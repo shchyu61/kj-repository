@@ -273,6 +273,8 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <button class="tenant-only hidden" onclick="ST('my-info')">🏠 我的房間</button>
   <!-- 共用 -->
   <button onclick="ST('announce')">📢 公告</button>
+  <button onclick="ST('repair')">🔧 報修</button>
+  <button class="landlord-only" onclick="ST('monitor-cam')">📷 智慧監控</button>
   <button class="landlord-only" onclick="ST('backup')">💾 備份</button>
 </nav>
 
@@ -553,6 +555,136 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   </div>
 </div>
 
+<!-- ══ 報修（房東/房客共用）══ -->
+<div id="page-repair" class="page">
+
+  <!-- 房客：提交報修單 -->
+  <div class="card mt" id="repair-submit-card">
+    <div class="card-title">🔧 設備損壞報修</div>
+    <div class="alert-box a-info" style="margin-bottom:.75rem;">填寫後系統會立即寄 Gmail 通知房東。房東處理後會回覆您。</div>
+    <div class="form-row c2">
+      <div>
+        <label>損壞地點</label>
+        <select id="repair-location">
+          <option value="房間內">房間內</option>
+          <option value="共用浴室">共用浴室</option>
+          <option value="5樓洗衣機">5樓洗衣機</option>
+          <option value="走廊/樓梯">走廊/樓梯</option>
+          <option value="1樓大廳">1樓大廳</option>
+          <option value="其他公共區域">其他公共區域</option>
+        </select>
+      </div>
+      <div>
+        <label>緊急程度</label>
+        <select id="repair-urgency">
+          <option value="普通">普通（3天內處理）</option>
+          <option value="緊急">緊急（請盡快處理）</option>
+          <option value="非常緊急">⚠️ 非常緊急（今天需處理）</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>損壞描述（請詳細說明，如：廁所燈管不亮、水龍頭漏水）</label>
+        <textarea id="repair-desc" rows="3" placeholder="請描述損壞狀況..."></textarea>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>方便維修時段（選填）</label>
+        <input type="text" id="repair-time" placeholder="如：週間下午 2-6 點均可">
+      </div>
+    </div>
+    <button class="btn ba blk" onclick="submitRepair()">📧 送出報修單（通知房東）</button>
+  </div>
+
+  <!-- 報修紀錄（房東看到全部，房客看自己的）-->
+  <div class="card">
+    <div class="card-title">
+      📋 報修紀錄
+      <span id="repair-pending-badge" style="font-size:.72rem;background:var(--danger);color:#fff;border-radius:99px;padding:.1rem .5rem;margin-left:.4rem;display:none;"></span>
+    </div>
+    <div id="repair-list"><div class="txt-m">讀取中...</div></div>
+  </div>
+</div>
+
+<!-- ══ 智慧監控（房東專用）══ -->
+<div id="page-monitor-cam" class="page">
+  <div class="card mt">
+    <div class="card-title">📷 TAPO 智慧監控系統</div>
+    <div class="alert-box a-warn">⚙️ 此功能需要 TP-Link TAPO Cloud API 金鑰設定後才能啟用。</div>
+
+    <!-- 攝影機①：5樓洗衣機 -->
+    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:1rem;padding:1rem;margin-bottom:.75rem;">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;">
+        <span style="font-size:1.3rem;">🫧</span>
+        <div>
+          <div style="font-weight:900;font-size:.92rem;">5樓洗衣機監控</div>
+          <div style="font-size:.72rem;color:var(--muted);">TAPO C320WS · 功能：使用中偵測 + 洗完自動通知房客</div>
+        </div>
+        <span id="cam1-status" style="margin-left:auto;font-size:.72rem;font-weight:900;background:#f0e8d5;color:var(--muted);border-radius:99px;padding:.15rem .6rem;">未連線</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;">
+        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
+          <div class="txt-m">目前狀態</div>
+          <div id="washer-status" style="font-weight:900;font-size:.95rem;color:var(--muted);">— 未連線 —</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
+          <div class="txt-m">最後偵測</div>
+          <div id="washer-last" style="font-weight:700;font-size:.82rem;color:var(--muted);">—</div>
+        </div>
+      </div>
+      <div class="gap mt" style="margin-top:.6rem;">
+        <button class="btn bo sm" onclick="checkWasher()" style="font-size:.75rem;">🔍 立即查詢</button>
+        <button class="btn bs sm" onclick="notifyWasherDone()" style="font-size:.75rem;">📧 手動通知：衣服洗好了</button>
+      </div>
+    </div>
+
+    <!-- 攝影機②：1樓電子鎖 -->
+    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:1rem;padding:1rem;margin-bottom:.75rem;">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;">
+        <span style="font-size:1.3rem;">🔒</span>
+        <div>
+          <div style="font-weight:900;font-size:.92rem;">1樓大廳電子鎖監控</div>
+          <div style="font-size:.72rem;color:var(--muted);">TAPO C220 · 功能：電池低電量警示音偵測 + 通知房東換電池</div>
+        </div>
+        <span id="cam2-status" style="margin-left:auto;font-size:.72rem;font-weight:900;background:#f0e8d5;color:var(--muted);border-radius:99px;padding:.15rem .6rem;">未連線</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;">
+        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
+          <div class="txt-m">電池狀態</div>
+          <div id="lock-battery" style="font-weight:900;font-size:.95rem;color:var(--muted);">— 未連線 —</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
+          <div class="txt-m">最後警報</div>
+          <div id="lock-last-alert" style="font-weight:700;font-size:.82rem;color:var(--muted);">無異常</div>
+        </div>
+      </div>
+      <div class="gap mt" style="margin-top:.6rem;">
+        <button class="btn bo sm" onclick="checkLockBattery()" style="font-size:.75rem;">🔍 立即查詢</button>
+        <button class="btn bd sm" onclick="notifyBatteryLow()" style="font-size:.75rem;">📧 手動通知：電池快沒電</button>
+      </div>
+    </div>
+
+    <!-- API 設定區 -->
+    <div style="border-top:1.5px solid var(--border2);padding-top:.85rem;margin-top:.25rem;">
+      <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.5rem;">⚙️ TAPO Cloud API 設定（需要 TP-Link 帳號）</div>
+      <div class="form-row c2">
+        <div><label>TP-Link 帳號（email）</label><input type="text" id="tapo-email" placeholder="your@email.com"></div>
+        <div><label>TP-Link 密碼</label><input type="password" id="tapo-pw" placeholder="TP-Link 登入密碼"></div>
+      </div>
+      <div class="form-row c2">
+        <div><label>洗衣機攝影機 Device ID</label><input type="text" id="tapo-cam1-id" placeholder="從 TAPO App 取得"></div>
+        <div><label>大廳攝影機 Device ID</label><input type="text" id="tapo-cam2-id" placeholder="從 TAPO App 取得"></div>
+      </div>
+      <div class="alert-box a-info" style="font-size:.75rem;">
+        📱 Device ID 取得方式：開啟 TAPO App → 點選攝影機 → 右上角設定 → 裝置資訊 → 複製 Device ID
+      </div>
+      <button class="btn ba sm" onclick="saveTapoSettings()">💾 儲存 TAPO 設定</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ 房東：備份 ══ -->
 <div id="page-backup" class="page">
   <div class="card mt">
@@ -669,7 +801,7 @@ const CO_ITEMS = [
 let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[] };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{} };
 let _ejsOk = false;
 
 // ══ Firebase helpers ═══════════════════════
@@ -852,6 +984,7 @@ const completeLogin = async (email) => {
   if(isLandlord) setTimeout(()=>{
     checkPendingAnnounces();
     checkRentOverdue();
+    updateRepairBadge();
   },1500);
   // 更新郵局帳號顯示
   setTimeout(()=>{updatePostalDisplay();loadPostalInputs();},600);
@@ -927,6 +1060,8 @@ const loadLandlordData = async () => {
       if(d.rentRecords)DB.rentRecords=d.rentRecords;
       if(d.checkouts)DB.checkouts=d.checkouts;
       if(d.announces)DB.announces=d.announces;
+      if(d.repairs)DB.repairs=d.repairs;
+      if(d.tapoSettings)DB.tapoSettings=d.tapoSettings;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -938,7 +1073,7 @@ const saveLandlordData = async () => {
   await window._setDoc(landlordPath(),{
     tenants:DB.tenants, utilBills:DB.utilBills,
     rentRecords:DB.rentRecords, checkouts:DB.checkouts,
-    announces:DB.announces, updatedAt:new Date().toISOString()
+    announces:DB.announces, repairs:DB.repairs||[], tapoSettings:DB.tapoSettings||{},
   });
 };
 
@@ -956,6 +1091,8 @@ window.ST = function(n){
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
   if(n==='announce')renderAnnounce();
+  if(n==='repair')renderRepair();
+  if(n==='monitor-cam')renderMonitorCam();
   if(n==='my-bill')renderMyBill();
   if(n==='my-info')renderMyInfo();
 };
@@ -1665,7 +1802,186 @@ async function checkSession(){
   setTimeout(()=>lucide.createIcons(),100);
 }
 
-// ══ 登入後：檢查是否有待寄公告已到期 ════
+// ══ 報修系統 ════════════════════════════════
+window.submitRepair = async function(){
+  const desc=document.getElementById('repair-desc')?.value.trim();
+  if(!desc){toast('請填寫損壞描述');return;}
+  const location=document.getElementById('repair-location')?.value||'';
+  const urgency=document.getElementById('repair-urgency')?.value||'普通';
+  const time=document.getElementById('repair-time')?.value.trim()||'';
+  const now=new Date();
+  const datetime=now.toLocaleDateString('zh-TW')+' '+now.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  const room=myRoom?RL[myRoom]:'未知房間';
+  const tname=myRoom?DB.tenants[myRoom]?.name||'':currentEmail.split('@')[0];
+  const repair={
+    id:now.getTime(), datetime, room, tenantEmail:currentEmail, tenantName:tname,
+    location, urgency, desc, time, status:'待處理', statusDate:''
+  };
+  // 寄 Gmail 給房東
+  initEJS();
+  const urgencyEmoji=urgency==='非常緊急'?'🚨':urgency==='緊急'?'⚠️':'🔧';
+  try{
+    await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+      to_email:LANDLORD_EMAIL,
+      otp:`${urgencyEmoji}【報修通知】${room} ${tname}\n地點：${location}\n緊急程度：${urgency}\n說明：${desc}\n方便時段：${time||'未填'}\n提報時間：${datetime}`
+    });
+    toast('📧 報修單已送出，已通知房東 ✓');
+  }catch(e){
+    toast('報修單已儲存，但 Gmail 通知失敗，請直接聯繫房東');
+    console.warn('報修 Gmail 失敗:',e);
+  }
+  if(!DB.repairs)DB.repairs=[];
+  DB.repairs.unshift(repair);
+  await saveLandlordData();
+  // 清空表單
+  document.getElementById('repair-desc').value='';
+  document.getElementById('repair-time').value='';
+  renderRepair();
+};
+
+function renderRepair(){
+  // 房客送出區：只有非房東才顯示
+  const submitCard=document.getElementById('repair-submit-card');
+  if(submitCard) submitCard.style.display=isLandlord?'none':'block';
+
+  const list=document.getElementById('repair-list');
+  const badge=document.getElementById('repair-pending-badge');
+  if(!DB.repairs||!DB.repairs.length){
+    list.innerHTML='<div class="txt-m">尚無報修紀錄。</div>';
+    if(badge)badge.style.display='none';
+    return;
+  }
+  // 房客只看自己的，房東看全部
+  const filtered = isLandlord
+    ? DB.repairs
+    : DB.repairs.filter(r=>r.tenantEmail===currentEmail);
+  const pending=filtered.filter(r=>r.status==='待處理').length;
+  if(badge){
+    badge.textContent=pending>0?pending+'件待處理':'';
+    badge.style.display=pending>0?'':'none';
+  }
+  if(!filtered.length){list.innerHTML='<div class="txt-m">尚無報修紀錄。</div>';return;}
+  list.innerHTML='';
+  filtered.forEach((r,i)=>{
+    const realIdx=DB.repairs.findIndex(x=>x.id===r.id);
+    const urgColor=r.urgency==='非常緊急'?'var(--danger)':r.urgency==='緊急'?'#b06a20':'var(--success)';
+    const statusColor=r.status==='已完成'?'var(--success)':r.status==='處理中'?'#1a4a8a':'var(--danger)';
+    const landlordBtns=isLandlord?`
+      <div style="display:flex;gap:.4rem;margin-top:.5rem;flex-wrap:wrap;">
+        <button onclick="updateRepairStatus(${realIdx},'處理中')" class="btn bo sm" style="font-size:.72rem;">🔨 處理中</button>
+        <button onclick="updateRepairStatus(${realIdx},'已完成')" class="btn bs sm" style="font-size:.72rem;">✅ 已完成</button>
+        <button onclick="deleteRepair(${realIdx})" class="btn bd sm" style="font-size:.72rem;">🗑️ 刪除</button>
+      </div>`:'';
+    list.innerHTML+=`
+      <div style="background:var(--bg2);border:1.5px solid ${r.status==='待處理'?'var(--danger)':r.status==='處理中'?'#b0c8f0':'var(--border2)'};border-radius:.9rem;padding:.85rem 1rem;margin-bottom:.5rem;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.3rem;">
+          <div>
+            <span style="font-weight:900;font-size:.9rem;">${r.location}</span>
+            <span style="font-size:.72rem;color:${urgColor};font-weight:900;margin-left:.4rem;">${r.urgency==='非常緊急'?'🚨':r.urgency==='緊急'?'⚠️':'🔧'} ${r.urgency}</span>
+          </div>
+          <span style="font-size:.72rem;font-weight:900;color:${statusColor};background:${r.status==='已完成'?'#e0f4e8':r.status==='處理中'?'#e8f0fc':'#fdecea'};border-radius:99px;padding:.15rem .6rem;">${r.status}</span>
+        </div>
+        <div style="font-size:.72rem;color:var(--muted);margin:.25rem 0 .4rem;">${r.datetime} · ${r.room} ${r.tenantName||''}</div>
+        <div style="font-size:.85rem;color:var(--primary);line-height:1.6;white-space:pre-wrap;">${r.desc}</div>
+        ${r.time?`<div style="font-size:.75rem;color:var(--muted);margin-top:.25rem;">⏰ 方便時段：${r.time}</div>`:''}
+        ${landlordBtns}
+      </div>`;
+  });
+}
+
+window.updateRepairStatus = async function(i, status){
+  if(!DB.repairs[i])return;
+  DB.repairs[i].status=status;
+  DB.repairs[i].statusDate=new Date().toLocaleDateString('zh-TW');
+  // 通知房客
+  if(status==='已完成' && DB.repairs[i].tenantEmail){
+    initEJS();
+    try{
+      await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+        to_email:DB.repairs[i].tenantEmail,
+        otp:`✅【報修完成通知】您於 ${DB.repairs[i].datetime} 提報的「${DB.repairs[i].location}：${DB.repairs[i].desc.slice(0,40)}」已完成修繕，請確認。如有問題請再報修。`
+      });
+    }catch(e){}
+  }
+  await saveLandlordData(); renderRepair(); toast('狀態已更新 ✓');
+};
+window.deleteRepair = async function(i){
+  if(!confirm('確定刪除此報修紀錄？'))return;
+  DB.repairs.splice(i,1);
+  await saveLandlordData(); renderRepair(); toast('已刪除');
+};
+
+// ══ TAPO 智慧監控（預留 API 串接）════════════
+function renderMonitorCam(){
+  const s=DB.tapoSettings||{};
+  if(document.getElementById('tapo-email'))document.getElementById('tapo-email').value=s.email||'';
+  if(document.getElementById('tapo-pw'))document.getElementById('tapo-pw').value=s.pw||'';
+  if(document.getElementById('tapo-cam1-id'))document.getElementById('tapo-cam1-id').value=s.cam1||'';
+  if(document.getElementById('tapo-cam2-id'))document.getElementById('tapo-cam2-id').value=s.cam2||'';
+  // 狀態顯示
+  const connected = s.email&&s.cam1&&s.cam2;
+  ['cam1-status','cam2-status'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){ el.textContent=connected?'設定完成':'未設定'; el.style.background=connected?'#d0f0dc':'#f0e8d5'; el.style.color=connected?'var(--success)':'var(--muted)'; }
+  });
+}
+window.saveTapoSettings = async function(){
+  DB.tapoSettings={
+    email:document.getElementById('tapo-email')?.value.trim()||'',
+    pw:document.getElementById('tapo-pw')?.value||'',
+    cam1:document.getElementById('tapo-cam1-id')?.value.trim()||'',
+    cam2:document.getElementById('tapo-cam2-id')?.value.trim()||'',
+  };
+  await saveLandlordData(); renderMonitorCam(); toast('TAPO 設定已儲存 ✓ （API串接開發中）');
+};
+// 手動通知按鈕（API未串接前的替代方案）
+window.checkWasher = function(){
+  toast('⚙️ TAPO API 尚未串接，目前無法自動查詢。');
+};
+window.notifyWasherDone = async function(){
+  // 手動通知所有房客洗衣機洗好了
+  const tenants=Object.values(DB.tenants).filter(t=>t.status==='occupied'&&t.tenantEmail);
+  if(!tenants.length){toast('目前無設定 email 的房客');return;}
+  initEJS();
+  const now=new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  let sent=0;
+  for(const t of tenants){
+    try{
+      await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+        to_email:t.tenantEmail,
+        otp:`🫧【洗衣機通知】${now} 5樓洗衣機衣服已洗好，請盡速取出，以免影響其他房客使用。謝謝！`
+      });
+      sent++;
+    }catch(e){}
+  }
+  toast(`📧 已通知 ${sent} 位房客：洗衣機洗好了 ✓`);
+};
+window.checkLockBattery = function(){
+  toast('⚙️ TAPO API 尚未串接，目前無法自動查詢。');
+};
+window.notifyBatteryLow = async function(){
+  initEJS();
+  try{
+    await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+      to_email:LANDLORD_EMAIL,
+      otp:`🔋【電子鎖電池警告】1樓大廳電子鎖電池電量偏低，請盡快返回嘉義更換電池，以免房客無法進出。`
+    });
+    toast('📧 已寄 Gmail 提醒房東換電池 ✓');
+  }catch(e){ toast('Gmail 發送失敗：'+e.message); }
+};
+
+// ══ 登入後更新報修角標 ════════════════════════
+function updateRepairBadge(){
+  const badge=document.getElementById('repair-pending-badge');
+  if(!badge)return;
+  const repairs=DB.repairs||[];
+  const myRepairs=isLandlord?repairs:repairs.filter(r=>r.tenantEmail===currentEmail);
+  const pending=myRepairs.filter(r=>r.status==='待處理').length;
+  badge.textContent=pending>0?pending+'件':'';
+  badge.style.display=pending>0?'':'none';
+}
+
+// ══ 登入後補寄 + 逾期 + 報修角標 ════════════
 async function checkPendingAnnounces(){
   if(!isLandlord) return;
   const pending = (DB.announces||[]).filter(a=>!a.notified&&!a.testOnly&&a.sendAt&&Date.now()>=a.sendAt);
