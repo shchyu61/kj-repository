@@ -426,32 +426,94 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
 <!-- ══ 公告（房東/房客共用）══ -->
 <div id="page-announce" class="page">
+
+  <!-- 固定資訊區：停水停電 + 垃圾資源回收 + 實用連結 -->
   <div class="card mt">
-    <div class="card-title">📢 公告與注意事項</div>
-    <div id="announce-list">
-      <div class="alert-box a-info" style="margin-bottom:.6rem;">📌 停水停電查詢：如遇停水停電，請至以下網站查詢。</div>
-      <div style="display:grid;gap:.5rem;">
-        <a href="https://web.water.gov.tw/wateroff/city/%E5%98%89%E7%BE%A9%E5%B8%82/index.html" target="_blank"
-           style="display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.8rem;text-decoration:none;color:var(--primary);font-weight:700;font-size:.85rem;">
-          💧 停水查詢（嘉義市自來水處）
-        </a>
-        <a href="https://service.taipower.com.tw/nds/ndsWeb/ndft112.aspx" target="_blank"
-           style="display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.8rem;text-decoration:none;color:var(--primary);font-weight:700;font-size:.85rem;">
-          ⚡ 停電查詢（台電）
-        </a>
-        <a href="http://www.shin-chia.com.tw/construction.asp" target="_blank"
-           style="display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.8rem;text-decoration:none;color:var(--primary);font-weight:700;font-size:.85rem;">
-          🔥 停氣查詢（欣嘉天然氣）
-        </a>
-      </div>
+    <div class="card-title">🔗 常用查詢與資訊</div>
+
+    <!-- 停水停電停氣 -->
+    <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">停水停電停氣查詢</div>
+    <div style="display:grid;gap:.45rem;margin-bottom:1rem;">
+      <a href="https://web.water.gov.tw/wateroff/city/%E5%98%89%E7%BE%A9%E5%B8%82/index.html" target="_blank"
+         style="display:flex;align-items:center;gap:.6rem;padding:.65rem 1rem;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.8rem;text-decoration:none;color:var(--primary);font-weight:700;font-size:.85rem;transition:border-color .15s;"
+         onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)'">
+        💧 停水查詢（嘉義市自來水處）
+      </a>
+      <a href="https://service.taipower.com.tw/nds/ndsWeb/ndft112.aspx" target="_blank"
+         style="display:flex;align-items:center;gap:.6rem;padding:.65rem 1rem;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.8rem;text-decoration:none;color:var(--primary);font-weight:700;font-size:.85rem;transition:border-color .15s;"
+         onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)'">
+        ⚡ 停電查詢（台電）
+      </a>
+      <a href="http://www.shin-chia.com.tw/" target="_blank"
+         style="display:flex;align-items:center;gap:.6rem;padding:.65rem 1rem;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.8rem;text-decoration:none;color:var(--primary);font-weight:700;font-size:.85rem;transition:border-color .15s;"
+         onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)'">
+        🔥 停氣查詢（欣嘉天然氣）
+      </a>
     </div>
-    <div id="landlord-announce-edit" class="hidden mt">
-      <hr style="border:none;border-top:1.5px solid var(--border2);margin:1rem 0;">
-      <div class="card-title">✏️ 新增公告（房東）</div>
-      <div class="form-row">
-        <div><label>公告內容</label><textarea id="ann-content" rows="3" placeholder="輸入公告內容..."></textarea></div>
+
+    <!-- 垃圾資源回收 -->
+    <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">🗑️ 垃圾清運與資源回收</div>
+    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.85rem 1rem;margin-bottom:.45rem;font-size:.83rem;line-height:1.8;">
+      <div style="font-weight:900;color:var(--primary);margin-bottom:.3rem;">🚛 垃圾車（KEP-2639 · 18號路線）</div>
+      <div style="color:var(--muted);">路線：興村街 → <strong style="color:var(--accent);">溪興街153巷</strong> → 軍輝路411號</div>
+      <div style="color:var(--muted);">回收日：<strong style="color:var(--primary);">週一、二、四、五</strong> &nbsp; 表定時間：<strong style="color:var(--danger);">17:03</strong></div>
+    </div>
+    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.85rem 1rem;margin-bottom:1rem;font-size:.83rem;line-height:1.8;">
+      <div style="font-weight:900;color:var(--primary);margin-bottom:.3rem;">♻️ 資源回收車（KEM-2212 · 18號路線）</div>
+      <div style="color:var(--muted);">路線：興村街 → <strong style="color:var(--accent);">溪興街153巷</strong> → 軍輝路411號</div>
+      <div style="color:var(--muted);">回收日：<strong style="color:var(--primary);">週一、二、四、五</strong> &nbsp; 表定時間：<strong style="color:var(--danger);">17:03</strong></div>
+    </div>
+
+    <!-- 大型廢棄物 -->
+    <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">🛋️ 大型廢棄物申請</div>
+    <a href="https://cleaner.web.cycepb.gov.tw/biggarbage.aspx" target="_blank"
+       style="display:flex;align-items:center;gap:.6rem;padding:.65rem 1rem;background:#fff8e8;border:1.5px solid #e8d090;border-radius:.8rem;text-decoration:none;color:#6a4a00;font-weight:700;font-size:.85rem;margin-bottom:1rem;transition:border-color .15s;"
+       onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='#e8d090'">
+      📋 嘉義市大型廢棄物清除申請（書桌、椅子等）
+    </a>
+    <div style="font-size:.75rem;color:var(--muted);margin-top:-.6rem;margin-bottom:1rem;padding:0 .25rem;">
+      ※ 請自行申請，廢棄物請放置騎樓並拍照上傳給清潔隊。
+    </div>
+
+    <!-- 免費理財工具 -->
+    <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">📈 房客專屬福利</div>
+    <a href="https://shchyu61.github.io/kj-manager/" target="_blank"
+       style="display:flex;align-items:center;gap:.75rem;padding:.85rem 1rem;background:linear-gradient(135deg,#1e3a5f,#1a4a8a);border-radius:.9rem;text-decoration:none;transition:opacity .18s;"
+       onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+      <div style="font-size:1.6rem;line-height:1;">📊</div>
+      <div>
+        <div style="font-weight:900;color:#ffe8b8;font-size:.92rem;">科蓁智能理財管家（免費使用）</div>
+        <div style="font-size:.72rem;color:rgba(255,220,150,.7);margin-top:.2rem;">台/美股、虛擬幣 RSI 布林帶買賣訊號 · 租約期間內免費</div>
       </div>
-      <button class="btn ba sm" onclick="saveAnnounce()">📢 發布公告</button>
+      <div style="margin-left:auto;color:rgba(255,220,150,.6);font-size:.8rem;">→</div>
+    </a>
+  </div>
+
+  <!-- 房東公告區 -->
+  <div class="card" id="announce-card">
+    <div class="card-title">
+      📢 房東公告
+      <span id="ann-count" style="font-size:.72rem;background:var(--accent);color:#fff;border-radius:99px;padding:.1rem .5rem;margin-left:.4rem;"></span>
+    </div>
+    <div id="announce-list"></div>
+
+    <!-- 房東專用：新增公告 -->
+    <div id="landlord-announce-edit" class="hidden mt">
+      <hr style="border:none;border-top:1.5px solid var(--border2);margin:.75rem 0;">
+      <div style="font-weight:900;font-size:.88rem;color:var(--primary);margin-bottom:.6rem;">✏️ 新增公告</div>
+      <div class="form-row">
+        <div><label>公告內容</label>
+          <textarea id="ann-content" rows="3" placeholder="輸入公告內容，發布後自動通知所有房客..."></textarea>
+        </div>
+      </div>
+      <div class="gap">
+        <button class="btn ba sm" onclick="saveAnnounce(false)">
+          📢 發布公告（通知所有房客 Gmail）
+        </button>
+        <button class="btn bo sm" onclick="saveAnnounce(true)">
+          💾 僅儲存（測試用，不寄 Gmail）
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -1249,17 +1311,79 @@ function renderAnnounce(){
     document.getElementById('landlord-announce-edit')?.classList.remove('hidden');
   }
   const list=document.getElementById('announce-list');
-  if(DB.announces&&DB.announces.length>0){
-    DB.announces.forEach(a=>{
-      list.innerHTML+=`<div class="alert-box a-ok" style="margin-top:.5rem;">📢 ${a.content}<br><span class="txt-m">${a.date||''}</span></div>`;
-    });
+  const cntEl=document.getElementById('ann-count');
+  const anns=DB.announces||[];
+  if(cntEl)cntEl.textContent=anns.length>0?anns.length+'則':'';
+  if(!anns.length){
+    list.innerHTML='<div class="txt-m" style="padding:.5rem 0;">尚無公告。</div>';
+    return;
   }
+  // 最新在上（DB.announces已用unshift，index 0最新）
+  list.innerHTML='';
+  anns.forEach((a,i)=>{
+    const editBtn=isLandlord?`
+      <div style="display:flex;gap:.4rem;margin-top:.5rem;">
+        <button onclick="editAnnounce(${i})" class="btn bo sm" style="font-size:.72rem;padding:.25rem .65rem;">✏️ 編輯</button>
+        <button onclick="deleteAnnounce(${i})" class="btn bd sm" style="font-size:.72rem;padding:.25rem .65rem;">🗑️ 刪除</button>
+      </div>`:'';
+    list.innerHTML+=`
+      <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.85rem 1rem;margin-bottom:.5rem;position:relative;">
+        <div style="font-size:.72rem;color:var(--muted);margin-bottom:.35rem;font-weight:700;">
+          📅 ${a.datetime||a.date||'—'}
+          ${a.notified?'<span style="color:var(--success);margin-left:.5rem;">✅ 已通知房客</span>':''}
+        </div>
+        <div style="font-size:.88rem;font-weight:500;color:var(--primary);line-height:1.7;white-space:pre-wrap;">${a.content}</div>
+        ${editBtn}
+      </div>`;
+  });
 }
-window.saveAnnounce = async function(){
+
+window.saveAnnounce = async function(testOnly=false){
   const content=document.getElementById('ann-content')?.value.trim();
-  if(!content)return;
-  DB.announces.unshift({content,date:new Date().toLocaleDateString('zh-TW')});
-  await saveLandlordData();renderAnnounce();document.getElementById('ann-content').value='';toast('公告已發布 ✓');
+  if(!content){toast('請輸入公告內容');return;}
+  const now=new Date();
+  const datetime=now.toLocaleDateString('zh-TW')+' '+now.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  const ann={content, datetime, notified:false, id:now.getTime()};
+
+  if(!testOnly){
+    // 寄 Gmail 給所有入住中的房客
+    const tenants=Object.values(DB.tenants).filter(t=>t.status==='occupied'&&t.tenantEmail);
+    let sent=0;
+    for(const t of tenants){
+      try{
+        initEJS();
+        await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+          to_email:t.tenantEmail,
+          otp:'【公告通知】'+content.slice(0,50)+(content.length>50?'…':'')
+        });
+        sent++;
+      }catch(e){ console.warn('通知發送失敗:',t.tenantEmail,e); }
+    }
+    ann.notified=true;
+    toast(`公告已發布 ✓ 已通知 ${sent} 位房客`);
+  } else {
+    toast('公告已儲存（測試模式，未寄 Gmail）✓');
+  }
+
+  DB.announces.unshift(ann);
+  await saveLandlordData();
+  renderAnnounce();
+  document.getElementById('ann-content').value='';
+};
+
+window.deleteAnnounce = async function(i){
+  if(!confirm('確定刪除此公告？'))return;
+  DB.announces.splice(i,1);
+  await saveLandlordData(); renderAnnounce(); toast('公告已刪除');
+};
+
+window.editAnnounce = function(i){
+  const a=DB.announces[i];
+  const content=document.getElementById('ann-content');
+  if(content){ content.value=a.content; content.focus(); }
+  // 刪除舊的，讓房東重新發布
+  DB.announces.splice(i,1);
+  toast('已載入公告內容，修改後請重新發布');
 };
 
 // ══ 備份 ════════════════════════════════════
