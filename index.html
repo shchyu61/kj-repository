@@ -513,6 +513,9 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         <button class="btn bo sm" onclick="saveAnnounce(true)">
           💾 僅儲存（測試用，不寄 Gmail）
         </button>
+        <button class="btn bo sm" onclick="cancelAnnounce()" style="color:var(--muted);">
+          ✕ 取消，回主畫面
+        </button>
       </div>
     </div>
   </div>
@@ -803,6 +806,8 @@ const completeLogin = async (email) => {
     }
   }
   if(typeof lucide!=='undefined')lucide.createIcons();
+  // 登入後檢查是否有待寄公告已到期
+  if(isLandlord) setTimeout(()=>checkPendingAnnounces(),1500);
 };
 
 function findMyRoom(email){
@@ -1306,6 +1311,9 @@ function renderMyInfo(){
 }
 
 // ══ 公告 ════════════════════════════════════
+const ANN_DELAY_MS = 30 * 60 * 1000; // 30分鐘後悔期
+let _annCountdownTimers = {}; // key=ann.id, value=intervalID
+
 function renderAnnounce(){
   if(isLandlord){
     document.getElementById('landlord-announce-edit')?.classList.remove('hidden');
@@ -1318,24 +1326,93 @@ function renderAnnounce(){
     list.innerHTML='<div class="txt-m" style="padding:.5rem 0;">尚無公告。</div>';
     return;
   }
-  // 最新在上（DB.announces已用unshift，index 0最新）
   list.innerHTML='';
   anns.forEach((a,i)=>{
-    const editBtn=isLandlord?`
-      <div style="display:flex;gap:.4rem;margin-top:.5rem;">
-        <button onclick="editAnnounce(${i})" class="btn bo sm" style="font-size:.72rem;padding:.25rem .65rem;">✏️ 編輯</button>
-        <button onclick="deleteAnnounce(${i})" class="btn bd sm" style="font-size:.72rem;padding:.25rem .65rem;">🗑️ 刪除</button>
-      </div>`:'';
+    const now=Date.now();
+    const isPending=!a.notified && !a.testOnly && a.sendAt && now < a.sendAt;
+    const remainMs=isPending ? a.sendAt - now : 0;
+    const mm=String(Math.floor(remainMs/60000)).padStart(2,'0');
+    const ss=String(Math.floor((remainMs%60000)/1000)).padStart(2,'0');
+
+    // 狀態標籤
+    let statusHtml='';
+    if(a.notified){
+      statusHtml='<span style="color:var(--success);margin-left:.5rem;font-weight:900;">✅ 已通知房客</span>';
+    } else if(a.testOnly){
+      statusHtml='<span style="color:var(--muted);margin-left:.5rem;">💾 測試儲存（未寄信）</span>';
+    } else if(isPending){
+      statusHtml=`<span id="ann-countdown-${a.id}" style="color:#b06a20;margin-left:.5rem;font-weight:900;">⏳ ${mm}:${ss} 後自動寄出</span>`;
+    }
+
+    // 倒數期間：顯示取消寄信按鈕
+    const cancelSendBtn = isPending && isLandlord
+      ? `<button onclick="cancelAnnSend(${i})" class="btn bd sm" style="font-size:.72rem;padding:.25rem .7rem;">🚫 取消寄信</button>`
+      : '';
+
+    const editDelBtn = isLandlord ? `
+      <button onclick="editAnnounce(${i})" class="btn bo sm" style="font-size:.72rem;padding:.25rem .65rem;">✏️ 編輯</button>
+      <button onclick="deleteAnnounce(${i})" class="btn bd sm" style="font-size:.72rem;padding:.25rem .65rem;">🗑️ 刪除</button>` : '';
+
     list.innerHTML+=`
-      <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.85rem 1rem;margin-bottom:.5rem;position:relative;">
-        <div style="font-size:.72rem;color:var(--muted);margin-bottom:.35rem;font-weight:700;">
-          📅 ${a.datetime||a.date||'—'}
-          ${a.notified?'<span style="color:var(--success);margin-left:.5rem;">✅ 已通知房客</span>':''}
+      <div id="ann-card-${a.id}" style="background:${isPending?'#fffbf0':'var(--bg2)'};border:1.5px solid ${isPending?'var(--gold)':'var(--border2)'};border-radius:.9rem;padding:.85rem 1rem;margin-bottom:.5rem;">
+        <div style="font-size:.72rem;color:var(--muted);margin-bottom:.35rem;font-weight:700;display:flex;flex-wrap:wrap;align-items:center;gap:.3rem;">
+          📅 ${a.datetime||'—'} ${statusHtml}
         </div>
         <div style="font-size:.88rem;font-weight:500;color:var(--primary);line-height:1.7;white-space:pre-wrap;">${a.content}</div>
-        ${editBtn}
+        <div style="display:flex;gap:.4rem;margin-top:.5rem;flex-wrap:wrap;">
+          ${cancelSendBtn}${editDelBtn}
+        </div>
       </div>`;
+
+    // 啟動倒數計時器
+    if(isPending){ startAnnCountdown(a, i); }
   });
+}
+
+// 倒數計時器：每秒更新顯示，時間到自動寄信
+function startAnnCountdown(ann, idx){
+  if(_annCountdownTimers[ann.id]) clearInterval(_annCountdownTimers[ann.id]);
+  _annCountdownTimers[ann.id] = setInterval(async ()=>{
+    const rem = ann.sendAt - Date.now();
+    const el = document.getElementById('ann-countdown-'+ann.id);
+    if(rem > 0){
+      if(el){
+        const mm=String(Math.floor(rem/60000)).padStart(2,'0');
+        const ss=String(Math.floor((rem%60000)/1000)).padStart(2,'0');
+        el.textContent=`⏳ ${mm}:${ss} 後自動寄出`;
+      }
+    } else {
+      clearInterval(_annCountdownTimers[ann.id]);
+      // 時間到，自動寄信
+      const annIdx = DB.announces.findIndex(a=>a.id===ann.id);
+      if(annIdx>=0 && !DB.announces[annIdx].notified){
+        await sendAnnGmail(annIdx);
+        renderAnnounce();
+      }
+    }
+  }, 1000);
+}
+
+// 實際寄信函數
+async function sendAnnGmail(idx){
+  const a=DB.announces[idx];
+  if(!a||a.notified)return;
+  const tenants=Object.values(DB.tenants).filter(t=>t.status==='occupied'&&t.tenantEmail);
+  let sent=0;
+  initEJS();
+  for(const t of tenants){
+    try{
+      await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+        to_email:t.tenantEmail,
+        otp:'【公告通知】'+a.content.slice(0,80)+(a.content.length>80?'…':'')
+      });
+      sent++;
+    }catch(e){ console.warn('通知失敗:',t.tenantEmail,e); }
+  }
+  DB.announces[idx].notified=true;
+  DB.announces[idx].sendAt=null;
+  await saveLandlordData();
+  toast(`📧 公告已自動寄出，通知 ${sent} 位房客 ✓`);
 }
 
 window.saveAnnounce = async function(testOnly=false){
@@ -1343,32 +1420,40 @@ window.saveAnnounce = async function(testOnly=false){
   if(!content){toast('請輸入公告內容');return;}
   const now=new Date();
   const datetime=now.toLocaleDateString('zh-TW')+' '+now.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
-  const ann={content, datetime, notified:false, id:now.getTime()};
 
-  if(!testOnly){
-    // 寄 Gmail 給所有入住中的房客
-    const tenants=Object.values(DB.tenants).filter(t=>t.status==='occupied'&&t.tenantEmail);
-    let sent=0;
-    for(const t of tenants){
-      try{
-        initEJS();
-        await emailjs.send(EJS_SVC,'template_oqm4kw9',{
-          to_email:t.tenantEmail,
-          otp:'【公告通知】'+content.slice(0,50)+(content.length>50?'…':'')
-        });
-        sent++;
-      }catch(e){ console.warn('通知發送失敗:',t.tenantEmail,e); }
-    }
-    ann.notified=true;
-    toast(`公告已發布 ✓ 已通知 ${sent} 位房客`);
+  if(testOnly){
+    // 測試：直接存，不排程寄信
+    const ann={content, datetime, notified:false, testOnly:true, id:now.getTime()};
+    DB.announces.unshift(ann);
+    await saveLandlordData(); renderAnnounce();
+    document.getElementById('ann-content').value='';
+    toast('💾 公告已儲存（測試模式，不寄 Gmail）✓');
   } else {
-    toast('公告已儲存（測試模式，未寄 Gmail）✓');
+    // 正式發布：排程 30 分鐘後寄信
+    const sendAt=now.getTime()+ANN_DELAY_MS;
+    const ann={content, datetime, notified:false, testOnly:false, sendAt, id:now.getTime()};
+    DB.announces.unshift(ann);
+    await saveLandlordData(); renderAnnounce();
+    document.getElementById('ann-content').value='';
+    toast('✅ 公告已儲存！將在 30 分鐘後自動寄 Gmail 通知房客。可在倒數期間取消。');
   }
+};
 
-  DB.announces.unshift(ann);
-  await saveLandlordData();
-  renderAnnounce();
+// 取消寄信（倒數期間）
+window.cancelAnnSend = async function(i){
+  if(!confirm('確定取消寄信？公告內容仍會保留，但不會通知房客。'))return;
+  if(_annCountdownTimers[DB.announces[i].id]){
+    clearInterval(_annCountdownTimers[DB.announces[i].id]);
+  }
+  DB.announces[i].sendAt=null;
+  DB.announces[i].testOnly=true; // 改為測試模式（不寄）
+  await saveLandlordData(); renderAnnounce();
+  toast('🚫 已取消寄信，公告保留但不通知房客。');
+};
+
+window.cancelAnnounce = function(){
   document.getElementById('ann-content').value='';
+  ST(isLandlord ? 'tenants' : 'my-bill');
 };
 
 window.deleteAnnounce = async function(i){
@@ -1440,6 +1525,17 @@ async function checkSession(){
   localStorage.removeItem('kj_rental_email');
   document.getElementById('security-overlay').style.display='flex';
   setTimeout(()=>lucide.createIcons(),100);
+}
+
+// ══ 登入後：檢查是否有待寄公告已到期 ════
+async function checkPendingAnnounces(){
+  if(!isLandlord) return;
+  const pending = (DB.announces||[]).filter(a=>!a.notified&&!a.testOnly&&a.sendAt&&Date.now()>=a.sendAt);
+  for(let i=0;i<pending.length;i++){
+    const idx=DB.announces.findIndex(a=>a.id===pending[i].id);
+    if(idx>=0) await sendAnnGmail(idx);
+  }
+  if(pending.length>0) renderAnnounce();
 }
 
 // ══ INIT ════════════════════════════════════
