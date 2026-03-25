@@ -252,7 +252,10 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
 <!-- ══ 主介面 ══ -->
 <header>
-  <h1>🏠 科蓁 <span>房租智能AI系統</span></h1>
+  <h1 style="display:flex;align-items:center;gap:.4rem;font-family:'Noto Sans TC',sans-serif;font-weight:900;font-size:1.08rem;letter-spacing:.02em;">
+    <span style="font-size:1.15rem;">🏠</span>
+    <span style="color:#ffe8b8;">科蓁</span><span style="color:var(--gold);font-style:italic;letter-spacing:.03em;">房租</span><span style="color:#ffe8b8;font-weight:700;">智能AI系統</span>
+  </h1>
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
@@ -402,6 +405,35 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="tenant-name" id="mb-tenant-name">—</div>
     <div class="next-due" id="mb-room-label">—</div>
   </div>
+  <!-- AI提醒系統說明 -->
+  <div class="card" style="border-color:#b06a20;background:linear-gradient(135deg,#faf5ea,#fff8e8);">
+    <div class="card-title" style="border-color:#e8d090;">🤖 AI 提醒系統（自動通知）</div>
+    <div style="display:flex;flex-direction:column;gap:.55rem;font-size:.83rem;">
+      <div style="display:flex;gap:.7rem;align-items:flex-start;padding:.55rem .75rem;background:rgba(255,255,255,.6);border-radius:.7rem;border:1px solid #e8d8c0;">
+        <span style="font-size:1.1rem;flex-shrink:0;">📅</span>
+        <div><span style="font-weight:900;color:var(--primary);">租約到期提醒</span><br>
+        <span style="color:var(--muted);">租約到期前 <strong style="color:var(--danger);">30天</strong>，系統自動寄 Gmail 提醒您提早續約或辦理退租點交。</span></div>
+      </div>
+      <div style="display:flex;gap:.7rem;align-items:flex-start;padding:.55rem .75rem;background:rgba(255,255,255,.6);border-radius:.7rem;border:1px solid #e8d8c0;">
+        <span style="font-size:1.1rem;flex-shrink:0;">💡</span>
+        <div><span style="font-weight:900;color:var(--primary);">水電瓦斯費通知</span><br>
+        <span style="color:var(--muted);">每期帳單計算完成後，系統自動寄 Gmail 通知您本期金額，<strong style="color:var(--danger);">請於3日內郵局轉帳</strong>，以便房東繳費。</span></div>
+      </div>
+      <div style="display:flex;gap:.7rem;align-items:flex-start;padding:.55rem .75rem;background:rgba(255,255,255,.6);border-radius:.7rem;border:1px solid #e8d8c0;">
+        <span style="font-size:1.1rem;flex-shrink:0;">💰</span>
+        <div><span style="font-weight:900;color:var(--primary);">租金逾期提醒</span><br>
+        <span style="color:var(--muted);">租金逾期未繳，系統將於<strong style="color:var(--danger);">逾期隔天</strong>自動寄 Gmail 提醒您繳納。</span></div>
+      </div>
+      <div style="display:flex;gap:.7rem;align-items:flex-start;padding:.55rem .75rem;background:#fff8e8;border-radius:.7rem;border:1.5px solid #e8c050;">
+        <span style="font-size:1.1rem;flex-shrink:0;">🏦</span>
+        <div><span style="font-weight:900;color:#6a4a00;">繳費方式</span><br>
+        <span style="color:#7a5a10;">所有費用一律以 <strong>郵局轉帳</strong> 繳納。<br>
+        ⚠️ 恕不接受銀行轉帳，亦不接受他人代繳。<br>
+        <span id="postal-account-info" style="color:var(--accent);font-weight:700;"></span></span></div>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-title">💡 水電瓦斯帳單紀錄</div>
     <div id="my-bill-list"><div class="txt-m">讀取中...</div></div>
@@ -532,6 +564,16 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <button class="btn bd sm" onclick="if(confirm('確定清除所有資料？'))clearAll()">🗑️ 清除</button>
     </div>
   </div>
+  <div class="card">
+    <div class="card-title">🏦 郵局轉帳帳號設定（房東專用）</div>
+    <div class="txt-m mb">設定後，房客的 AI 提醒系統說明中會顯示此帳號。</div>
+    <div class="form-row c2">
+      <div><label>郵局帳號（戶名）</label><input type="text" id="postal-name" placeholder="如：許○○"></div>
+      <div><label>郵局帳號（帳號）</label><input type="text" id="postal-acc" placeholder="如：700-0000000-0000000"></div>
+    </div>
+    <button class="btn ba sm" onclick="savePostalAccount()">💾 儲存帳號</button>
+  </div>
+
   <div class="card">
     <div class="card-title">🔑 登入密碼管理</div>
     <div class="txt-m mb">每日密碼格式：<strong>601 + 月月日日 + 信箱帳號</strong>（如 60103shchyu61）<br>首次登入須先完成 OTP 信箱驗證，之後可改用每日密碼。</div>
@@ -807,7 +849,12 @@ const completeLogin = async (email) => {
   }
   if(typeof lucide!=='undefined')lucide.createIcons();
   // 登入後檢查是否有待寄公告已到期
-  if(isLandlord) setTimeout(()=>checkPendingAnnounces(),1500);
+  if(isLandlord) setTimeout(()=>{
+    checkPendingAnnounces();
+    checkRentOverdue();
+  },1500);
+  // 更新郵局帳號顯示
+  setTimeout(()=>{updatePostalDisplay();loadPostalInputs();},600);
 };
 
 function findMyRoom(email){
@@ -1150,12 +1197,21 @@ function renderRentHistory(){
     const total=ROOMS.reduce((s,r)=>s+(rec.payments[r]?.paid||0),0);
     const due=ROOMS.reduce((s,r)=>s+(rec.payments[r]?.amount||0),0);
     const st=total>=due?'pay-paid':total>0?'pay-partial':'pay-unpaid';
-    el.innerHTML+=`<div class="hist-item">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div><div style="font-weight:900;">📅 ${rec.period} 收租</div>
-        <div class="txt-m">${rec.note||''} · 應收 NT$${due.toLocaleString()} / 實收 NT$${total.toLocaleString()}</div></div>
-        <div style="display:flex;gap:.5rem;align-items:center;">
+    // 逾期判斷：期別YYYYMM，若今天已超過該月最後一天，且未收齊
+    const recY=+rec.period.slice(0,4), recM=+rec.period.slice(4,6);
+    const dueDate=new Date(recY,recM,1); // 下個月1號=本月最後一天的隔天
+    const isOverdue=total<due && Date.now()>dueDate.getTime();
+    el.innerHTML+=`<div class="hist-item" style="${isOverdue?'border-color:var(--danger);background:#fff8f8;':''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem;">
+        <div>
+          <div style="font-weight:900;">📅 ${rec.period} 收租
+            ${isOverdue?'<span style="color:var(--danger);font-size:.72rem;font-weight:900;margin-left:.4rem;">⚠️ 逾期未收齊</span>':''}
+          </div>
+          <div class="txt-m">${rec.note||''} · 應收 NT$${due.toLocaleString()} / 實收 NT$${total.toLocaleString()}</div>
+        </div>
+        <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;">
           <span class="${st}">${total>=due?'已收齊':total>0?'部分':'未收'}</span>
+          ${total<due?`<button class="btn bs sm" onclick="markRentPaid(${i})" style="font-size:.72rem;padding:.3rem .7rem;">✅ 已繳租</button>`:''}
           <button class="btn bo sm" onclick="deleteRent(${i})">刪除</button>
         </div>
       </div>
@@ -1165,6 +1221,87 @@ function renderRentHistory(){
 window.deleteRent = async function(i){
   if(confirm('確定刪除？')){DB.rentRecords.splice(i,1);await saveLandlordData();renderRentHistory();toast('已刪除');}
 };
+
+// ── 標記已繳租 ─────────────────────────────
+window.markRentPaid = async function(i){
+  const rec=DB.rentRecords[i];
+  if(!rec)return;
+  ROOMS.forEach(r=>{
+    if(rec.payments[r]){
+      rec.payments[r].paid=rec.payments[r].amount; // 全額標為已收
+      rec.payments[r].date=new Date().toLocaleDateString('zh-TW');
+    }
+  });
+  await saveLandlordData(); renderRentHistory(); toast('✅ 已標記為繳租完成');
+};
+
+// ── 郵局帳號存取 ────────────────────────────
+window.savePostalAccount = async function(){
+  const name=document.getElementById('postal-name')?.value.trim()||'';
+  const acc=document.getElementById('postal-acc')?.value.trim()||'';
+  if(!acc){toast('請填寫郵局帳號');return;}
+  DB.postalAccount={name,acc};
+  await saveLandlordData(); toast('郵局帳號已儲存 ✓');
+  updatePostalDisplay();
+};
+function updatePostalDisplay(){
+  const el=document.getElementById('postal-account-info');
+  if(!el)return;
+  const pa=DB.postalAccount;
+  if(pa&&pa.acc){
+    el.textContent=`郵局帳號：${pa.name?pa.name+' ':''}${pa.acc}`;
+  }
+}
+function loadPostalInputs(){
+  const pa=DB.postalAccount||{};
+  const n=document.getElementById('postal-name');
+  const a=document.getElementById('postal-acc');
+  if(n)n.value=pa.name||'';
+  if(a)a.value=pa.acc||'';
+}
+
+// ── 租金逾期自動提醒 ────────────────────────
+// 每次登入後檢查是否有逾期未收且尚未通知的月份
+async function checkRentOverdue(){
+  if(!isLandlord)return;
+  const now=new Date();
+  const notifiedKey='kj_rent_overdue_notified';
+  const notified=JSON.parse(localStorage.getItem(notifiedKey)||'{}');
+
+  for(const rec of DB.rentRecords){
+    const y=+rec.period.slice(0,4), m=+rec.period.slice(4,6);
+    const dueDate=new Date(y,m,1); // 該月份的隔月1日（即逾期起算）
+    const due=ROOMS.reduce((s,r)=>s+(rec.payments[r]?.amount||0),0);
+    const paid=ROOMS.reduce((s,r)=>s+(rec.payments[r]?.paid||0),0);
+    const isOverdue=paid<due && Date.now()>dueDate.getTime();
+    if(isOverdue && !notified[rec.period]){
+      // 找出未繳的房客
+      const overdueTenants=ROOMS.filter(r=>{
+        const p=rec.payments[r]||{};
+        return p.paid<p.amount && p.amount>0 && DB.tenants[r]?.tenantEmail;
+      });
+      let sent=0;
+      initEJS();
+      for(const r of overdueTenants){
+        const t=DB.tenants[r];
+        const short=`${rec.period.slice(0,4)}年${rec.period.slice(4,6)}月`;
+        const owed=(rec.payments[r].amount||0)-(rec.payments[r].paid||0);
+        try{
+          await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+            to_email:t.tenantEmail,
+            otp:`【租金逾期提醒】${RL[r]} ${t.name||''} 您好，${short}租金尚有 NT$${owed.toLocaleString()} 未繳，請盡速以郵局轉帳繳納。`
+          });
+          sent++;
+        }catch(e){console.warn('逾期通知失敗:',e);}
+      }
+      if(sent>0){
+        notified[rec.period]=new Date().toISOString();
+        localStorage.setItem(notifiedKey,JSON.stringify(notified));
+        toast(`⚠️ ${rec.period} 租金逾期，已通知 ${sent} 位房客 ✓`);
+      }
+    }
+  }
+}
 
 // ══ 房東：退租點交 ══════════════════════════
 window.initCO = function(){
@@ -1241,6 +1378,7 @@ window.saveCO = async function(){
 
 // ══ 房客：我的帳單 ══════════════════════════
 function renderMyBill(){
+  updatePostalDisplay();
   const t=myRoom?DB.tenants[myRoom]:null;
   document.getElementById('mb-tenant-name').textContent=t?.name||currentEmail.split('@')[0];
   document.getElementById('mb-room-label').textContent=myRoom?RL[myRoom]:'—';
