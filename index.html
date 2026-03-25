@@ -498,10 +498,6 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div><label>房客姓名</label><input type="text" id="mt-name" placeholder="姓名"></div>
       <div><label>聯絡電話</label><input type="text" id="mt-phone" placeholder="09xx"></div>
     </div>
-    <div class="form-row">
-      <div><label>🔑 登入 Email（房客用此 email 登入系統）</label>
-        <input type="text" id="mt-email" placeholder="如: tenant@gmail.com"></div>
-    </div>
     <div class="form-row c2">
       <div><label>月租金（元）</label><input type="number" id="mt-rent" placeholder="6000" oninput="autoDeposit()"></div>
       <div><label>押金<span style="font-size:.7rem;color:var(--gold);font-weight:400;">（自動=月租×2）</span></label>
@@ -521,6 +517,22 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="mftr">
       <button class="btn bo sm" onclick="CM('modal-tenant')">取消</button>
       <button class="btn bp sm" onclick="saveTenant()">💾 儲存</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: 首次登入選房間 -->
+<div id="modal-select-room" class="modal-overlay" style="z-index:600;">
+  <div class="modal" style="max-width:400px;">
+    <div class="mhdr">
+      <h3>🏠 請選擇您的房間</h3>
+    </div>
+    <p class="txt-m mb">您好！系統尚未記錄您的房間。<br>請選擇您目前居住的房間，只需設定一次。</p>
+    <div id="room-select-list" style="display:flex;flex-direction:column;gap:.5rem;"></div>
+    <p class="txt-m mt">若您不是房客，請直接點「我是房東」。</p>
+    <div class="mftr">
+      <button class="btn bo sm" onclick="skipRoomSelect()">我是房東</button>
     </div>
   </div>
 </div>
@@ -710,13 +722,23 @@ const completeLogin = async (email) => {
     // 找到該email對應的房間
     await loadLandlordData(); // 只讀取公開資料
     myRoom = findMyRoom(email);
-    renderTenantView();
-    // 切換到我的帳單頁
-    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
-    document.getElementById('page-my-bill').classList.add('active');
-    const tenantTabs=document.querySelectorAll('.tenant-only');
-    if(tenantTabs[0])tenantTabs[0].classList.add('active');
+    if(!myRoom){
+      // 首次登入：讓房客自己選房間
+      renderTenantView();
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
+      document.getElementById('page-my-bill').classList.add('active');
+      const tenantTabs=document.querySelectorAll('.tenant-only');
+      if(tenantTabs[0])tenantTabs[0].classList.add('active');
+      setTimeout(()=>showRoomSelect(),400);
+    } else {
+      renderTenantView();
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
+      document.getElementById('page-my-bill').classList.add('active');
+      const tenantTabs=document.querySelectorAll('.tenant-only');
+      if(tenantTabs[0])tenantTabs[0].classList.add('active');
+    }
   }
   if(typeof lucide!=='undefined')lucide.createIcons();
 };
@@ -727,6 +749,43 @@ function findMyRoom(email){
     if(t && t.tenantEmail && t.tenantEmail.toLowerCase()===email.toLowerCase()) return r;
   }
   return null;
+}
+
+// 首次登入房客：顯示選房間畫面
+function showRoomSelect(){
+  const list=document.getElementById('room-select-list');
+  list.innerHTML='';
+  ROOMS.forEach(r=>{
+    const t=DB.tenants[r]||{};
+    const occ=t.status==='occupied';
+    list.innerHTML+=`<button onclick="assignMyRoom('${r}')"
+      style="padding:.75rem 1rem;background:${occ?'var(--bg2)':'#f8f8f8'};border:1.5px solid ${occ?'var(--border)':'var(--border2)'};border-radius:.8rem;font-family:inherit;font-size:.9rem;font-weight:700;cursor:pointer;text-align:left;color:${occ?'var(--primary)':'var(--muted)'};transition:all .18s;"
+      onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='${occ?'var(--border)':'var(--border2)'}'">
+      ${RL[r]} ${occ&&t.name?'・'+t.name:''} <span style="font-size:.72rem;color:var(--muted);font-weight:400;">${occ?'入住中':'空房'}</span>
+    </button>`;
+  });
+  document.getElementById('modal-select-room').classList.add('open');
+  if(typeof lucide!=='undefined')lucide.createIcons();
+}
+
+async function assignMyRoom(r){
+  // 將 email → 房間 寫入 Firebase
+  myRoom=r;
+  DB.tenants[r].tenantEmail=currentEmail;
+  await saveLandlordData();
+  document.getElementById('modal-select-room').classList.remove('open');
+  toast('✅ 已設定您的房間：'+RL[r]);
+  renderTenantView();
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-my-bill').classList.add('active');
+  const tenantTabs=document.querySelectorAll('.tenant-only');
+  if(tenantTabs[0])tenantTabs[0].classList.add('active');
+}
+
+function skipRoomSelect(){
+  // 按「我是房東」→關掉modal，回到房東模式
+  document.getElementById('modal-select-room').classList.remove('open');
 }
 
 // ══ 登出 ═══════════════════════════════════
@@ -819,7 +878,7 @@ function renderTenants(){
 }
 window.openAddTenant = function(){
   document.getElementById('mt-title').textContent='新增房客';
-  ['mt-name','mt-phone','mt-email','mt-rent','mt-deposit','mt-movein','mt-expiry','mt-id','mt-note'].forEach(id=>document.getElementById(id).value='');
+  ['mt-name','mt-phone','mt-rent','mt-deposit','mt-movein','mt-expiry','mt-id','mt-note'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('mt-status').value='occupied';
   OM('modal-tenant');
 };
@@ -827,8 +886,8 @@ window.openEditTenant = function(r){
   const t=DB.tenants[r]||{};
   document.getElementById('mt-title').textContent='編輯 '+RL[r];
   document.getElementById('mt-room').value=r;
-  ['name','phone','tenantEmail','rent','deposit','movein','expiry','id','note'].forEach(f=>{
-    const el=document.getElementById('mt-'+f.replace('tenantEmail','email'));
+  ['name','phone','rent','deposit','movein','expiry','id','note'].forEach(f=>{
+    const el=document.getElementById('mt-'+f);
     if(el)el.value=t[f]||'';
   });
   document.getElementById('mt-status').value=t.status||'vacant';
@@ -839,7 +898,6 @@ window.saveTenant = async function(){
   DB.tenants[r]={
     name:document.getElementById('mt-name').value.trim(),
     phone:document.getElementById('mt-phone').value.trim(),
-    tenantEmail:document.getElementById('mt-email').value.trim().toLowerCase(),
     rent:+document.getElementById('mt-rent').value||0,
     deposit:+document.getElementById('mt-deposit').value||0,
     movein:document.getElementById('mt-movein').value,
