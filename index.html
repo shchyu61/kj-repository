@@ -42,7 +42,7 @@ document.dispatchEvent(new Event('fbReady'));
   --shadow:0 2px 16px rgba(60,30,0,.10);--radius:1.2rem;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-html{font-size:15px;}
+html{font-size:16px;}
 body{background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--primary);min-height:100vh;}
 
 /* ── 登入層 ── */
@@ -76,12 +76,12 @@ body{background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--prim
 header{background:var(--primary);color:#ffe8b8;padding:.9rem 1.2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.25);}
 header h1{font-family:'Noto Serif TC',serif;font-size:1.05rem;font-weight:700;letter-spacing:.05em;}
 header h1 span{color:var(--gold);}
-.version-tag{font-size:.68rem;background:rgba(255,220,120,.15);border:1px solid rgba(255,220,120,.3);border-radius:99px;padding:.15rem .6rem;color:var(--gold);}
-#btn-logout{display:none;font-size:.68rem;font-weight:900;color:rgba(255,230,180,.6);border:1px solid rgba(255,230,180,.2);background:transparent;border-radius:99px;padding:.2rem .7rem;cursor:pointer;}
-#user-badge{display:none;font-size:.72rem;font-weight:700;color:var(--gold);background:rgba(200,151,58,.15);border:1px solid rgba(200,151,58,.3);border-radius:99px;padding:.2rem .7rem;}
+.version-tag{font-size:.76rem;background:rgba(255,220,120,.15);border:1px solid rgba(255,220,120,.3);border-radius:99px;padding:.15rem .6rem;color:var(--gold);}
+#btn-logout{display:none;font-size:.76rem;font-weight:900;color:rgba(255,230,180,.6);border:1px solid rgba(255,230,180,.2);background:transparent;border-radius:99px;padding:.2rem .7rem;cursor:pointer;}
+#user-badge{display:none;font-size:.8rem;font-weight:700;color:var(--gold);background:rgba(200,151,58,.15);border:1px solid rgba(200,151,58,.3);border-radius:99px;padding:.2rem .7rem;}
 
 .tab-nav{display:flex;gap:0;overflow-x:auto;background:var(--primary);border-top:1px solid rgba(255,255,255,.08);padding:0 .4rem .5rem;}
-.tab-nav button{flex:1;min-width:72px;padding:.55rem .5rem;border:none;background:transparent;color:rgba(255,230,180,.5);font-family:'Noto Sans TC',sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab-nav button{flex:1;min-width:72px;padding:.55rem .5rem;border:none;background:transparent;color:rgba(255,230,180,.5);font-family:'Noto Sans TC',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap;}
 .tab-nav button.active{color:var(--gold);border-bottom-color:var(--gold);}
 .tab-nav button:hover{color:#ffe8b8;}
 /* 房客模式：隱藏房東專用頁籤 */
@@ -90,21 +90,21 @@ header h1 span{color:var(--gold);}
 .page{display:none;padding:1rem;max-width:860px;margin:0 auto;}
 .page.active{display:block;}
 .card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.2rem;box-shadow:var(--shadow);margin-bottom:1rem;}
-.card-title{font-family:'Noto Serif TC',serif;font-size:.95rem;font-weight:700;color:var(--primary);margin-bottom:.9rem;padding-bottom:.55rem;border-bottom:1.5px solid var(--border2);display:flex;align-items:center;gap:.5rem;}
-label{display:block;font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.25rem;}
-input,select,textarea{width:100%;border:1.5px solid var(--border2);background:var(--bg2);border-radius:.65rem;padding:.5rem .75rem;font-size:.88rem;font-family:inherit;color:var(--primary);transition:border-color .15s;outline:none;}
+.card-title{font-family:'Noto Serif TC',serif;font-size:1.05rem;font-weight:700;color:var(--primary);margin-bottom:.9rem;padding-bottom:.55rem;border-bottom:1.5px solid var(--border2);display:flex;align-items:center;gap:.5rem;}
+label{display:block;font-size:.85rem;font-weight:700;color:var(--muted);margin-bottom:.25rem;}
+input,select,textarea{width:100%;border:1.5px solid var(--border2);background:var(--bg2);border-radius:.65rem;padding:.5rem .75rem;font-size:.95rem;font-family:inherit;color:var(--primary);transition:border-color .15s;outline:none;}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,106,32,.12);}
 input[readonly]{background:#f0e8d5;color:var(--muted);}
 .form-row{display:grid;gap:.75rem;margin-bottom:.75rem;}
 .form-row.c2{grid-template-columns:1fr 1fr;}
 .form-row.c3{grid-template-columns:1fr 1fr 1fr;}
-.btn{padding:.55rem 1.2rem;border:none;border-radius:.7rem;font-size:.85rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:.4rem;}
+.btn{padding:.55rem 1.2rem;border:none;border-radius:.7rem;font-size:.92rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:.4rem;}
 .bp{background:var(--primary);color:#ffe8b8;}.bp:hover{background:#5a3014;}
 .ba{background:var(--accent);color:#fff;}.ba:hover{background:var(--accent2);}
 .bs{background:var(--success);color:#fff;}.bs:hover{background:#3a8f52;}
 .bd{background:var(--danger);color:#fff;}.bd:hover{background:#c84030;}
 .bo{background:transparent;border:1.5px solid var(--border);color:var(--primary);}.bo:hover{background:var(--bg2);}
-.sm{padding:.35rem .8rem;font-size:.78rem;border-radius:.55rem;}
+.sm{padding:.35rem .8rem;font-size:.82rem;border-radius:.55rem;}
 .blk{width:100%;justify-content:center;}
 .room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:.75rem;margin-bottom:1rem;}
 .room-card{background:var(--bg2);border:1.5px solid var(--border2);border-radius:1rem;padding:1rem;cursor:pointer;transition:all .18s;position:relative;}
@@ -112,14 +112,14 @@ input[readonly]{background:#f0e8d5;color:var(--muted);}
 .room-card.occupied{border-color:var(--success);background:#f0faf4;}
 .room-card.mine{border-color:var(--gold);background:#fffdf0;box-shadow:0 0 0 3px rgba(200,151,58,.2);}
 .room-name{font-weight:900;font-size:1rem;color:var(--primary);}
-.room-tenant{font-size:.8rem;color:var(--accent);font-weight:700;margin-top:.2rem;}
-.room-rent{font-size:.78rem;color:var(--muted);margin-top:.3rem;}
-.room-badge{position:absolute;top:.6rem;right:.7rem;font-size:.65rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
+.room-tenant{font-size:.88rem;color:var(--accent);font-weight:700;margin-top:.2rem;}
+.room-rent{font-size:.85rem;color:var(--muted);margin-top:.3rem;}
+.room-badge{position:absolute;top:.6rem;right:.7rem;font-size:.73rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
 .b-occ{background:#d0f0dc;color:var(--success);}
 .b-vac{background:#f0e8d5;color:var(--muted);}
 .b-mine{background:#fff0d0;color:#8a5a00;}
 .tbl-wrap{overflow-x:auto;margin-top:.5rem;}
-table{width:100%;border-collapse:collapse;font-size:.82rem;}
+table{width:100%;border-collapse:collapse;font-size:.88rem;}
 th{background:var(--primary);color:#ffe8b8;font-weight:700;padding:.55rem .7rem;text-align:center;white-space:nowrap;}
 td{border-bottom:1px solid var(--border2);padding:.5rem .7rem;text-align:center;}
 tr:last-child td{border-bottom:none;}
@@ -132,39 +132,39 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 .modal{background:var(--card);border-radius:var(--radius);border:1.5px solid var(--border);padding:1.3rem 1.4rem;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.25);animation:su .2s ease;}
 @keyframes su{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 .mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
-.mhdr h3{font-family:'Noto Serif TC',serif;font-weight:700;font-size:1rem;}
+.mhdr h3{font-family:'Noto Serif TC',serif;font-weight:700;font-size:1.08rem;}
 .mclose{background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);line-height:1;}
 .mftr{margin-top:1rem;display:flex;gap:.6rem;justify-content:flex-end;}
-.alert-box{padding:.65rem 1rem;border-radius:.7rem;font-size:.82rem;font-weight:700;margin-bottom:.75rem;}
+.alert-box{padding:.65rem 1rem;border-radius:.7rem;font-size:.9rem;font-weight:700;margin-bottom:.75rem;}
 .a-info{background:#e8f0fc;color:var(--info);border:1px solid #b0c8f0;}
 .a-warn{background:#fff4d8;color:#8a5a00;border:1px solid #f0d088;}
 .a-ok{background:#e0f4e8;color:var(--success);border:1px solid #a0d8b0;}
 .result-box{background:#fffdf0;border:2px solid var(--gold);border-radius:1rem;padding:1rem 1.2rem;margin-top:1rem;}
-.rrow{display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;border-bottom:1px solid var(--border2);font-size:.85rem;}
-.rrow:last-child{border-bottom:none;padding-top:.5rem;font-weight:900;font-size:.95rem;color:var(--danger);}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;border-bottom:1px solid var(--border2);font-size:.92rem;}
+.rrow:last-child{border-bottom:none;padding-top:.5rem;font-weight:900;font-size:1.05rem;color:var(--danger);}
 .rrow .lbl{color:var(--muted);font-weight:500;}
-.pay-paid{background:#d0f0dc;color:var(--success);font-size:.7rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
-.pay-unpaid{background:#fdecea;color:var(--danger);font-size:.7rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
-.pay-partial{background:#fff4d8;color:#8a5a00;font-size:.7rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
+.pay-paid{background:#d0f0dc;color:var(--success);font-size:.78rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
+.pay-unpaid{background:#fdecea;color:var(--danger);font-size:.78rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
+.pay-partial{background:#fff4d8;color:#8a5a00;font-size:.78rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
 .sec-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;}
-.sec-hdr h2{font-family:'Noto Serif TC',serif;font-size:1rem;font-weight:700;}
+.sec-hdr h2{font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:700;}
 .mt{margin-top:.75rem;}
 .mb{margin-bottom:.75rem;}
 .gap{display:flex;gap:.5rem;flex-wrap:wrap;}
 .hidden{display:none!important;}
-.txt-m{color:var(--muted);font-size:.78rem;}
+.txt-m{color:var(--muted);font-size:.85rem;}
 .urow{display:grid;grid-template-columns:72px 1fr 1fr 1fr 1fr;gap:.4rem;align-items:center;margin-bottom:.4rem;}
-.ulbl{font-weight:900;font-size:.82rem;color:var(--primary);}
+.ulbl{font-weight:900;font-size:.9rem;color:var(--primary);}
 .check-row{display:flex;align-items:center;gap:.75rem;padding:.55rem .9rem;border-radius:.7rem;border:1.5px solid var(--border2);margin-bottom:.4rem;background:var(--bg2);}
 .check-row input[type=checkbox]{width:1.1rem;height:1.1rem;accent-color:var(--success);flex-shrink:0;}
 .check-row label{margin:0;font-size:.85rem;font-weight:500;cursor:pointer;flex:1;}
 .check-row .camt{width:100px;flex-shrink:0;}
 .bill-box{background:#fff;border:2px solid var(--border);border-radius:1rem;padding:1.3rem;margin-top:.75rem;}
 .bill-box h2{font-family:'Noto Serif TC',serif;text-align:center;font-size:1.05rem;margin-bottom:.25rem;}
-.bill-sub{text-align:center;color:var(--muted);font-size:.75rem;margin-bottom:.8rem;}
-.bill-row{display:flex;justify-content:space-between;padding:.25rem 0;font-size:.85rem;}
+.bill-sub{text-align:center;color:var(--muted);font-size:.82rem;margin-bottom:.8rem;}
+.bill-row{display:flex;justify-content:space-between;padding:.25rem 0;font-size:.92rem;}
 .bill-row.tot{font-weight:900;font-size:.95rem;color:var(--danger);border-top:2px solid var(--border);padding-top:.45rem;margin-top:.2rem;}
-.bill-note{font-size:.72rem;color:var(--muted);margin-top:.8rem;line-height:1.7;}
+.bill-note{font-size:.8rem;color:var(--muted);margin-top:.8rem;line-height:1.7;}
 .hist-item{background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.8rem 1rem;margin-bottom:.5rem;}
 /* 租戶視圖：個人帳單大字顯示 */
 .tenant-bill-header{text-align:center;padding:1.2rem;background:linear-gradient(135deg,#3a1f04,#6a3010);border-radius:1rem;color:#ffe8b8;margin-bottom:1rem;}
@@ -466,27 +466,27 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="card-title">🔗 常用查詢與資訊</div>
 
     <!-- 停水停電停氣 -->
-    <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">停水停電停氣查詢</div>
+    <div style="font-size:.88rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">停水停電停氣查詢</div>
     <div style="display:grid;gap:.45rem;margin-bottom:1rem;">
       <a href="https://web.water.gov.tw/wateroff/city/%E5%98%89%E7%BE%A9%E5%B8%82/index.html" target="_blank"
-         style="display:flex;align-items:center;gap:.6rem;padding:.65rem 1rem;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.8rem;text-decoration:none;color:var(--primary);font-weight:700;font-size:.85rem;transition:border-color .15s;"
+         style="display:flex;align-items:center;gap:.6rem;padding:.65rem 1rem;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.8rem;text-decoration:none;color:var(--primary);font-weight:700;font-size:.92rem;transition:border-color .15s;"
          onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)'">
         💧 停水查詢（嘉義市自來水處）
       </a>
       <a href="https://service.taipower.com.tw/nds/ndsWeb/ndft112.aspx" target="_blank"
-         style="display:flex;align-items:center;gap:.6rem;padding:.65rem 1rem;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.8rem;text-decoration:none;color:var(--primary);font-weight:700;font-size:.85rem;transition:border-color .15s;"
+         style="display:flex;align-items:center;gap:.6rem;padding:.65rem 1rem;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.8rem;text-decoration:none;color:var(--primary);font-weight:700;font-size:.92rem;transition:border-color .15s;"
          onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)'">
         ⚡ 停電查詢（台電）
       </a>
       <a href="http://www.shin-chia.com.tw/" target="_blank"
-         style="display:flex;align-items:center;gap:.6rem;padding:.65rem 1rem;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.8rem;text-decoration:none;color:var(--primary);font-weight:700;font-size:.85rem;transition:border-color .15s;"
+         style="display:flex;align-items:center;gap:.6rem;padding:.65rem 1rem;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.8rem;text-decoration:none;color:var(--primary);font-weight:700;font-size:.92rem;transition:border-color .15s;"
          onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)'">
         🔥 停氣查詢（欣嘉天然氣）
       </a>
     </div>
 
     <!-- 垃圾資源回收 -->
-    <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">🗑️ 垃圾清運與資源回收</div>
+    <div style="font-size:.88rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">🗑️ 垃圾清運與資源回收</div>
     <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.85rem 1rem;margin-bottom:.45rem;font-size:.83rem;line-height:1.8;">
       <div style="font-weight:900;color:var(--primary);margin-bottom:.3rem;">🚛 垃圾車（KEP-2639 · 18號路線）</div>
       <div style="color:var(--muted);">路線：興村街 → <strong style="color:var(--accent);">溪興街153巷</strong> → 軍輝路411號</div>
@@ -499,7 +499,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
 
     <!-- 大型廢棄物 -->
-    <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">🛋️ 大型廢棄物申請</div>
+    <div style="font-size:.88rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">🛋️ 大型廢棄物申請</div>
     <a href="https://cleaner.web.cycepb.gov.tw/biggarbage.aspx" target="_blank"
        style="display:flex;align-items:center;gap:.6rem;padding:.65rem 1rem;background:#fff8e8;border:1.5px solid #e8d090;border-radius:.8rem;text-decoration:none;color:#6a4a00;font-weight:700;font-size:.85rem;margin-bottom:1rem;transition:border-color .15s;"
        onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='#e8d090'">
@@ -510,7 +510,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
 
     <!-- 免費理財工具 -->
-    <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">📈 房客專屬福利</div>
+    <div style="font-size:.88rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">📈 房客專屬福利</div>
     <a href="https://shchyu61.github.io/kj-manager/" target="_blank"
        style="display:flex;align-items:center;gap:.75rem;padding:.85rem 1rem;background:linear-gradient(135deg,#1e3a5f,#1a4a8a);border-radius:.9rem;text-decoration:none;transition:opacity .18s;"
        onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
