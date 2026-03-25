@@ -781,7 +781,8 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
 <script type="module">
 // ══ 設定區 ══════════════════════════════════
-const LANDLORD_EMAIL = 'shchyu61@gmail.com'; // 房東 email（看全部）
+const LANDLORD_EMAILS = ['shchyu61@gmail.com','jakey20110610@gmail.com']; // 房東 emails
+const LANDLORD_EMAIL = LANDLORD_EMAILS[0]; // 主要帳號（收通知用）
 const EJS_SVC  = 'service_knhvcfj';
 const EJS_TPL  = 'template_oqm4kw9';
 const EJS_KEY  = '5dk4HoCBYIS7ypwiw';
@@ -937,7 +938,7 @@ function showAuthErr(msg){
 // ══ 登入完成 ═══════════════════════════════
 const completeLogin = async (email) => {
   currentEmail = email;
-  isLandlord   = (email === LANDLORD_EMAIL);
+  isLandlord   = LANDLORD_EMAILS.includes(email);
   localStorage.setItem('kj_rental_email', email);
 
   document.getElementById('security-overlay').style.display='none';
