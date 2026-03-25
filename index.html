@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>嘉義房租管理系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2ead8;--bg2:#faf5ea;--card:#fffdf7;--border:#d4b896;--border2:#e8d8c0;--primary:#3a1f04;--accent:#b06a20;--accent2:#d4892a;--gold:#c8973a;--success:#2d6e40;--danger:#b03020;--info:#1a4a8a;--muted:#8a7060;--shadow:0 2px 16px rgba(60,30,0,.10);--radius:1.2rem;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;}
+body{background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--primary);min-height:100vh;}
+header{background:var(--primary);color:#ffe8b8;padding:.9rem 1.2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.25);}
+header h1{font-family:'Noto Serif TC',serif;font-size:1.05rem;font-weight:700;letter-spacing:.05em;}
+header h1 span{color:var(--gold);}
+.version-tag{font-size:.68rem;background:rgba(255,220,120,.15);border:1px solid rgba(255,220,120,.3);border-radius:99px;padding:.15rem .6rem;color:var(--gold);}
+.tab-nav{display:flex;gap:0;overflow-x:auto;background:var(--primary);border-top:1px solid rgba(255,255,255,.08);padding:0 .4rem .5rem;}
+.tab-nav button{flex:1;min-width:72px;padding:.55rem .5rem;border:none;background:transparent;color:rgba(255,230,180,.5);font-family:'Noto Sans TC',sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab-nav button.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-nav button:hover{color:#ffe8b8;}
+.page{display:none;padding:1rem;max-width:860px;margin:0 auto;}
+.page.active{display:block;}
+.card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.2rem;box-shadow:var(--shadow);margin-bottom:1rem;}
+.card-title{font-family:'Noto Serif TC',serif;font-size:.95rem;font-weight:700;color:var(--primary);margin-bottom:.9rem;padding-bottom:.55rem;border-bottom:1.5px solid var(--border2);display:flex;align-items:center;gap:.5rem;}
+label{display:block;font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.25rem;}
+input,select,textarea{width:100%;border:1.5px solid var(--border2);background:var(--bg2);border-radius:.65rem;padding:.5rem .75rem;font-size:.88rem;font-family:inherit;color:var(--primary);transition:border-color .15s;outline:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,106,32,.12);}
+input[readonly]{background:#f0e8d5;color:var(--muted);}
+.form-row{display:grid;gap:.75rem;margin-bottom:.75rem;}
+.form-row.c2{grid-template-columns:1fr 1fr;}
+.form-row.c3{grid-template-columns:1fr 1fr 1fr;}
+.form-row.c4{grid-template-columns:repeat(4,1fr);}
+.btn{padding:.55rem 1.2rem;border:none;border-radius:.7rem;font-size:.85rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:.4rem;}
+.bp{background:var(--primary);color:#ffe8b8;}.bp:hover{background:#5a3014;}
+.ba{background:var(--accent);color:#fff;}.ba:hover{background:var(--accent2);}
+.bs{background:var(--success);color:#fff;}.bs:hover{background:#3a8f52;}
+.bd{background:var(--danger);color:#fff;}.bd:hover{background:#c84030;}
+.bo{background:transparent;border:1.5px solid var(--border);color:var(--primary);}.bo:hover{background:var(--bg2);}
+.sm{padding:.35rem .8rem;font-size:.78rem;border-radius:.55rem;}
+.blk{width:100%;justify-content:center;}
+.room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:.75rem;margin-bottom:1rem;}
+.room-card{background:var(--bg2);border:1.5px solid var(--border2);border-radius:1rem;padding:1rem;cursor:pointer;transition:all .18s;position:relative;}
+.room-card:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(176,106,32,.15);transform:translateY(-2px);}
+.room-card.occupied{border-color:var(--success);background:#f0faf4;}
+.room-name{font-weight:900;font-size:1rem;color:var(--primary);}
+.room-tenant{font-size:.8rem;color:var(--accent);font-weight:700;margin-top:.2rem;}
+.room-rent{font-size:.78rem;color:var(--muted);margin-top:.3rem;}
+.room-badge{position:absolute;top:.6rem;right:.7rem;font-size:.65rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
+.b-occ{background:#d0f0dc;color:var(--success);}
+.b-vac{background:#f0e8d5;color:var(--muted);}
+.tbl-wrap{overflow-x:auto;margin-top:.5rem;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+th{background:var(--primary);color:#ffe8b8;font-weight:700;padding:.55rem .7rem;text-align:center;white-space:nowrap;}
+td{border-bottom:1px solid var(--border2);padding:.5rem .7rem;text-align:center;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#f5eed8;}
+td.rl{text-align:left;font-weight:900;}
+td.amt{font-weight:700;color:var(--info);}
+td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(40,20,0,.5);z-index:200;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border-radius:var(--radius);border:1.5px solid var(--border);padding:1.3rem 1.4rem;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.25);animation:su .2s ease;}
+@keyframes su{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+.mhdr h3{font-family:'Noto Serif TC',serif;font-weight:700;font-size:1rem;}
+.mclose{background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);line-height:1;}
+.mftr{margin-top:1rem;display:flex;gap:.6rem;justify-content:flex-end;}
+.alert{padding:.65rem 1rem;border-radius:.7rem;font-size:.82rem;font-weight:700;margin-bottom:.75rem;}
+.a-info{background:#e8f0fc;color:var(--info);border:1px solid #b0c8f0;}
+.a-warn{background:#fff4d8;color:#8a5a00;border:1px solid #f0d088;}
+.a-ok{background:#e0f4e8;color:var(--success);border:1px solid #a0d8b0;}
+.a-err{background:#fdecea;color:var(--danger);border:1px solid #f5c0b8;}
+.result-box{background:#fffdf0;border:2px solid var(--gold);border-radius:1rem;padding:1rem 1.2rem;margin-top:1rem;}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;border-bottom:1px solid var(--border2);font-size:.85rem;}
+.rrow:last-child{border-bottom:none;padding-top:.5rem;font-weight:900;font-size:.95rem;color:var(--danger);}
+.rrow .lbl{color:var(--muted);font-weight:500;}
+.pay-paid{background:#d0f0dc;color:var(--success);font-size:.7rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
+.pay-unpaid{background:#fdecea;color:var(--danger);font-size:.7rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
+.pay-partial{background:#fff4d8;color:#8a5a00;font-size:.7rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
+.sec-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;}
+.sec-hdr h2{font-family:'Noto Serif TC',serif;font-size:1rem;font-weight:700;}
+.mt{margin-top:.75rem;}
+.mb{margin-bottom:.75rem;}
+.gap{display:flex;gap:.5rem;flex-wrap:wrap;}
+.hidden{display:none!important;}
+.txt-m{color:var(--muted);font-size:.78rem;}
+.urow{display:grid;grid-template-columns:72px 1fr 1fr 1fr 1fr;gap:.4rem;align-items:center;margin-bottom:.4rem;}
+.ulbl{font-weight:900;font-size:.82rem;color:var(--primary);}
+.check-row{display:flex;align-items:center;gap:.75rem;padding:.55rem .9rem;border-radius:.7rem;border:1.5px solid var(--border2);margin-bottom:.4rem;background:var(--bg2);}
+.check-row input[type=checkbox]{width:1.1rem;height:1.1rem;accent-color:var(--success);flex-shrink:0;}
+.check-row label{margin:0;font-size:.85rem;font-weight:500;color:var(--primary);cursor:pointer;flex:1;}
+.check-row .camt{width:100px;flex-shrink:0;}
+.bill-box{background:#fff;border:2px solid var(--border);border-radius:1rem;padding:1.3rem;margin-top:.75rem;}
+.bill-box h2{font-family:'Noto Serif TC',serif;text-align:center;font-size:1.05rem;margin-bottom:.25rem;}
+.bill-sub{text-align:center;color:var(--muted);font-size:.75rem;margin-bottom:.8rem;}
+.bill-row{display:flex;justify-content:space-between;padding:.25rem 0;font-size:.85rem;}
+.bill-row.tot{font-weight:900;font-size:.95rem;color:var(--danger);border-top:2px solid var(--border);padding-top:.45rem;margin-top:.2rem;}
+.bill-note{font-size:.72rem;color:var(--muted);margin-top:.8rem;line-height:1.7;}
+.hist-item{background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.8rem 1rem;margin-bottom:.5rem;}
+.hist-period{font-weight:900;font-size:.9rem;}
+.hist-meta{font-size:.75rem;color:var(--muted);margin-top:.15rem;}
+@media(max-width:600px){.form-row.c3,.form-row.c4{grid-template-columns:1fr 1fr;}.urow{grid-template-columns:60px 1fr 1fr;}.urow .hc{display:none;}.room-grid{grid-template-columns:1fr 1fr;}}
+@media print{body{background:white;}header,.tab-nav,.no-print{display:none!important;}.page{display:block!important;padding:0;}.card{box-shadow:none;border:1px solid #ccc;}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏠 嘉義 <span>房租管理系統</span></h1>
+  <span class="version-tag">v1.0 · 03/25</span>
+</header>
+<nav class="tab-nav">
+  <button class="active" onclick="ST('tenants')">🏠 房客管理</button>
+  <button onclick="ST('utility')">💡 水電帳單</button>
+  <button onclick="ST('rent')">💰 收租紀錄</button>
+  <button onclick="ST('checkout')">📋 退租點交</button>
+  <button onclick="ST('backup')">💾 備份</button>
+</nav>
+
+<!-- PAGE: tenants -->
+<div id="page-tenants" class="page active">
+  <div class="sec-hdr mt"><h2>🏠 房間與房客管理</h2>
+    <button class="btn ba sm" onclick="openAddTenant()">＋ 新增房客</button>
+  </div>
+  <div class="room-grid" id="room-grid"></div>
+  <div class="card">
+    <div class="card-title">📋 房客一覽表</div>
+    <div class="tbl-wrap">
+      <table><thead><tr>
+        <th>房間</th><th>房客姓名</th><th>月租金</th><th>入住日</th><th>押金</th><th>電話</th><th>狀態</th><th>操作</th>
+      </tr></thead><tbody id="tenant-tbody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: utility -->
+<div id="page-utility" class="page">
+  <div class="card mt">
+    <div class="card-title">📋 本期帳單資訊</div>
+    <div class="form-row c3">
+      <div><label>計費期間（起）</label><input type="date" id="u-start"></div>
+      <div><label>計費期間（迄）</label><input type="date" id="u-end"></div>
+      <div><label>帳單期別（如 202506）</label><input type="text" id="u-period" placeholder="202506"></div>
+    </div>
+    <div class="form-row c3">
+      <div><label>💡 電費總金額（元）</label><input type="number" id="u-elec" placeholder="0" oninput="calcU()"></div>
+      <div><label>💧 水費總金額（元）</label><input type="number" id="u-water" placeholder="0" oninput="calcU()"></div>
+      <div><label>🔥 天然氣總金額（元）</label><input type="number" id="u-gas" placeholder="0" oninput="calcU()"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>每度電費（元/度）</label><input type="number" id="u-kwh-price" value="2.3" step="0.01" oninput="calcU()"></div>
+      <div><label>備註</label><input type="text" id="u-note" placeholder="如：本期電費較高因夏季..."></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔌 各房冷氣電表抄錶</div>
+    <div id="meter-hdr" style="display:grid;grid-template-columns:72px 1fr 1fr 1fr 1fr;gap:.4rem;margin-bottom:.35rem;">
+      <div class="txt-m" style="font-weight:700;">房間</div>
+      <div class="txt-m" style="font-weight:700;">上期度數</div>
+      <div class="txt-m" style="font-weight:700;">本期度數</div>
+      <div class="txt-m" style="font-weight:700;">用電度數</div>
+      <div class="txt-m" style="font-weight:700;">冷氣電費</div>
+    </div>
+    <div id="meter-rows"></div>
+    <div class="txt-m mt">※ 冷氣以各房個人電表計算；共用電費依人數×天數均分</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">👥 各房計費人數與天數</div>
+    <div id="person-hdr" style="display:grid;grid-template-columns:72px 1fr 1fr 1fr;gap:.4rem;margin-bottom:.35rem;">
+      <div class="txt-m" style="font-weight:700;">房間</div>
+      <div class="txt-m" style="font-weight:700;">計費人數</div>
+      <div class="txt-m" style="font-weight:700;">計費天數</div>
+      <div class="txt-m" style="font-weight:700;">備註</div>
+    </div>
+    <div id="person-rows"></div>
+    <div class="txt-m mt">※ 空房填0人；中途退租填實際住滿天數</div>
+  </div>
+
+  <div class="card hidden" id="u-result-card">
+    <div class="card-title">📊 計算結果</div>
+    <div class="tbl-wrap">
+      <table><thead><tr>
+        <th>房間</th><th>房客</th><th>冷氣電費</th><th>均分電費</th><th>均分水費</th><th>均分瓦斯</th><th style="background:#4a2c0a;">水電瓦斯合計</th>
+      </tr></thead><tbody id="u-result-tbody"></tbody></table>
+    </div>
+    <div class="gap mt">
+      <button class="btn bs sm" onclick="saveUtilBill()">💾 儲存本期帳單</button>
+      <button class="btn bp sm" onclick="showAllBills()">📄 產生帳單通知單</button>
+    </div>
+  </div>
+
+  <div id="bills-area"></div>
+</div>
+
+<!-- PAGE: rent -->
+<div id="page-rent" class="page">
+  <div class="card mt">
+    <div class="card-title">💰 本期收租登記</div>
+    <div class="form-row c2">
+      <div><label>年月期別（如 202503）</label><input type="text" id="r-period" placeholder="202503"></div>
+      <div><label>備註</label><input type="text" id="r-note" placeholder="備注"></div>
+    </div>
+    <div id="rent-rows"></div>
+    <button class="btn bs blk mt" onclick="saveRent()">💾 儲存收租紀錄</button>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 收租歷史</div>
+    <div id="rent-history"></div>
+  </div>
+</div>
+
+<!-- PAGE: checkout -->
+<div id="page-checkout" class="page">
+  <div class="card mt">
+    <div class="card-title">🚪 退租基本資訊</div>
+    <div class="form-row c3">
+      <div><label>退租房間</label>
+        <select id="co-room" onchange="fillCO()">
+          <option value="">-- 選擇房間 --</option>
+        </select>
+      </div>
+      <div><label>退租日期</label><input type="date" id="co-date" oninput="calcCO()"></div>
+      <div><label>房客姓名</label><input type="text" id="co-tenant" readonly></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>月租金（元）</label><input type="number" id="co-rent" oninput="calcCO()"></div>
+      <div><label>已收押金（元）</label><input type="number" id="co-deposit" oninput="calcCO()"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚡ 退租水電費計算</div>
+    <div class="alert a-info">依上期均攤費用（每天）×本期計費天數估算</div>
+    <div class="form-row c3">
+      <div><label>上期該房水費（元）</label><input type="number" id="co-lw" placeholder="0" oninput="calcCO()"></div>
+      <div><label>上期該房電費（元）</label><input type="number" id="co-le" placeholder="0" oninput="calcCO()"></div>
+      <div><label>上期該房瓦斯（元）</label><input type="number" id="co-lg" placeholder="0" oninput="calcCO()"></div>
+    </div>
+    <div class="form-row c3">
+      <div><label>上期計費天數</label><input type="number" id="co-ld" value="60" oninput="calcCO()"></div>
+      <div><label>本期計費天數（至退租）</label><input type="number" id="co-days" placeholder="0" oninput="calcCO()"></div>
+      <div><label>本期電費（已知則填入）</label><input type="number" id="co-e-actual" placeholder="留空=按日估算" oninput="calcCO()"></div>
+    </div>
+    <div id="co-util-r" class="result-box hidden"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🛋️ 設備損壞賠償</div>
+    <div id="co-items"></div>
+    <div class="form-row c2 mt">
+      <div><label>房間清潔費（元）</label><input type="number" id="co-clean" value="1000" oninput="calcCO()"></div>
+      <div><label>其他費用（元）</label><input type="number" id="co-other" value="0" oninput="calcCO()"></div>
+    </div>
+  </div>
+
+  <div class="card" id="co-result-card">
+    <div class="card-title">📊 應退押金計算</div>
+    <div id="co-result"></div>
+    <div class="gap mt no-print">
+      <button class="btn bp sm" onclick="window.print()">🖨️ 列印點交表</button>
+      <button class="btn bs sm" onclick="saveCO()">💾 儲存退租紀錄</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: backup -->
+<div id="page-backup" class="page">
+  <div class="card mt">
+    <div class="card-title">💾 資料備份與還原</div>
+    <p class="txt-m mb">所有資料儲存在瀏覽器本機。建議定期匯出備份，換裝置前請先匯出！</p>
+    <div class="gap">
+      <button class="btn bp" onclick="exportData()">⬇ 匯出 JSON 備份</button>
+      <label class="btn bo" style="cursor:pointer;">⬆ 匯入 JSON 還原<input type="file" accept=".json" class="hidden" onchange="importData(event)"></label>
+      <button class="btn bd sm" onclick="if(confirm('確定清除所有資料？此操作無法復原！'))clearAll()">🗑️ 清除所有資料</button>
+    </div>
+  </div>
+  <div class="card"><div class="card-title">📊 資料統計</div><div id="bk-stats"></div></div>
+</div>
+
+<!-- MODAL: tenant -->
+<div id="modal-tenant" class="modal-overlay">
+  <div class="modal">
+    <div class="mhdr">
+      <h3 id="mt-title">房客資料</h3>
+      <button class="mclose" onclick="CM('modal-tenant')">✕</button>
+    </div>
+    <div class="form-row">
+      <div><label>房間</label>
+        <select id="mt-room">
+          <option value="3F前">3樓前</option><option value="3F後">3樓後</option>
+          <option value="4F前">4樓前</option><option value="4F後">4樓後</option>
+          <option value="5F前">5樓前</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row c2">
+      <div><label>房客姓名</label><input type="text" id="mt-name" placeholder="姓名"></div>
+      <div><label>聯絡電話</label><input type="text" id="mt-phone" placeholder="09xx"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>月租金（元）</label><input type="number" id="mt-rent" placeholder="6000"></div>
+      <div><label>押金金額（元）</label><input type="number" id="mt-deposit" placeholder="12000"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>入住日期</label><input type="date" id="mt-movein"></div>
+      <div><label>身份證字號</label><input type="text" id="mt-id" placeholder="A123456789"></div>
+    </div>
+    <div class="form-row">
+      <div><label>備註（人數、寵物等）</label><textarea id="mt-note" rows="2"></textarea></div>
+    </div>
+    <div class="form-row">
+      <div><label>狀態</label>
+        <select id="mt-status">
+          <option value="occupied">入住中</option>
+          <option value="vacant">空房</option>
+        </select>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="btn bo sm" onclick="CM('modal-tenant')">取消</button>
+      <button class="btn bp sm" onclick="saveTenant()">💾 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" style="position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);background:var(--primary);color:#ffe8b8;padding:.6rem 1.3rem;border-radius:2rem;font-size:.82rem;font-weight:700;z-index:999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.3);pointer-events:none;"></div>
+
+<script>
+const ROOMS=['3F前','3F後','4F前','4F後','5F前'];
+const RL={'3F前':'3樓前','3F後':'3樓後','4F前':'4樓前','4F後':'4樓後','5F前':'5樓前'};
+const CO_ITEMS=[
+  {k:'chair',l:'椅子損壞',mv:760},
+  {k:'pillow',l:'水洗枕頭損壞',mv:680},
+  {k:'quilt',l:'水洗棉被損壞',mv:790},
+  {k:'mattress',l:'灰色格調床墊損壞',mv:810},
+  {k:'fridge',l:'冰箱未清空（清潔費）',mv:300},
+  {k:'bath',l:'共用浴室未清空',mv:200},
+];
+
+let DB={tenants:{},utilBills:[],rentRecords:[],checkouts:[]};
+
+function loadDB(){
+  try{const s=localStorage.getItem('kj_chia_v2');if(s)DB=JSON.parse(s);}catch(e){}
+  ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',rent:0,deposit:0,movein:'',id:'',note:'',status:'vacant'};});
+}
+function saveDB(){localStorage.setItem('kj_chia_v2',JSON.stringify(DB));}
+function toast(msg,dur=2200){const e=document.getElementById('toast');e.textContent=msg;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',dur);}
+
+// TABS
+function ST(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  const idx=['tenants','utility','rent','checkout','backup'].indexOf(n);
+  document.querySelectorAll('.tab-nav button')[idx].classList.add('active');
+  if(n==='tenants')renderTenants();
+  if(n==='utility')initU();
+  if(n==='rent')initRent();
+  if(n==='checkout')initCO();
+  if(n==='backup')renderBK();
+}
+function CM(id){document.getElementById(id).classList.remove('open');}
+function OM(id){document.getElementById(id).classList.add('open');}
+
+// ── TENANTS ──────────────────────────
+function renderTenants(){
+  const grid=document.getElementById('room-grid');
+  const tb=document.getElementById('tenant-tbody');
+  grid.innerHTML='';tb.innerHTML='';
+  ROOMS.forEach(r=>{
+    const t=DB.tenants[r]||{};
+    const occ=t.status==='occupied'&&t.name;
+    grid.innerHTML+=`<div class="room-card ${occ?'occupied':''}" onclick="openEditTenant('${r}')">
+      <span class="room-badge ${occ?'b-occ':'b-vac'}">${occ?'入住中':'空房'}</span>
+      <div class="room-name">${RL[r]}</div>
+      <div class="room-tenant">${occ?t.name:'（空房）'}</div>
+      <div class="room-rent">${occ?'月租 NT$'+(+t.rent||0).toLocaleString():'點擊設定'}</div>
+    </div>`;
+    tb.innerHTML+=`<tr>
+      <td class="rl">${RL[r]}</td>
+      <td>${t.name||'—'}</td>
+      <td>${t.rent?'NT$'+(+t.rent).toLocaleString():'—'}</td>
+      <td>${t.movein||'—'}</td>
+      <td>${t.deposit?'NT$'+(+t.deposit).toLocaleString():'—'}</td>
+      <td>${t.phone||'—'}</td>
+      <td><span class="${occ?'pay-paid':'b-vac'}">${occ?'入住中':'空房'}</span></td>
+      <td><button class="btn bo sm" onclick="openEditTenant('${r}')">編輯</button></td>
+    </tr>`;
+  });
+}
+function openAddTenant(){
+  document.getElementById('mt-title').textContent='新增房客';
+  ['mt-name','mt-phone','mt-rent','mt-deposit','mt-movein','mt-id','mt-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mt-status').value='occupied';
+  OM('modal-tenant');
+}
+function openEditTenant(r){
+  const t=DB.tenants[r]||{};
+  document.getElementById('mt-title').textContent='編輯 '+RL[r];
+  document.getElementById('mt-room').value=r;
+  document.getElementById('mt-name').value=t.name||'';
+  document.getElementById('mt-phone').value=t.phone||'';
+  document.getElementById('mt-rent').value=t.rent||'';
+  document.getElementById('mt-deposit').value=t.deposit||'';
+  document.getElementById('mt-movein').value=t.movein||'';
+  document.getElementById('mt-id').value=t.id||'';
+  document.getElementById('mt-note').value=t.note||'';
+  document.getElementById('mt-status').value=t.status||'vacant';
+  OM('modal-tenant');
+}
+function saveTenant(){
+  const r=document.getElementById('mt-room').value;
+  DB.tenants[r]={
+    name:document.getElementById('mt-name').value.trim(),
+    phone:document.getElementById('mt-phone').value.trim(),
+    rent:+document.getElementById('mt-rent').value||0,
+    deposit:+document.getElementById('mt-deposit').value||0,
+    movein:document.getElementById('mt-movein').value,
+    id:document.getElementById('mt-id').value.trim(),
+    note:document.getElementById('mt-note').value.trim(),
+    status:document.getElementById('mt-status').value,
+  };
+  saveDB();CM('modal-tenant');renderTenants();toast('房客資料已儲存 ✓');
+}
+
+// ── UTILITY ──────────────────────────
+function initU(){
+  const mr=document.getElementById('meter-rows');
+  const pr=document.getElementById('person-rows');
+  mr.innerHTML='';pr.innerHTML='';
+  ROOMS.forEach(r=>{
+    mr.innerHTML+=`<div class="urow">
+      <div class="ulbl">${RL[r]}</div>
+      <input type="number" id="mp-${r}" placeholder="上期" oninput="calcU()">
+      <input type="number" id="mc-${r}" placeholder="本期" oninput="calcU()">
+      <input type="number" id="mk-${r}" readonly style="background:#f0e8d5;color:var(--muted);">
+      <input type="number" id="mf-${r}" readonly style="background:#f0e8d5;color:var(--muted);">
+    </div>`;
+    const t=DB.tenants[r]||{};
+    const occ=t.status==='occupied';
+    pr.innerHTML+=`<div style="display:grid;grid-template-columns:72px 1fr 1fr 1fr;gap:.4rem;align-items:center;margin-bottom:.4rem;">
+      <div class="ulbl">${RL[r]}</div>
+      <input type="number" id="pn-${r}" value="${occ?1:0}" min="0" oninput="calcU()">
+      <input type="number" id="pd-${r}" placeholder="天數" oninput="calcU()">
+      <input type="text" id="pnote-${r}" placeholder="${occ?(t.name||'入住中'):'空房'}">
+    </div>`;
+  });
+  // default dates
+  if(!document.getElementById('u-start').value){
+    const n=new Date(),y=n.getFullYear(),m=n.getMonth();
+    const sm=m%2===0?m:m-1;
+    document.getElementById('u-start').value=`${y}-${String(sm+1).padStart(2,'0')}-01`;
+    document.getElementById('u-period').value=`${y}${String(sm+2).padStart(2,'0')}`;
+    const ed=new Date(y,sm+2,0);
+    document.getElementById('u-end').value=`${y}-${String(sm+2).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`;
+  }
+}
+
+function calcU(){
+  const E=+document.getElementById('u-elec').value||0;
+  const W=+document.getElementById('u-water').value||0;
+  const G=+document.getElementById('u-gas').value||0;
+  const P=+document.getElementById('u-kwh-price').value||2.3;
+  // AC fees
+  let sumAC=0;const ac={};
+  ROOMS.forEach(r=>{
+    const prev=+document.getElementById('mp-'+r)?.value||0;
+    const curr=+document.getElementById('mc-'+r)?.value||0;
+    const kwh=Math.max(0,curr-prev);
+    const fee=Math.round(kwh*P);
+    ac[r]={kwh,fee};sumAC+=fee;
+    const kEl=document.getElementById('mk-'+r);const fEl=document.getElementById('mf-'+r);
+    if(kEl)kEl.value=kwh>0?kwh.toFixed(1):'';
+    if(fEl)fEl.value=fee>0?fee:'';
+  });
+  const sharedE=Math.max(0,E-sumAC);
+  // person weights
+  let totalW=0;const pd={};
+  ROOMS.forEach(r=>{
+    const n=+document.getElementById('pn-'+r)?.value||0;
+    const d=+document.getElementById('pd-'+r)?.value||0;
+    pd[r]={n,d,w:n*d};totalW+=n*d;
+  });
+  if(E===0&&W===0&&G===0){document.getElementById('u-result-card').classList.add('hidden');return;}
+  const tb=document.getElementById('u-result-tbody');tb.innerHTML='';
+  window._UR={};
+  let sAC=0,sE=0,sW=0,sG=0,sT=0;
+  ROOMS.forEach(r=>{
+    const ratio=totalW>0?pd[r].w/totalW:0;
+    const sE2=Math.round(sharedE*ratio);
+    const sW2=Math.round(W*ratio);
+    const sG2=Math.round(G*ratio);
+    const tot=ac[r].fee+sE2+sW2+sG2;
+    const t=DB.tenants[r]||{};
+    window._UR[r]={acFee:ac[r].fee,sharedElec:sE2,water:sW2,gas:sG2,total:tot,ratio};
+    sAC+=ac[r].fee;sE+=sE2;sW+=sW2;sG+=sG2;sT+=tot;
+    tb.innerHTML+=`<tr>
+      <td class="rl">${RL[r]}</td>
+      <td>${t.name||'—'}</td>
+      <td class="amt">NT$${ac[r].fee.toLocaleString()}</td>
+      <td class="amt">NT$${sE2.toLocaleString()}</td>
+      <td class="amt">NT$${sW2.toLocaleString()}</td>
+      <td class="amt">NT$${sG2.toLocaleString()}</td>
+      <td class="tot">NT$${tot.toLocaleString()}</td>
+    </tr>`;
+  });
+  tb.innerHTML+=`<tr style="background:#fff8f0;font-weight:900;">
+    <td class="rl" colspan="2">合計</td>
+    <td>NT$${sAC.toLocaleString()}</td>
+    <td>NT$${sE.toLocaleString()}</td>
+    <td>NT$${sW.toLocaleString()}</td>
+    <td>NT$${sG.toLocaleString()}</td>
+    <td class="tot">NT$${sT.toLocaleString()}</td>
+  </tr>`;
+  document.getElementById('u-result-card').classList.remove('hidden');
+}
+
+function saveUtilBill(){
+  if(!window._UR){toast('請先完成計算');return;}
+  const period=document.getElementById('u-period').value.trim();
+  if(!period){toast('請填寫期別');return;}
+  const bill={
+    period,
+    dateStart:document.getElementById('u-start').value,
+    dateEnd:document.getElementById('u-end').value,
+    elecTotal:+document.getElementById('u-elec').value||0,
+    waterTotal:+document.getElementById('u-water').value||0,
+    gasTotal:+document.getElementById('u-gas').value||0,
+    pricePerKwh:+document.getElementById('u-kwh-price').value||2.3,
+    note:document.getElementById('u-note').value||'',
+    rooms:JSON.parse(JSON.stringify(window._UR)),
+    savedAt:new Date().toISOString(),
+  };
+  const idx=DB.utilBills.findIndex(b=>b.period===period);
+  if(idx>=0)DB.utilBills[idx]=bill;else DB.utilBills.unshift(bill);
+  saveDB();toast('帳單已儲存 ✓ 期別：'+period);
+}
+
+function showAllBills(){
+  if(!window._UR){toast('請先完成計算');return;}
+  const period=document.getElementById('u-period').value||'—';
+  const ds=document.getElementById('u-start').value;
+  const de=document.getElementById('u-end').value;
+  const E=+document.getElementById('u-elec').value||0;
+  const W=+document.getElementById('u-water').value||0;
+  const G=+document.getElementById('u-gas').value||0;
+  const area=document.getElementById('bills-area');
+  area.innerHTML='<div style="font-weight:900;font-size:.9rem;margin:.75rem 0 .4rem;color:var(--accent);">📄 帳單通知單（可列印）</div>';
+  ROOMS.forEach(r=>{
+    const ur=window._UR[r];if(!ur||ur.total===0)return;
+    const t=DB.tenants[r]||{};
+    const rent=+t.rent||0;
+    const grandTotal=rent+ur.total;
+    area.innerHTML+=`<div class="bill-box">
+      <h2>嘉義出租房 水電費通知單</h2>
+      <div class="bill-sub">計費期間：${ds} ～ ${de}（期別：${period}）</div>
+      <div class="bill-row"><span style="font-weight:700;">${RL[r]}・${t.name||'—'}</span></div>
+      <hr style="border:none;border-top:1px solid var(--border2);margin:.5rem 0;">
+      <div class="bill-row"><span>冷氣電費</span><span>NT$${ur.acFee.toLocaleString()}</span></div>
+      <div class="bill-row"><span>均分電費（共用）</span><span>NT$${ur.sharedElec.toLocaleString()}</span></div>
+      <div class="bill-row"><span>均分水費</span><span>NT$${ur.water.toLocaleString()}</span></div>
+      <div class="bill-row"><span>均分天然氣費</span><span>NT$${ur.gas.toLocaleString()}</span></div>
+      <div class="bill-row tot"><span>水電瓦斯合計</span><span>NT$${ur.total.toLocaleString()}</span></div>
+      ${rent>0?`<div class="bill-row" style="margin-top:.3rem;"><span>本月房租</span><span>NT$${rent.toLocaleString()}</span></div>
+      <div class="bill-row tot"><span>本期應繳總計</span><span>NT$${grandTotal.toLocaleString()}</span></div>`:''}
+      <div class="bill-note">請於3日內將費用交給房東。謝謝配合！<br>電費（總）：NT$${E.toLocaleString()}｜水費（總）：NT$${W.toLocaleString()}｜天然氣（總）：NT$${G.toLocaleString()}</div>
+    </div>`;
+  });
+}
+
+// ── RENT ──────────────────────────
+function initRent(){
+  const rr=document.getElementById('rent-rows');rr.innerHTML='';
+  if(!document.getElementById('r-period').value){
+    const n=new Date();
+    document.getElementById('r-period').value=`${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}`;
+  }
+  ROOMS.forEach(r=>{
+    const t=DB.tenants[r]||{};
+    const occ=t.status==='occupied'&&t.name;
+    rr.innerHTML+=`<div style="display:grid;grid-template-columns:72px 1fr 1fr 1fr 1fr;gap:.5rem;align-items:center;margin-bottom:.5rem;padding:.5rem .75rem;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.8rem;">
+      <div style="font-weight:900;font-size:.85rem;">${RL[r]}</div>
+      <div style="font-size:.78rem;color:var(--accent);font-weight:700;">${occ?t.name:'（空房）'}</div>
+      <div><label style="margin-bottom:.15rem;">應收金額</label><input type="number" id="ramt-${r}" value="${occ?t.rent||0:0}"></div>
+      <div><label style="margin-bottom:.15rem;">實收金額</label><input type="number" id="rpay-${r}" value="${occ?t.rent||0:0}"></div>
+      <div><label style="margin-bottom:.15rem;">收款日</label><input type="date" id="rdate-${r}"></div>
+    </div>`;
+  });
+  renderRentHistory();
+}
+
+function saveRent(){
+  const period=document.getElementById('r-period').value.trim();
+  if(!period){toast('請填寫期別');return;}
+  const note=document.getElementById('r-note').value;
+  const payments={};
+  ROOMS.forEach(r=>{
+    const amt=+document.getElementById('ramt-'+r)?.value||0;
+    const pay=+document.getElementById('rpay-'+r)?.value||0;
+    const date=document.getElementById('rdate-'+r)?.value||'';
+    payments[r]={amount:amt,paid:pay,date};
+  });
+  const rec={period,note,payments,savedAt:new Date().toISOString()};
+  const idx=DB.rentRecords.findIndex(x=>x.period===period);
+  if(idx>=0)DB.rentRecords[idx]=rec;else DB.rentRecords.unshift(rec);
+  saveDB();renderRentHistory();toast('收租紀錄已儲存 ✓');
+}
+
+function renderRentHistory(){
+  const el=document.getElementById('rent-history');
+  if(!DB.rentRecords.length){el.innerHTML='<div class="txt-m">尚無紀錄</div>';return;}
+  el.innerHTML='';
+  DB.rentRecords.slice(0,24).forEach((rec,i)=>{
+    const total=ROOMS.reduce((s,r)=>s+(rec.payments[r]?.paid||0),0);
+    const due=ROOMS.reduce((s,r)=>s+(rec.payments[r]?.amount||0),0);
+    const status=total>=due?'pay-paid':total>0?'pay-partial':'pay-unpaid';
+    const statusTxt=total>=due?'已收齊':total>0?'部分收':'未收';
+    el.innerHTML+=`<div class="hist-item">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div><div class="hist-period">📅 ${rec.period} 收租</div>
+        <div class="hist-meta">${rec.note||''} · 應收 NT$${due.toLocaleString()} / 實收 NT$${total.toLocaleString()}</div></div>
+        <div style="display:flex;gap:.5rem;align-items:center;">
+          <span class="${status}">${statusTxt}</span>
+          <button class="btn bo sm" onclick="deleteRent(${i})">刪除</button>
+        </div>
+      </div>
+      <div class="tbl-wrap" style="margin-top:.5rem;">
+        <table><thead><tr><th>房間</th><th>房客</th><th>應收</th><th>實收</th><th>日期</th><th>狀態</th></tr></thead>
+        <tbody>${ROOMS.map(r=>{
+          const p=rec.payments[r]||{};
+          const s2=p.paid>=p.amount&&p.amount>0?'pay-paid':p.paid>0?'pay-partial':'pay-unpaid';
+          const t2=DB.tenants[r]||{};
+          return `<tr><td class="rl">${RL[r]}</td><td>${t2.name||'—'}</td><td>NT$${(p.amount||0).toLocaleString()}</td><td>NT$${(p.paid||0).toLocaleString()}</td><td>${p.date||'—'}</td><td><span class="${s2}">${p.paid>=(p.amount||0)&&p.amount>0?'已收':p.paid>0?'部分':'—'}</span></td></tr>`;
+        }).join('')}</tbody></table>
+      </div>
+    </div>`;
+  });
+}
+function deleteRent(i){if(confirm('確定刪除此紀錄？')){DB.rentRecords.splice(i,1);saveDB();renderRentHistory();toast('已刪除');}}
+
+// ── CHECKOUT ──────────────────────────
+function initCO(){
+  const sel=document.getElementById('co-room');
+  sel.innerHTML='<option value="">-- 選擇房間 --</option>';
+  ROOMS.forEach(r=>{sel.innerHTML+=`<option value="${r}">${RL[r]}</option>`;});
+  const ci=document.getElementById('co-items');ci.innerHTML='';
+  CO_ITEMS.forEach(item=>{
+    ci.innerHTML+=`<div class="check-row">
+      <input type="checkbox" id="ci-${item.k}" onchange="calcCO()">
+      <label for="ci-${item.k}">${item.l}（市價 NT$${item.mv.toLocaleString()}）</label>
+      <input type="number" id="cv-${item.k}" class="camt" value="${item.mv}" oninput="calcCO()" placeholder="金額">
+    </div>`;
+  });
+  document.getElementById('co-date').value=new Date().toISOString().split('T')[0];
+  calcCO();
+}
+function fillCO(){
+  const r=document.getElementById('co-room').value;
+  if(!r)return;
+  const t=DB.tenants[r]||{};
+  document.getElementById('co-tenant').value=t.name||'';
+  document.getElementById('co-rent').value=t.rent||0;
+  document.getElementById('co-deposit').value=t.deposit||0;
+  // autofill from last util bill
+  if(DB.utilBills.length>0){
+    const lb=DB.utilBills[0];
+    if(lb.rooms&&lb.rooms[r]){
+      const lr=lb.rooms[r];
+      document.getElementById('co-le').value=lr.acFee+lr.sharedElec||0;
+      document.getElementById('co-lw').value=lr.water||0;
+      document.getElementById('co-lg').value=lr.gas||0;
+      const ds=new Date(lb.dateStart),de=new Date(lb.dateEnd);
+      document.getElementById('co-ld').value=Math.round((de-ds)/(86400000))||60;
+      toast('已自動帶入上期帳單數據 ✓');
+    }
+  }
+  calcCO();
+}
+function calcCO(){
+  const lw=+document.getElementById('co-lw').value||0;
+  const le=+document.getElementById('co-le').value||0;
+  const lg=+document.getElementById('co-lg').value||0;
+  const ld=+document.getElementById('co-ld').value||60;
+  const days=+document.getElementById('co-days').value||0;
+  const eActual=+document.getElementById('co-e-actual').value||0;
+  const deposit=+document.getElementById('co-deposit').value||0;
+  const clean=+document.getElementById('co-clean').value||0;
+  const other=+document.getElementById('co-other').value||0;
+
+  const deductW=ld>0?Math.round(lw/ld*days):0;
+  const deductE=eActual>0?eActual:ld>0?Math.round(le/ld*days):0;
+  const deductG=ld>0?Math.round(lg/ld*days):0;
+  const totalUtil=deductW+deductE+deductG;
+
+  const urEl=document.getElementById('co-util-r');
+  if(days>0){
+    urEl.innerHTML=`<div style="font-weight:900;color:var(--accent);font-size:.85rem;margin-bottom:.6rem;">本期退租水電費估算</div>
+      <div class="rrow"><span class="lbl">水費（${days}天）</span><span>NT$${deductW.toLocaleString()}</span></div>
+      <div class="rrow"><span class="lbl">電費（${days}天）${eActual>0?'【實際】':'【估算】'}</span><span>NT$${deductE.toLocaleString()}</span></div>
+      <div class="rrow"><span class="lbl">天然氣（${days}天）</span><span>NT$${deductG.toLocaleString()}</span></div>
+      <div class="rrow"><span class="lbl">小計</span><span style="color:var(--danger);font-weight:900;">NT$${totalUtil.toLocaleString()}</span></div>`;
+    urEl.classList.remove('hidden');
+  }else{urEl.classList.add('hidden');}
+
+  // damage items
+  let damageTotal=0;
+  CO_ITEMS.forEach(item=>{
+    const chk=document.getElementById('ci-'+item.k);
+    const val=+document.getElementById('cv-'+item.k)?.value||0;
+    if(chk&&chk.checked)damageTotal+=val;
+  });
+
+  const totalDeduct=totalUtil+clean+other+damageTotal;
+  const refund=deposit-totalDeduct;
+
+  const res=document.getElementById('co-result');
+  res.innerHTML=`<div class="result-box">
+    <div style="font-weight:900;color:var(--accent);font-size:.88rem;margin-bottom:.6rem;">退租費用明細</div>
+    <div class="rrow"><span class="lbl">押金（已收）</span><span style="color:var(--success);">NT$${deposit.toLocaleString()}</span></div>
+    <div class="rrow"><span class="lbl">應繳水電費</span><span>－ NT$${totalUtil.toLocaleString()}</span></div>
+    <div class="rrow"><span class="lbl">清潔費</span><span>－ NT$${clean.toLocaleString()}</span></div>
+    ${other>0?`<div class="rrow"><span class="lbl">其他費用</span><span>－ NT$${other.toLocaleString()}</span></div>`:''}
+    ${damageTotal>0?`<div class="rrow"><span class="lbl">設備賠償</span><span>－ NT$${damageTotal.toLocaleString()}</span></div>`:''}
+    <div class="rrow" style="border-top:2px solid var(--gold);margin-top:.25rem;"><span>應退押金</span><span style="font-size:1.15rem;">${refund>=0?'NT$'+refund.toLocaleString():'【房客需補繳】 NT$'+Math.abs(refund).toLocaleString()}</span></div>
+  </div>`;
+}
+function saveCO(){
+  const r=document.getElementById('co-room').value;
+  if(!r){toast('請選擇房間');return;}
+  const rec={
+    room:r,date:document.getElementById('co-date').value,
+    tenant:document.getElementById('co-tenant').value,
+    rent:+document.getElementById('co-rent').value||0,
+    deposit:+document.getElementById('co-deposit').value||0,
+    savedAt:new Date().toISOString(),
+  };
+  DB.checkouts.unshift(rec);saveDB();toast('退租紀錄已儲存 ✓');
+}
+
+// ── BACKUP ──────────────────────────
+function renderBK(){
+  document.getElementById('bk-stats').innerHTML=`
+    <div class="rrow"><span class="lbl">房客資料</span><span>${Object.values(DB.tenants).filter(t=>t.status==='occupied').length} 間入住中 / ${ROOMS.length} 間</span></div>
+    <div class="rrow"><span class="lbl">水電帳單紀錄</span><span>${DB.utilBills.length} 期</span></div>
+    <div class="rrow"><span class="lbl">收租紀錄</span><span>${DB.rentRecords.length} 期</span></div>
+    <div class="rrow"><span class="lbl">退租紀錄</span><span>${DB.checkouts.length} 筆</span></div>
+    <div class="rrow"><span class="lbl">最後存檔</span><span>${new Date().toLocaleString('zh-TW')}</span></div>`;
+}
+function exportData(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  const d=new Date();a.download=`嘉義房租備份_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  a.click();toast('備份已下載 ✓');
+}
+function importData(evt){
+  const f=evt.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(data.tenants||data.utilBills||data.rentRecords){
+        if(data.tenants)DB.tenants=data.tenants;
+        if(data.utilBills)DB.utilBills=data.utilBills;
+        if(data.rentRecords)DB.rentRecords=data.rentRecords;
+        if(data.checkouts)DB.checkouts=data.checkouts;
+        ROOMS.forEach(rm=>{if(!DB.tenants[rm])DB.tenants[rm]={name:'',phone:'',rent:0,deposit:0,movein:'',id:'',note:'',status:'vacant'};});
+        saveDB();renderBK();toast('匯入成功 ✓');
+      }else{toast('格式錯誤，請確認是本系統匯出的備份');}
+    }catch(err){toast('匯入失敗：'+err.message);}
+    evt.target.value='';
+  };r.readAsText(f);
+}
+function clearAll(){DB={tenants:{},utilBills:[],rentRecords:[],checkouts:[]};ROOMS.forEach(r=>{DB.tenants[r]={name:'',phone:'',rent:0,deposit:0,movein:'',id:'',note:'',status:'vacant'};});saveDB();renderTenants();renderBK();toast('資料已清除');}
+
+// INIT
+loadDB();renderTenants();
+</script>
+</body>
+</html>
