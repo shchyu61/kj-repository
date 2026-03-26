@@ -252,7 +252,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
 <!-- ══ 主介面 ══ -->
 <header>
-  <h1 style="display:flex;align-items:center;gap:.4rem;font-family:'Noto Sans TC',sans-serif;font-weight:900;font-size:1.08rem;letter-spacing:.02em;">
+  <h1 style="display:flex;align-items:center;gap:.4rem;font-family:'Noto Sans TC',sans-serif;font-weight:900;font-size:1.08rem;letter-spacing:.02em;cursor:pointer;" onclick="location.href='?'">
     <span style="font-size:1.15rem;">🏠</span>
     <span style="color:#ffe8b8;">科蓁</span><span style="color:var(--gold);font-style:italic;letter-spacing:.03em;">房租</span><span style="color:#ffe8b8;font-weight:700;">智能AI系統</span>
   </h1>
@@ -280,6 +280,17 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <button class="landlord-only" onclick="ST('monitor-cam')">📷 智慧監控</button>
   <button class="landlord-only" onclick="ST('backup')">💾 備份</button>
 </nav>
+
+<!-- ══ 入居前意願與背景調查 ══ -->
+<div id="page-new-guest" class="page">
+  <div class="card mt">
+    <div class="card-title">🏠 嘉義市精選優質租屋－入居前意願與背景調查</div>
+    <div class="alert-box a-info">歡迎您！為了維護優良的居住環境，請先填寫看房預約問卷。</div>
+    <div class="gap mt">
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSfI0NR9XVQ_u91UbHhiUI4xtfo7YOfHcGdl4xmE1fnzlJv-gQ/viewform?usp=sharing&ouid=103834690980604325554" target="_blank" class="btn bs blk" style="text-decoration:none; text-align:center;">📋 點此填寫看房預約問卷</a>
+    </div>
+  </div>
+</div>
 
 <!-- ══ 房東：房客管理 ══ -->
 <div id="page-tenants" class="page active">
@@ -458,6 +469,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div class="card">
     <div class="card-title">📅 租約資訊</div>
     <div id="my-lease-info"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 房客專屬調查</div>
+    <div class="gap mt">
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSf493ZdJy2vRp2XczvZHSnXD9Gduo-sW030_6gX2XHLui5U-Q/viewform?usp=sharing&ouid=103834690980604325554" target="_blank" class="btn ba sm" style="text-decoration:none;">🔗 填寫：電子鎖需求調查</a>
+    </div>
   </div>
 </div>
 
@@ -681,7 +698,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         <div><label>大廳攝影機 Device ID</label><input type="text" id="tapo-cam2-id" placeholder="從 TAPO App 取得"></div>
       </div>
       <div class="alert-box a-info" style="font-size:.75rem;">
-        📱 Device ID 取得方式：開啟 TAPO App → 點選攝影機 → 右上角設定 → 裝置資訊 → 複製 Device ID
+        📱 Device ID 取得方式：開啟 TAPO App → 點選攝影機 → 右上角設定 → 設備資訊 → 複製 MAC 位址 (格式如 AA:BB:CC...) 作為 Device ID
       </div>
       <button class="btn ba sm" onclick="saveTapoSettings()">💾 儲存 TAPO 設定</button>
     </div>
@@ -766,7 +783,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         <div style="font-weight:900;font-size:.92rem;margin-bottom:.3rem;">📱 建議存放位置（選一即可）</div>
         <div style="font-size:.85rem;color:var(--muted);line-height:1.9;">
           ✅ <strong>Google 相簿</strong> — 免費15GB，可設私人相薄，手機電腦同步<br>
-          ✅ <strong>Google 雲端硬碟</strong> — 建立「嘉義房租/房客照片/[姓名]」資料夾<br>
+          ✅ <strong>Google 雲端硬碟</strong> — 建立「嘉義房租房客照片和契約和檔案/[姓名]」資料夾<br>
           ✅ <strong>iCloud 私人相薄</strong>（Apple 用戶）<br>
           ⚠️ 請勿存放在公開的 GitHub Repository
         </div>
@@ -941,8 +958,8 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="card-title">🏦 郵局轉帳帳號設定（房東專用）</div>
     <div class="txt-m mb">設定後，房客的 AI 提醒系統說明中會顯示此帳號。</div>
     <div class="form-row c2">
-      <div><label>郵局帳號（戶名）</label><input type="text" id="postal-name" placeholder="如：許○○"></div>
-      <div><label>郵局帳號（帳號）</label><input type="text" id="postal-acc" placeholder="如：700-0000000-0000000"></div>
+      <div><label>房東郵局（戶名）</label><input type="text" id="postal-name" placeholder="如：許○○"></div>
+      <div><label>房東郵局（帳號）</label><input type="text" id="postal-acc" placeholder="如：700-0000000-0000000"></div>
     </div>
     <button class="btn ba sm" onclick="savePostalAccount()">💾 儲存帳號</button>
   </div>
@@ -1215,10 +1232,9 @@ const completeLogin = async (email) => {
     // 房客：只顯示帳單、我的房間、公告
     document.querySelectorAll('.landlord-only').forEach(el=>el.style.display='none');
     document.querySelectorAll('.tenant-only').forEach(el=>{
-        el.classList.remove('hidden');
-        el.style.display='inline-block';
+      el.classList.remove('hidden');
+      el.style.display='inline-block';
     });
-
     // 找到該email對應的房間
     await loadLandlordData(); // 只讀取公開資料
     myRoom = findMyRoom(email);
@@ -1356,13 +1372,13 @@ window.ST = function(n){
   if(n==='backup')renderBK();
   if(n==='announce')renderAnnounce();
   if(n==='repair')renderRepair();
-  if(n==='monitor-cam')renderMonitorCam();if(n==='former'){
-  setTimeout(()=>renderFormer(),0); // ✅ 保證DOM完成
-}
+  if(n==='monitor-cam')renderMonitorCam();
+  if(n==='former')renderFormer();
   if(n==='photos')renderPhotos();
   if(n==='adtext'){}
   if(n==='my-bill')renderMyBill();
   if(n==='my-info')renderMyInfo();
+  if(n==='new-guest'){}
 };
 window.CM = (id)=>document.getElementById(id).classList.remove('open');
 window.OM = (id)=>document.getElementById(id).classList.add('open');
@@ -1797,8 +1813,8 @@ function renderMyBill(){
   const myBills=DB.utilBills.filter(b=>b.rooms&&b.rooms[myRoom]&&b.rooms[myRoom].total>0);
   if(!myRoom){list.innerHTML='<div class="txt-m">⚠️ 系統尚未設定您的房間，請聯繫房東。</div>';return;}
   if(!myBills.length){list.innerHTML='<div class="txt-m">尚無帳單紀錄。</div>';return;}
-  list.innerHTML='';
-  myBills.slice(0,12).forEach(b=>{
+  list.innerHTML='<div class="txt-m mb">⬇ 向下捲動可查看所有過往歷史帳單</div>';
+  myBills.forEach(b=>{
     const r=b.rooms[myRoom];
     const rent=+(DB.tenants[myRoom]?.rent)||0;
     list.innerHTML+=`<div class="hist-item">
@@ -2057,6 +2073,15 @@ window.clearAll = async function(){
 
 // ══ 自動還原 Session ═══════════════════════
 async function checkSession(){
+  const urlParams = new URLSearchParams(window.location.search);
+  if(urlParams.get('page') === 'guest'){
+    document.getElementById('security-overlay').style.display='none';
+    document.getElementById('btn-logout').style.display='none';
+    document.getElementById('main-tab-nav').style.display='none';
+    ST('new-guest');
+    setTimeout(()=>lucide.createIcons(),100);
+    return;
+  }
   const email=localStorage.getItem('kj_rental_email');
   if(!email){
     document.getElementById('security-overlay').style.display='flex';
@@ -2326,8 +2351,6 @@ window.deleteFormer = async function(i){
 };
 function renderFormer(){
   const list=document.getElementById('former-list');
-  if(!list) return; // ✅ ← 就這一行（關鍵）因為：👉 Claude版本某次修改 👉 renderFormer() 可能被提前呼叫（例如初始化、或切頁瞬間）。✅ 加了之後：→ 等DOM存在才動作→ 頁面正常顯示。
-
   if(!DB.formerTenants||!DB.formerTenants.length){
     list.innerHTML='<div class="txt-m">尚無舊房客紀錄。點「新增舊房客」開始建立存檔。</div>'; return;
   }
