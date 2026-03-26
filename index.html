@@ -1225,7 +1225,8 @@ const completeLogin = async (email) => {
     if(!myRoom){
       // 首次登入：讓房客自己選房間
       renderTenantView();
-      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('#app > .page').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('#main .page').forEach(p=>p.classList.remove('active'));
       document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
       document.getElementById('page-my-bill').classList.add('active');
       const tenantTabs=document.querySelectorAll('.tenant-only');
@@ -1233,7 +1234,8 @@ const completeLogin = async (email) => {
       setTimeout(()=>showRoomSelect(),400);
     } else {
       renderTenantView();
-      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('#app > .page').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('#main .page').forEach(p=>p.classList.remove('active'));
       document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
       document.getElementById('page-my-bill').classList.add('active');
       const tenantTabs=document.querySelectorAll('.tenant-only');
@@ -1284,7 +1286,8 @@ async function assignMyRoom(r){
   document.getElementById('modal-select-room').classList.remove('open');
   toast('✅ 已設定您的房間：'+RL[r]);
   renderTenantView();
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#app > .page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#main .page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-my-bill').classList.add('active');
   const tenantTabs=document.querySelectorAll('.tenant-only');
@@ -1343,7 +1346,8 @@ const saveLandlordData = async () => {
 
 // ══ TABS ═══════════════════════════════════
 window.ST = function(n){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#app > .page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#main .page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+n)?.classList.add('active');
   // 找對應按鈕
@@ -1356,8 +1360,9 @@ window.ST = function(n){
   if(n==='backup')renderBK();
   if(n==='announce')renderAnnounce();
   if(n==='repair')renderRepair();
-  if(n==='monitor-cam')renderMonitorCam();
-  if(n==='former')renderFormer();
+  if(n==='monitor-cam')renderMonitorCam();if(n==='former'){
+  setTimeout(()=>renderFormer(),0); // ✅ 保證DOM完成
+}
   if(n==='photos')renderPhotos();
   if(n==='adtext'){}
   if(n==='my-bill')renderMyBill();
@@ -2325,6 +2330,8 @@ window.deleteFormer = async function(i){
 };
 function renderFormer(){
   const list=document.getElementById('former-list');
+  if(!list) return; // ✅ ← 就這一行（關鍵）因為：👉 Claude版本某次修改 👉 renderFormer() 可能被提前呼叫（例如初始化、或切頁瞬間）。✅ 加了之後：→ 等DOM存在才動作→ 頁面正常顯示。
+
   if(!DB.formerTenants||!DB.formerTenants.length){
     list.innerHTML='<div class="txt-m">尚無舊房客紀錄。點「新增舊房客」開始建立存檔。</div>'; return;
   }
