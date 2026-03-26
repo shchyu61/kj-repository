@@ -259,7 +259,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v2.0 · 03/25</span>
+    <span class="version-tag">v2.1 · 03/26</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -274,6 +274,9 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <!-- 共用 -->
   <button onclick="ST('announce')">📢 公告</button>
   <button onclick="ST('repair')">🔧 報修</button>
+  <button onclick="ST('adtext')">📋 文案</button>
+  <button class="landlord-only" onclick="ST('former')">📁 舊房客</button>
+  <button class="landlord-only" onclick="ST('photos')">🖼️ 照片存檔</button>
   <button class="landlord-only" onclick="ST('monitor-cam')">📷 智慧監控</button>
   <button class="landlord-only" onclick="ST('backup')">💾 備份</button>
 </nav>
@@ -685,6 +688,244 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   </div>
 </div>
 
+<!-- ══ 舊房客存檔（房東專用）══ -->
+<div id="page-former" class="page">
+  <div class="card mt">
+    <div class="card-title">📁 舊房客存檔（已退租）</div>
+    <div class="alert-box a-info">此頁存放已退租房客的個資，供日後法律糾紛查詢用。房客登入後看不到此頁。</div>
+    <div class="gap mb">
+      <button class="btn ba sm" onclick="openAddFormer()">＋ 新增舊房客</button>
+    </div>
+    <div id="former-list"><div class="txt-m">尚無舊房客紀錄。</div></div>
+  </div>
+</div>
+
+<!-- MODAL: 舊房客 -->
+<div id="modal-former" class="modal-overlay">
+  <div class="modal" style="max-width:560px;">
+    <div class="mhdr">
+      <h3 id="mf-title">舊房客資料</h3>
+      <button class="mclose" onclick="CM('modal-former')">✕</button>
+    </div>
+    <div class="form-row c2">
+      <div><label>姓名</label><input type="text" id="mf-name" placeholder="姓名"></div>
+      <div><label>聯絡電話</label><input type="text" id="mf-phone" placeholder="09xx"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>居住房間</label>
+        <select id="mf-room">
+          <option value="3F前">3樓前</option><option value="3F後">3樓後</option>
+          <option value="4F前">4樓前</option><option value="4F後">4樓後</option>
+          <option value="5F前">5樓前</option><option value="其他">其他</option>
+        </select>
+      </div>
+      <div><label>身份證字號</label><input type="text" id="mf-id" placeholder="A123456789"></div>
+    </div>
+    <div class="form-row">
+      <div><label>身分證反面【戶籍地】</label><input type="text" id="mf-address" placeholder="如：嘉義市東區○○路○號"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>入住日期</label><input type="date" id="mf-movein"></div>
+      <div><label>退租日期</label><input type="date" id="mf-moveout"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>契約版本</label>
+        <select id="mf-contract">
+          <option value="">未設定</option>
+          <option value="red">📕 書局版（紅色本）</option>
+          <option value="yellow">📒 7-11版（黃色本）</option>
+        </select>
+      </div>
+      <div><label>月租金（元）</label><input type="number" id="mf-rent" placeholder="6000"></div>
+    </div>
+    <div class="form-row">
+      <div><label>租約歷史（可多筆）</label>
+        <textarea id="mf-history" rows="3" placeholder="如：2024/01首次入住→2024/07搬走。無糾紛，押金已退還。"></textarea>
+      </div>
+    </div>
+    <div class="form-row">
+      <div><label>備註（糾紛紀錄、欠款等）</label>
+        <textarea id="mf-note" rows="2" placeholder="如：無糾紛 / 曾拖欠水電費XXX元"></textarea>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="btn bo sm" onclick="CM('modal-former')">取消</button>
+      <button class="btn bp sm" onclick="saveFormer()">💾 儲存舊房客</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 照片存檔（房東專用）══ -->
+<div id="page-photos" class="page">
+  <div class="card mt">
+    <div class="card-title">🖼️ 重要照片存檔（房東專用）</div>
+    <div class="alert-box a-warn">⚠️ 此功能儲存說明備注，實際照片請存放在下方建議的安全雲端空間。純HTML網頁無法直接存放照片檔案。</div>
+
+    <div style="display:grid;gap:.6rem;margin-bottom:1rem;">
+      <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.9rem 1rem;">
+        <div style="font-weight:900;font-size:.92rem;margin-bottom:.3rem;">📱 建議存放位置（選一即可）</div>
+        <div style="font-size:.85rem;color:var(--muted);line-height:1.9;">
+          ✅ <strong>Google 相簿</strong> — 免費15GB，可設私人相薄，手機電腦同步<br>
+          ✅ <strong>Google 雲端硬碟</strong> — 建立「嘉義房租/房客照片/[姓名]」資料夾<br>
+          ✅ <strong>iCloud 私人相薄</strong>（Apple 用戶）<br>
+          ⚠️ 請勿存放在公開的 GitHub Repository
+        </div>
+      </div>
+    </div>
+
+    <div class="card-title" style="margin-top:.5rem;">📝 照片索引備注（房東自由編輯）</div>
+    <div id="photo-notes-list"></div>
+    <div class="gap mt">
+      <button class="btn ba sm" onclick="openAddPhotoNote()">＋ 新增照片備注</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 照片備注 -->
+<div id="modal-photo" class="modal-overlay">
+  <div class="modal">
+    <div class="mhdr">
+      <h3 id="mp2-title">照片備注</h3>
+      <button class="mclose" onclick="CM('modal-photo')">✕</button>
+    </div>
+    <div class="form-row c2">
+      <div><label>房客姓名</label><input type="text" id="mp2-name" placeholder="姓名"></div>
+      <div><label>房間</label>
+        <select id="mp2-room">
+          <option value="3F前">3樓前</option><option value="3F後">3樓後</option>
+          <option value="4F前">4樓前</option><option value="4F後">4樓後</option>
+          <option value="5F前">5樓前</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div><label>照片說明（存放位置與內容）</label>
+        <textarea id="mp2-desc" rows="4" placeholder="例：Google 相簿「嘉義房租/湯富傑」資料夾&#10;- 身分證正面（入住日 2024/01/15）&#10;- 身分證背面（戶籍：嘉義市東區...）&#10;- 勞保證明截圖&#10;- 退租點交照片（2024/07/20）"></textarea>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="btn bo sm" onclick="CM('modal-photo')">取消</button>
+      <button class="btn bp sm" onclick="savePhotoNote()">💾 儲存備注</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 文案頁面（房東/房客共用）══ -->
+<div id="page-adtext" class="page">
+  <div class="card mt">
+    <div class="card-title">📋 591 租屋網廣告文案</div>
+    <div class="alert-box a-info" style="margin-bottom:.5rem;">點選下方按鈕可一鍵複製，直接貼到 591 或 LINE 房客群組。</div>
+    <button class="btn ba sm mb" onclick="copyText('text-591-content')">📋 一鍵複製全文</button>
+    <div id="text-591-content" style="background:var(--card);border:1.5px solid var(--border2);border-radius:.9rem;padding:1rem 1.1rem;font-size:.88rem;line-height:1.85;white-space:pre-wrap;color:var(--primary);max-height:420px;overflow-y:auto;">【套房出租】嘉義透天厝分層出租：內向房客首選（含生活公約）
+
+【閱讀前聲明與手機版用戶提醒】 建議優先使用電腦瀏覽 591 網頁版以完整觀看房間照片與詳細租金明細。手機用戶請務必向下拉動並點開「隱藏的完整內容」（全文近 2000 字），以免遺漏重要承租條款、計費方式與居住安全規範。
+
+本房源為屋主直租，誠信經營。歡迎房客申請「政府租金補貼」、辦理「所得稅租金抵稅」及「入籍」。本屋用途登記明確，保證不會因用途登記不符而導致租補被駁回。
+
+一、 房客篩選標準與居住環境限制 對象偏好： 優先歡迎家境小康及以下之勤奮人士；本處明確婉拒家境富裕之成員承租。
+
+空間使用權限說明：
+
+房東使用區域： 屋主平時居住於北部，偶爾回南部居住，使用範圍包含 1 樓、2 樓及 5 樓公共區域，婉拒介意者。
+
+房客使用區域： 房客使用範圍包含 3 樓、4 樓、5 樓、5 樓戶內樓梯間及戶外公共區域。
+
+社交與安寧規範： 為保障住戶隱私，婉拒朋友同學眾多且頻繁拜訪者。騎樓僅供住戶停放機車，不提供訪客臨時車位。
+
+停車與宗教環境： 無汽車位，婉拒開車族房客。一樓大廳設有神明廳，房東有燒香拜拜信仰，若宗教信仰衝突或介意者請斟酌。
+
+人際禮節： 房東深知房客不想被干擾的心態，平時沒事不會找房客。房客不需刻意問好，但日常生活見面請保持基本禮貌，謝絕高姿態或無理房客。
+
+聯絡誠信： 請優先以 LINE 洽詢（ID 見 591 租屋網的標示或 QR code），其次才是 591 租屋網提供的轉接電話方式。拒絕仲介、中人或介紹人，偽裝房客者一律封鎖。
+
+二、 嚴謹的簽約審核程序（保障居住安全） 簽約前三日預審制度：
+
+房客須於簽約前三天提供身分證影本，由房東查詢法院判決系統及內政部網站核對有效性。不接受當天看屋當天簽約。影本請註記「僅供租賃使用」，退租後房東不退還影本，將妥善留存。
+
+簽約當日應備證明文件（影本）：
+
+學生： 學生證或在學證明。上班族： 識別證、單位電話、近 3 個月以上年資之勞保證明。
+
+軍警消公務員： 單位電話及國家考試及格電子證書。
+
+退休族/無證明者： 國稅局財產清單（名下不足 244 萬者，租約須辦理法院公證）。
+
+公證與契約： 公證費由雙方平分。契約採用 7-11 販售之定型化格式，房客可事先購買參閱。
+
+三、 費用計費標準與支付規範 郵局轉帳（唯一管道）： 須先開立「郵局」帳戶（建議用網路郵局），所有「租金」、「押金」及「水電瓦斯費用」限以「承租人本人」名義轉帳支付。不接受現金、父母親友代轉或其他銀行行庫轉帳。
+
+租金繳納方式： 僅限「月繳」，以判斷房客財務誠信；無年繳折扣優惠，避免提前退租時產生計算糾紛。
+
+電費計算（定義精確化）：(A) 冷氣用電： 依房內獨立電表度數精確計算，由房客按度數自付。(B) 個人用電與公共用電： 包含房內插座用電、公共區域（大廳、廚房、洗衣機、樓梯等）之電力支出，按全棟實際居住人數平均分攤。
+
+水費與天然瓦斯費： 依據公家公司總帳單，按全棟實際居住人數平均分攤。
+
+四、 頂級硬體配置與通訊設備 節能空調： 全室換裝國際牌 1 級節能 RX 系列冷暖氣機，極度省電且可冬日禦寒。熱水系統： 櫻花牌 16L 強排數位恆溫熱水器，安全且水量大。無電熱水器漏電風險。網路通訊： 免費提供中華電信光世代（500M/500M）極速網速、全樓層 WiFi 7 Mesh 無線網絡，配 Cat 7 級網絡線。禁止房客自行申請網絡、MOD 或第四台。
+
+五、 生活公約與治安維護 室內禁菸毒： 已安裝消防火災警報器。室內絕對禁菸，違者拒續約；嚴禁吸毒或拉 K，違者立即報警處理。監視器使用說明： 公共區域架設多支監視器，旨在預防竊盜、維護計費公平。房東會即時查看警示，介意隱私者請勿承租。居住人數與訪客： 每房限一人入住。若兩人同住需事先告知並加收 500 元租金，水電費按兩人計費。默許訪客暫住但每月不得超過 10 天，嚴禁私刻鑰匙交予外人，違者以侵入住居罪提告。垃圾處理： 請自行利用嘉義市環保局 APP 查詢清運時間，嚴禁將垃圾置於公共區域或騎樓。商業規範： 嚴禁從事直播、電商等營業行為，違者求償稅費、損失與律師費。
+
+六、 點交與法律權益保障 環境與防災： 地勢極高，近 30 年室內無淹水紀錄，經得起「國家災害防救中心」地圖驗證。租約性質： 新約最長 6 個月，房東保留續約權利，拒絕契約轉為不定期租約。點交流程： 簽約與退租點交一律在一樓監視器前進行。退租當日須簽署「退租點交表」並回傳確認，始轉帳退還扣除費用後之押金。違約處理： 依內政部定型化契約及租賃契約規定，本廣告內容視為契約之一部分。遺留物超過 15 天未取走，視同垃圾處理。
+
+【生活機能】 距 7-11、全聯約 220m；麥當勞 450m；傳統市場 470m。步行 350m 可達「興村」公車站。 若無法接受以上規則，請另尋更適合您的住處，謝謝配合。</div>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 LINE 房客群組公告文案</div>
+    <div class="alert-box a-info" style="margin-bottom:.5rem;">與 591 文案相同，可複製貼到 LINE 記事本或群組。</div>
+    <button class="btn ba sm mb" onclick="copyText('text-line-content')">📋 一鍵複製全文</button>
+    <div id="text-line-content" style="background:var(--card);border:1.5px solid var(--border2);border-radius:.9rem;padding:1rem 1.1rem;font-size:.88rem;line-height:1.85;white-space:pre-wrap;color:var(--primary);max-height:420px;overflow-y:auto;">【套房出租】嘉義透天厝分層出租：內向房客首選（含生活公約）
+
+【閱讀前聲明與手機版用戶提醒】 建議優先使用電腦瀏覽 591 網頁版以完整觀看房間照片與詳細租金明細。手機用戶請務必向下拉動並點開「隱藏的完整內容」（全文近 2000 字），以免遺漏重要承租條款、計費方式與居住安全規範。
+
+本房源為屋主直租，誠信經營。歡迎房客申請「政府租金補貼」、辦理「所得稅租金抵稅」及「入籍」。本屋用途登記明確，保證不會因用途登記不符而導致租補被駁回。
+
+一、 房客篩選標準與居住環境限制 對象偏好： 優先歡迎家境小康及以下之勤奮人士；本處明確婉拒家境富裕之成員承租。
+
+空間使用權限說明：
+
+房東使用區域： 屋主平時居住於北部，偶爾回南部居住，使用範圍包含 1 樓、2 樓及 5 樓公共區域，婉拒介意者。
+
+房客使用區域： 房客使用範圍包含 3 樓、4 樓、5 樓、5 樓戶內樓梯間及戶外公共區域。
+
+社交與安寧規範： 為保障住戶隱私，婉拒朋友同學眾多且頻繁拜訪者。騎樓僅供住戶停放機車，不提供訪客臨時車位。
+
+停車與宗教環境： 無汽車位，婉拒開車族房客。一樓大廳設有神明廳，房東有燒香拜拜信仰，若宗教信仰衝突或介意者請斟酌。
+
+人際禮節： 房東深知房客不想被干擾的心態，平時沒事不會找房客。房客不需刻意問好，但日常生活見面請保持基本禮貌，謝絕高姿態或無理房客。
+
+聯絡誠信： 請優先以 LINE 洽詢（ID 見 591 租屋網的標示或 QR code），其次才是 591 租屋網提供的轉接電話方式。拒絕仲介、中人或介紹人，偽裝房客者一律封鎖。
+
+二、 嚴謹的簽約審核程序（保障居住安全） 簽約前三日預審制度：
+
+房客須於簽約前三天提供身分證影本，由房東查詢法院判決系統及內政部網站核對有效性。不接受當天看屋當天簽約。影本請註記「僅供租賃使用」，退租後房東不退還影本，將妥善留存。
+
+簽約當日應備證明文件（影本）：
+
+學生： 學生證或在學證明。上班族： 識別證、單位電話、近 3 個月以上年資之勞保證明。
+
+軍警消公務員： 單位電話及國家考試及格電子證書。
+
+退休族/無證明者： 國稅局財產清單（名下不足 244 萬者，租約須辦理法院公證）。
+
+公證與契約： 公證費由雙方平分。契約採用 7-11 販售之定型化格式，房客可事先購買參閱。
+
+三、 費用計費標準與支付規範 郵局轉帳（唯一管道）： 須先開立「郵局」帳戶（建議用網路郵局），所有「租金」、「押金」及「水電瓦斯費用」限以「承租人本人」名義轉帳支付。不接受現金、父母親友代轉或其他銀行行庫轉帳。
+
+租金繳納方式： 僅限「月繳」，以判斷房客財務誠信；無年繳折扣優惠，避免提前退租時產生計算糾紛。
+
+電費計算（定義精確化）：(A) 冷氣用電： 依房內獨立電表度數精確計算，由房客按度數自付。(B) 個人用電與公共用電： 包含房內插座用電、公共區域（大廳、廚房、洗衣機、樓梯等）之電力支出，按全棟實際居住人數平均分攤。
+
+水費與天然瓦斯費： 依據公家公司總帳單，按全棟實際居住人數平均分攤。
+
+四、 頂級硬體配置與通訊設備 節能空調： 全室換裝國際牌 1 級節能 RX 系列冷暖氣機，極度省電且可冬日禦寒。熱水系統： 櫻花牌 16L 強排數位恆溫熱水器，安全且水量大。無電熱水器漏電風險。網路通訊： 免費提供中華電信光世代（500M/500M）極速網速、全樓層 WiFi 7 Mesh 無線網絡，配 Cat 7 級網絡線。禁止房客自行申請網絡、MOD 或第四台。
+
+五、 生活公約與治安維護 室內禁菸毒： 已安裝消防火災警報器。室內絕對禁菸，違者拒續約；嚴禁吸毒或拉 K，違者立即報警處理。監視器使用說明： 公共區域架設多支監視器，旨在預防竊盜、維護計費公平。房東會即時查看警示，介意隱私者請勿承租。居住人數與訪客： 每房限一人入住。若兩人同住需事先告知並加收 500 元租金，水電費按兩人計費。默許訪客暫住但每月不得超過 10 天，嚴禁私刻鑰匙交予外人，違者以侵入住居罪提告。垃圾處理： 請自行利用嘉義市環保局 APP 查詢清運時間，嚴禁將垃圾置於公共區域或騎樓。商業規範： 嚴禁從事直播、電商等營業行為，違者求償稅費、損失與律師費。
+
+六、 點交與法律權益保障 環境與防災： 地勢極高，近 30 年室內無淹水紀錄，經得起「國家災害防救中心」地圖驗證。租約性質： 新約最長 6 個月，房東保留續約權利，拒絕契約轉為不定期租約。點交流程： 簽約與退租點交一律在一樓監視器前進行。退租當日須簽署「退租點交表」並回傳確認，始轉帳退還扣除費用後之押金。違約處理： 依內政部定型化契約及租賃契約規定，本廣告內容視為契約之一部分。遺留物超過 15 天未取走，視同垃圾處理。
+
+【生活機能】 距 7-11、全聯約 220m；麥當勞 450m；傳統市場 470m。步行 350m 可達「興村」公車站。 若無法接受以上規則，請另尋更適合您的住處，謝謝配合。</div>
+  </div>
+</div>
+
 <!-- ══ 房東：備份 ══ -->
 <div id="page-backup" class="page">
   <div class="card mt">
@@ -748,7 +989,22 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
     <div class="form-row c2">
       <div><label>身份證字號</label><input type="text" id="mt-id" placeholder="A123456789"></div>
+      <div><label>身分證反面【戶籍地】</label><input type="text" id="mt-address" placeholder="如：嘉義市東區○○路○號"></div>
+    </div>
+    <div class="form-row c2">
       <div><label>狀態</label><select id="mt-status"><option value="occupied">入住中</option><option value="vacant">空房</option></select></div>
+      <div><label>目前契約版本</label>
+        <select id="mt-contract">
+          <option value="">未設定</option>
+          <option value="red">📕 書局版（紅色本）</option>
+          <option value="yellow">📒 7-11版（黃色本）</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div><label>租約歷史紀錄（房東自由編輯）</label>
+        <textarea id="mt-history" rows="3" placeholder="例：2024/01首次入住(紅色本)→2024/07續約改7-11版(黃色本)，未曾搬出&#10;或：2023/05入住→2023/11搬走→2024/03再度搬回續約"></textarea>
+      </div>
     </div>
     <div class="form-row">
       <div><label>備註</label><textarea id="mt-note" rows="2"></textarea></div>
@@ -802,7 +1058,7 @@ const CO_ITEMS = [
 let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{} };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[] };
 let _ejsOk = false;
 
 // ══ Firebase helpers ═══════════════════════
@@ -1063,6 +1319,8 @@ const loadLandlordData = async () => {
       if(d.announces)DB.announces=d.announces;
       if(d.repairs)DB.repairs=d.repairs;
       if(d.tapoSettings)DB.tapoSettings=d.tapoSettings;
+      if(d.formerTenants)DB.formerTenants=d.formerTenants;
+      if(d.photoNotes)DB.photoNotes=d.photoNotes;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -1075,6 +1333,7 @@ const saveLandlordData = async () => {
     tenants:DB.tenants, utilBills:DB.utilBills,
     rentRecords:DB.rentRecords, checkouts:DB.checkouts,
     announces:DB.announces, repairs:DB.repairs||[], tapoSettings:DB.tapoSettings||{},
+    formerTenants:DB.formerTenants||[], photoNotes:DB.photoNotes||[],
   });
 };
 
@@ -1094,6 +1353,9 @@ window.ST = function(n){
   if(n==='announce')renderAnnounce();
   if(n==='repair')renderRepair();
   if(n==='monitor-cam')renderMonitorCam();
+  if(n==='former')renderFormer();
+  if(n==='photos')renderPhotos();
+  if(n==='adtext'){}
   if(n==='my-bill')renderMyBill();
   if(n==='my-info')renderMyInfo();
 };
@@ -1130,7 +1392,8 @@ function renderTenants(){
 }
 window.openAddTenant = function(){
   document.getElementById('mt-title').textContent='新增房客';
-  ['mt-name','mt-phone','mt-rent','mt-deposit','mt-movein','mt-expiry','mt-id','mt-note'].forEach(id=>document.getElementById(id).value='');
+  ['mt-name','mt-phone','mt-rent','mt-deposit','mt-movein','mt-expiry','mt-id','mt-address','mt-history','mt-note'].forEach(id=>document.getElementById(id)&&(document.getElementById(id).value=''));
+  const _ct=document.getElementById('mt-contract');if(_ct)_ct.value='';
   document.getElementById('mt-status').value='occupied';
   OM('modal-tenant');
 };
@@ -1138,10 +1401,12 @@ window.openEditTenant = function(r){
   const t=DB.tenants[r]||{};
   document.getElementById('mt-title').textContent='編輯 '+RL[r];
   document.getElementById('mt-room').value=r;
-  ['name','phone','rent','deposit','movein','expiry','id','note'].forEach(f=>{
+  ['name','phone','rent','deposit','movein','expiry','id','address','history','note'].forEach(f=>{
     const el=document.getElementById('mt-'+f);
     if(el)el.value=t[f]||'';
   });
+  const ctEl=document.getElementById('mt-contract');
+  if(ctEl)ctEl.value=t.contract||'';
   document.getElementById('mt-status').value=t.status||'vacant';
   OM('modal-tenant');
 };
@@ -1155,6 +1420,9 @@ window.saveTenant = async function(){
     movein:document.getElementById('mt-movein').value,
     expiry:document.getElementById('mt-expiry').value,
     id:document.getElementById('mt-id').value.trim(),
+    address:document.getElementById('mt-address')?.value.trim()||'',
+    contract:document.getElementById('mt-contract')?.value||'',
+    history:document.getElementById('mt-history')?.value.trim()||'',
     note:document.getElementById('mt-note').value.trim(),
     status:document.getElementById('mt-status').value,
   };
@@ -1980,6 +2248,149 @@ function updateRepairBadge(){
   const pending=myRepairs.filter(r=>r.status==='待處理').length;
   badge.textContent=pending>0?pending+'件':'';
   badge.style.display=pending>0?'':'none';
+}
+
+
+// ══ 複製文字工具 ════════════════════════════
+window.copyText = function(elId){
+  const el=document.getElementById(elId);
+  if(!el)return;
+  const text=el.innerText||el.textContent;
+  navigator.clipboard.writeText(text).then(()=>toast('✅ 已複製到剪貼簿！直接貼上即可')).catch(()=>{
+    // fallback
+    const ta=document.createElement('textarea');
+    ta.value=text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('✅ 已複製！');
+  });
+};
+
+// ══ 舊房客 ══════════════════════════════════
+window.openAddFormer = function(){
+  document.getElementById('mf-title').textContent='新增舊房客';
+  ['mf-name','mf-phone','mf-id','mf-address','mf-movein','mf-moveout','mf-history','mf-note'].forEach(id=>{
+    const el=document.getElementById(id); if(el)el.value='';
+  });
+  const ct=document.getElementById('mf-contract'); if(ct)ct.value='';
+  document.getElementById('modal-former')._editIdx=-1;
+  OM('modal-former');
+};
+window.editFormer = function(i){
+  const f=DB.formerTenants[i];if(!f)return;
+  document.getElementById('mf-title').textContent='編輯舊房客';
+  document.getElementById('mf-name').value=f.name||'';
+  document.getElementById('mf-phone').value=f.phone||'';
+  document.getElementById('mf-room').value=f.room||'3F前';
+  document.getElementById('mf-id').value=f.id||'';
+  document.getElementById('mf-address').value=f.address||'';
+  document.getElementById('mf-movein').value=f.movein||'';
+  document.getElementById('mf-moveout').value=f.moveout||'';
+  document.getElementById('mf-contract').value=f.contract||'';
+  document.getElementById('mf-rent').value=f.rent||'';
+  document.getElementById('mf-history').value=f.history||'';
+  document.getElementById('mf-note').value=f.note||'';
+  document.getElementById('modal-former')._editIdx=i;
+  OM('modal-former');
+};
+window.saveFormer = async function(){
+  const name=document.getElementById('mf-name')?.value.trim()||'';
+  if(!name){toast('請填寫姓名');return;}
+  const f={
+    name,
+    phone:document.getElementById('mf-phone')?.value.trim()||'',
+    room:document.getElementById('mf-room')?.value||'',
+    id:document.getElementById('mf-id')?.value.trim()||'',
+    address:document.getElementById('mf-address')?.value.trim()||'',
+    movein:document.getElementById('mf-movein')?.value||'',
+    moveout:document.getElementById('mf-moveout')?.value||'',
+    contract:document.getElementById('mf-contract')?.value||'',
+    rent:+document.getElementById('mf-rent')?.value||0,
+    history:document.getElementById('mf-history')?.value.trim()||'',
+    note:document.getElementById('mf-note')?.value.trim()||'',
+    savedAt:new Date().toISOString(),
+  };
+  if(!DB.formerTenants)DB.formerTenants=[];
+  const idx=document.getElementById('modal-former')._editIdx;
+  if(idx>=0)DB.formerTenants[idx]=f; else DB.formerTenants.unshift(f);
+  await saveLandlordData(); CM('modal-former'); renderFormer(); toast('舊房客資料已儲存 ✓');
+};
+window.deleteFormer = async function(i){
+  if(!confirm('確定刪除此舊房客紀錄？'))return;
+  DB.formerTenants.splice(i,1);
+  await saveLandlordData(); renderFormer(); toast('已刪除');
+};
+function renderFormer(){
+  const list=document.getElementById('former-list');
+  if(!DB.formerTenants||!DB.formerTenants.length){
+    list.innerHTML='<div class="txt-m">尚無舊房客紀錄。點「新增舊房客」開始建立存檔。</div>'; return;
+  }
+  const contractLabel={'red':'📕 書局版(紅)','yellow':'📒 7-11版(黃)','':'未設定'};
+  list.innerHTML='';
+  DB.formerTenants.forEach((f,i)=>{
+    list.innerHTML+=`<div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.9rem 1rem;margin-bottom:.55rem;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.4rem;">
+        <div>
+          <div style="font-weight:900;font-size:.95rem;">${f.name||'—'} <span style="font-size:.75rem;color:var(--muted);font-weight:400;">${RL[f.room]||f.room||''}</span></div>
+          <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem;">📱 ${f.phone||'—'} ・ 🪪 ${f.id||'—'}</div>
+          ${f.address?`<div style="font-size:.78rem;color:var(--muted);">🏠 戶籍：${f.address}</div>`:''}
+          <div style="font-size:.78rem;color:var(--muted);">📅 ${f.movein||'—'} ～ ${f.moveout||'—'} ・ ${contractLabel[f.contract||'']||''}</div>
+          ${f.history?`<div style="font-size:.8rem;color:var(--primary);margin-top:.3rem;white-space:pre-wrap;">${f.history}</div>`:''}
+          ${f.note?`<div style="font-size:.78rem;color:var(--danger);margin-top:.2rem;">⚠️ ${f.note}</div>`:''}
+        </div>
+        <div style="display:flex;gap:.4rem;">
+          <button onclick="editFormer(${i})" class="btn bo sm" style="font-size:.72rem;">✏️</button>
+          <button onclick="deleteFormer(${i})" class="btn bd sm" style="font-size:.72rem;">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  });
+}
+
+// ══ 照片備注 ═════════════════════════════════
+window.openAddPhotoNote = function(){
+  document.getElementById('mp2-title').textContent='新增照片備注';
+  ['mp2-name','mp2-desc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('modal-photo')._editIdx=-1;
+  OM('modal-photo');
+};
+window.savePhotoNote = async function(){
+  const name=document.getElementById('mp2-name')?.value.trim()||'';
+  const desc=document.getElementById('mp2-desc')?.value.trim()||'';
+  if(!desc){toast('請填寫說明');return;}
+  const note={
+    name, room:document.getElementById('mp2-room')?.value||'',
+    desc, savedAt:new Date().toISOString()
+  };
+  if(!DB.photoNotes)DB.photoNotes=[];
+  const idx=document.getElementById('modal-photo')._editIdx;
+  if(idx>=0)DB.photoNotes[idx]=note; else DB.photoNotes.unshift(note);
+  await saveLandlordData(); CM('modal-photo'); renderPhotos(); toast('照片備注已儲存 ✓');
+};
+window.deletePhotoNote = async function(i){
+  if(!confirm('確定刪除？'))return;
+  DB.photoNotes.splice(i,1);
+  await saveLandlordData(); renderPhotos(); toast('已刪除');
+};
+function renderPhotos(){
+  const list=document.getElementById('photo-notes-list');
+  if(!DB.photoNotes||!DB.photoNotes.length){
+    list.innerHTML='<div class="txt-m">尚無照片備注。</div>'; return;
+  }
+  list.innerHTML='';
+  DB.photoNotes.forEach((n,i)=>{
+    list.innerHTML+=`<div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.85rem 1rem;margin-bottom:.5rem;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div style="flex:1;">
+          <div style="font-weight:900;font-size:.9rem;">${n.name||'—'} <span style="font-size:.75rem;color:var(--muted);">${RL[n.room]||n.room||''}</span></div>
+          <div style="font-size:.82rem;margin-top:.35rem;white-space:pre-wrap;color:var(--primary);line-height:1.65;">${n.desc}</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;">儲存於：${new Date(n.savedAt).toLocaleDateString('zh-TW')}</div>
+        </div>
+        <div style="display:flex;gap:.4rem;margin-left:.5rem;">
+          <button onclick="deletePhotoNote(${i})" class="btn bd sm" style="font-size:.72rem;">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  });
 }
 
 // ══ 登入後補寄 + 逾期 + 報修角標 ════════════
