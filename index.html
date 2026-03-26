@@ -1225,8 +1225,7 @@ const completeLogin = async (email) => {
     if(!myRoom){
       // 首次登入：讓房客自己選房間
       renderTenantView();
-      document.querySelectorAll('#app > .page').forEach(p=>p.classList.remove('active'));
-      document.querySelectorAll('#main .page').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
       document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
       document.getElementById('page-my-bill').classList.add('active');
       const tenantTabs=document.querySelectorAll('.tenant-only');
@@ -1234,8 +1233,7 @@ const completeLogin = async (email) => {
       setTimeout(()=>showRoomSelect(),400);
     } else {
       renderTenantView();
-      document.querySelectorAll('#app > .page').forEach(p=>p.classList.remove('active'));
-      document.querySelectorAll('#main .page').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
       document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
       document.getElementById('page-my-bill').classList.add('active');
       const tenantTabs=document.querySelectorAll('.tenant-only');
@@ -1286,8 +1284,7 @@ async function assignMyRoom(r){
   document.getElementById('modal-select-room').classList.remove('open');
   toast('✅ 已設定您的房間：'+RL[r]);
   renderTenantView();
-  document.querySelectorAll('#app > .page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('#main .page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-my-bill').classList.add('active');
   const tenantTabs=document.querySelectorAll('.tenant-only');
@@ -1346,8 +1343,7 @@ const saveLandlordData = async () => {
 
 // ══ TABS ═══════════════════════════════════
 window.ST = function(n){
-  document.querySelectorAll('#app > .page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('#main .page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+n)?.classList.add('active');
   // 找對應按鈕
