@@ -1205,16 +1205,20 @@ const completeLogin = async (email) => {
 
   if(isLandlord){
     // 房東：顯示全部頁籤，讀取所有資料
-    document.querySelectorAll('.landlord-only').forEach(el=>el.style.display='');
+    document.querySelectorAll('.landlord-only').forEach(el=>el.style.display='inline-block');
     document.querySelectorAll('.tenant-only').forEach(el=>el.style.display='none');
     await loadLandlordData();
     renderTenants(); renderAnnounce();
     const backupBtn = document.querySelector('[onclick="ST(\'backup\')"]');
-    if(backupBtn) backupBtn.style.display='';
+    if(backupBtn) backupBtn.style.display='inline-block';
   } else {
     // 房客：只顯示帳單、我的房間、公告
     document.querySelectorAll('.landlord-only').forEach(el=>el.style.display='none');
-    document.querySelectorAll('.tenant-only').forEach(el=>el.style.display='');
+    document.querySelectorAll('.tenant-only').forEach(el=>{
+        el.classList.remove('hidden');
+        el.style.display='inline-block';
+    });
+
     // 找到該email對應的房間
     await loadLandlordData(); // 只讀取公開資料
     myRoom = findMyRoom(email);
