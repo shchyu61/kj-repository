@@ -2418,7 +2418,7 @@ function renderPhotos(){
           <div style="font-weight:900;font-size:.9rem;">${n.name||'—'} <span style="font-size:.75rem;color:var(--muted);">${RL[n.room]||n.room||''}</span></div>
           <div style="font-size:.82rem;margin-top:.35rem;white-space:pre-wrap;color:var(--primary);line-height:1.65;">${n.desc}</div>
 
-            ${n.url ? <div style="margin-top:.4rem;"><a href="${n.url}" target="\_blank" style="font-size:.75rem;color:var(--info);text-decoration:none;"\>🔗 查看雲端照片網址\</a\>\</div\>\ : ''} <!-- 03270742版。新增【修改渲染畫面邏輯 (在檔案尾端的 renderPhotos 裡)】。 -->
+          ${n.url ? <div style="margin-top:.4rem;"><a href="${n.url}" target="\_blank" style="font-size:.75rem;color:var(--info);text-decoration:none;"\>🔗 查看雲端照片網址\</a\>\</div\>\ : ''} <!-- 03270742版。新增【修改渲染畫面邏輯 (在檔案尾端的 renderPhotos 裡)】。 -->
 
           <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;">儲存於：${new Date(n.savedAt).toLocaleDateString('zh-TW')}</div>
         </div>
