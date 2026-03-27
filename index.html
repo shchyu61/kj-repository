@@ -818,6 +818,9 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="form-row">
       <div><label>照片說明（存放位置與內容）</label>
         <textarea id="mp2-desc" rows="4" placeholder="例：Google 相簿「嘉義房租/湯富傑」資料夾&#10;- 身分證正面（入住日 2024/01/15）&#10;- 身分證背面（戶籍：嘉義市東區...）&#10;- 勞保證明截圖&#10;- 退租點交照片（2024/07/20）"></textarea>
+
+        <input type="text" id="mp2-url" class="inp w-full" style="margin-top: .5rem;" placeholder="🔗 請貼上 Google 雲端硬碟網址 (選填)"> <!-- ══ 此行才是新增【雲端照片網址】欄位。202603271156版。═ -->
+
       </div>
     </div>
     <div class="mftr">
@@ -2413,7 +2416,7 @@ function renderPhotos(){
         <div style="flex:1;">
           <div style="font-weight:900;font-size:.9rem;">${n.name||'—'} <span style="font-size:.75rem;color:var(--muted);">${RL[n.room]||n.room||''}</span></div>
 
-          ${n.url ? `<div style="margin-top:.4rem;"><a href="${n.url}" target="_blank" style="font-size:.75rem;color:var(--info);text-decoration:none;">🔗 查看雲端照片網址</a></div>` : ''} <!-- ══ 新增【雲端照片網址】欄位。202603271156版項目1:修正照片備注渲染 (解決登入失效問題)。═ -->
+          ${n.url ? `<div style="margin-top:.4rem;"><a href="${n.url}" target="_blank" style="font-size:.75rem;color:var(--info);text-decoration:none;">🔗 查看雲端照片網址</a></div>` : ''} <!-- ══ 此為【雲端照片網址】還不會出現欄位的前置作業。202603271156版項目1:修正照片備注渲染 (解決登入失效問題)。═ -->
 
           <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;">儲存於：${new Date(n.savedAt).toLocaleDateString('zh-TW')}</div>
         </div>
