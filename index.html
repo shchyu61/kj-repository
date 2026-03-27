@@ -817,10 +817,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
     <div class="form-row">
       <div><label>照片說明（存放位置與內容）</label>
-        <textarea id="mp2-desc" rows="4" placeholder="例：Google 相簿「嘉義房租/王小明」資料夾&#10;- 身分證正面（入住日 2024/01/15）&#10;- 身分證背面（戶籍：嘉義市東區...）&#10;- 勞保證明截圖&#10;- 退租點交照片（2024/07/20）"></textarea>
-
-      <div style="margin-top:.8rem;"><label>Google 雲端網址 (選填)</label><input type="url" id="mp2-url" placeholder="貼上連結" style="width:100%;padding:.4rem;border:1px solid var(--border2);border-radius:4px;"></div> <!-- 03270742版。新增【雲端網址】欄位。 -->
-
+        <textarea id="mp2-desc" rows="4" placeholder="例：Google 相簿「嘉義房租/湯富傑」資料夾&#10;- 身分證正面（入住日 2024/01/15）&#10;- 身分證背面（戶籍：嘉義市東區...）&#10;- 勞保證明截圖&#10;- 退租點交照片（2024/07/20）"></textarea>
       </div>
     </div>
     <div class="mftr">
@@ -2382,14 +2379,13 @@ function renderFormer(){
 // ══ 照片備注 ═════════════════════════════════
 window.openAddPhotoNote = function(){
   document.getElementById('mp2-title').textContent='新增照片備注';
-  ['mp2-name','mp2-desc','mp2-url'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';}); <!-- 03270742版。替換【修改清空邏輯】。 -->
+  ['mp2-name','mp2-desc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('modal-photo')._editIdx=-1;
   OM('modal-photo');
 };
 window.savePhotoNote = async function(){
   const name=document.getElementById('mp2-name')?.value.trim()||'';
   const desc=document.getElementById('mp2-desc')?.value.trim()||'';
-  const url=document.getElementById('mp2-url')?.value.trim()||''; <!-- 03270742版。新增【修改抓取網址邏輯】。 -->
   if(!desc){toast('請填寫說明');return;}
   const note={
     name, room:document.getElementById('mp2-room')?.value||'',
@@ -2417,9 +2413,6 @@ function renderPhotos(){
         <div style="flex:1;">
           <div style="font-weight:900;font-size:.9rem;">${n.name||'—'} <span style="font-size:.75rem;color:var(--muted);">${RL[n.room]||n.room||''}</span></div>
           <div style="font-size:.82rem;margin-top:.35rem;white-space:pre-wrap;color:var(--primary);line-height:1.65;">${n.desc}</div>
-
-          <div style="font-size:.82rem;margin-top:.35rem;white-space:pre-wrap;color:var(--primary);line-height:1.65;">${n.desc}</div> <!-- 03270742版。新增【修改渲染畫面邏輯 (在檔案尾端的 renderPhotos 裡)】。 -->
-
           <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;">儲存於：${new Date(n.savedAt).toLocaleDateString('zh-TW')}</div>
         </div>
         <div style="display:flex;gap:.4rem;margin-left:.5rem;">
