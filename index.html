@@ -176,15 +176,21 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
 /* ── 房東專屬下拉選單 ── */
 .dropdown{position:relative;display:inline-block;}
-.dropdown-btn{flex:1;min-width:80px;padding:.55rem .5rem;border:none;background:transparent;color:rgba(255,230,180,.5);font-family:'Noto Sans TC',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:.25rem;}
-.dropdown-btn.active,.dropdown-btn:hover{color:var(--gold);}
-.dropdown-btn.open{color:var(--gold);border-bottom-color:var(--gold);}
-.dropdown-menu{display:none;position:absolute;top:100%;left:0;min-width:140px;background:#2a1204;border:1.5px solid rgba(200,151,58,.3);border-radius:.75rem;z-index:200;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);}
-.dropdown-menu.open{display:block;}
-.dropdown-menu button{display:block;width:100%;padding:.6rem 1rem;border:none;background:transparent;color:rgba(255,230,180,.7);font-family:'Noto Sans TC',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;text-align:left;transition:background .15s;border-bottom:1px solid rgba(255,255,255,.06);}
+.dropdown-btn{padding:.55rem .85rem;border:none;background:rgba(200,151,58,.18);color:var(--gold);font-family:'Noto Sans TC',sans-serif;font-size:.95rem;font-weight:900;cursor:pointer;transition:all .2s;border-radius:.6rem;white-space:nowrap;display:flex;align-items:center;gap:.4rem;border:1.5px solid rgba(200,151,58,.35);letter-spacing:.03em;}
+.dropdown-btn:hover{background:rgba(200,151,58,.3);}
+.dropdown-btn.open{background:rgba(200,151,58,.35);color:#fff8e0;}
+/* 子選單：緊貼在按鈕右下方，左對齊按鈕 */
+.dropdown-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;min-width:160px;background:#2a1204;border:1.5px solid rgba(200,151,58,.4);border-radius:.85rem;z-index:300;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,.5);}
+.dropdown-menu.open{display:block;animation:ddFade .15s ease;}
+@keyframes ddFade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.dropdown-menu button{display:flex;align-items:center;gap:.5rem;width:100%;padding:.7rem 1.1rem;border:none;background:transparent;color:rgba(255,230,180,.8);font-family:'Noto Sans TC',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;text-align:left;transition:background .12s;border-bottom:1px solid rgba(255,255,255,.07);}
 .dropdown-menu button:last-child{border-bottom:none;}
-.dropdown-menu button:hover{background:rgba(200,151,58,.2);color:var(--gold);}
-.dropdown-menu button.active{color:var(--gold);background:rgba(200,151,58,.12);}
+.dropdown-menu button:hover{background:rgba(200,151,58,.22);color:var(--gold);}
+.dropdown-menu button.active{color:var(--gold);background:rgba(200,151,58,.15);}
+/* 共用頁籤字體放大 */
+.tab-nav>.tab-btn{padding:.55rem .75rem;border:none;background:transparent;color:rgba(255,230,180,.55);font-family:'Noto Sans TC',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab-nav>.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-nav>.tab-btn:hover{color:#ffe8b8;}
 </style>
 </head>
 <body>
@@ -292,12 +298,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
   </div>
   <!-- 房客看到 -->
-  <button class="tenant-only hidden" onclick="ST('my-bill')">💡 我的帳單</button>
-  <button class="tenant-only hidden" onclick="ST('my-info')">🏠 我的房間</button>
+  <button class="tab-btn tenant-only hidden" onclick="ST('my-bill')">💡 我的帳單</button>
+  <button class="tab-btn tenant-only hidden" onclick="ST('my-info')">🏠 我的房間</button>
   <!-- 共用 -->
-  <button onclick="ST('announce')">📢 公告</button>
-  <button onclick="ST('repair')">🔧 報修</button>
-  <button onclick="ST('adtext')">📋 文案</button>
+  <button class="tab-btn" onclick="ST('announce')">📢 公告</button>
+  <button class="tab-btn" onclick="ST('repair')">🔧 報修</button>
+  <button class="tab-btn" onclick="ST('adtext')">📋 文案</button>
   <button onclick="ST('new-guest')">🔍 看房問卷</button>
 </nav>
 
@@ -562,6 +568,17 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </a>
     <div style="font-size:.75rem;color:var(--muted);margin-top:-.6rem;margin-bottom:1rem;padding:0 .25rem;">
       ※ 請自行申請，廢棄物請放置騎樓並拍照上傳給清潔隊。
+    </div>
+
+    <!-- 郵局帳號（已登入才看到）-->
+    <div id="postal-public-section" style="display:none;">
+      <div style="font-size:.88rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">🏦 房租繳費帳號</div>
+      <div style="background:#fff8e8;border:2px solid #e8c050;border-radius:.9rem;padding:.9rem 1rem;margin-bottom:1rem;">
+        <div style="font-weight:900;font-size:.9rem;color:#6a4a00;margin-bottom:.35rem;">💳 郵局轉帳帳號</div>
+        <div id="postal-public-info" style="font-size:.95rem;font-weight:900;color:var(--primary);letter-spacing:.05em;">讀取中...</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.4rem;">⚠️ 限承租人本人名義轉帳，不接受他人代轉或銀行轉帳</div>
+        <div id="postal-img-note" style="font-size:.75rem;color:var(--accent);margin-top:.3rem;display:none;"></div>
+      </div>
     </div>
 
     <!-- 免費理財工具 -->
@@ -1568,9 +1585,9 @@ function renderTenants(){
       <div class="room-rent">${occ?'月租 NT$'+(+t.rent||0).toLocaleString():'點擊設定'}</div>
     </div>`;
     // 遮蔽敏感資料（第4點安全強化）
-    const maskPhone = (p)=>p?p.slice(0,4)+'***'+p.slice(-3):'—';
-    const maskId    = (id)=>id?id.slice(0,5)+'****':'—';
-    const maskAddr  = (a)=>a?a.split('').slice(0,6).join('')+'…':'—';
+    const maskPhone = (p)=>p?p.slice(0,4)+'****'+p.slice(-3):'—'; // 遮蔽4碼
+    const maskId    = (id)=>id?id.slice(0,4)+'****':'—'; // 遮蔽4碼
+    const maskAddr  = (a)=>a?a.split('').slice(0,5).join('')+'…':'—';
     tb.innerHTML+=`<tr>
       <td class="rl">${RL[r]}</td>
       <td>
@@ -1859,20 +1876,41 @@ function renderRentHistory(){
     const recY=+rec.period.slice(0,4), recM=+rec.period.slice(4,6);
     const dueDate=new Date(recY,recM,1); // 下個月1號=本月最後一天的隔天
     const isOverdue=total<due && Date.now()>dueDate.getTime();
+    // 各房備注
+    const roomNotes=ROOMS.filter(r=>rec.payments[r]?.note).map(r=>`${RL[r]}：${rec.payments[r].note}`).join('　');
+    // 各房明細
+    const roomDetails=ROOMS.map(r=>{
+      const p=rec.payments[r]||{};
+      if(!p.amount)return '';
+      const t=DB.tenants[r]||{};
+      const paidOk=p.paid>=p.amount;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.3rem .5rem;border-radius:.5rem;background:${paidOk?'#e0f4e8':'#fff8f0'};margin-bottom:.2rem;">
+        <span style="font-size:.82rem;font-weight:700;">${RL[r]} ${t.name?'・'+t.name:''}</span>
+        <span style="font-size:.82rem;">應 NT$${p.amount.toLocaleString()} / 實 NT$${(p.paid||0).toLocaleString()}
+          ${p.date?'<span style="font-size:.7rem;color:var(--muted);"> '+p.date+'</span>':''}
+        </span>
+        ${p.note?`<span style="font-size:.72rem;color:var(--accent);margin-left:.3rem;">📝${p.note}</span>`:''}
+      </div>`;
+    }).join('');
+    const detailId='rent-detail-'+i;
     el.innerHTML+=`<div class="hist-item" style="${isOverdue?'border-color:var(--danger);background:#fff8f8;':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem;">
         <div>
           <div style="font-weight:900;">📅 ${rec.period} 收租
             ${isOverdue?'<span style="color:var(--danger);font-size:.72rem;font-weight:900;margin-left:.4rem;">⚠️ 逾期未收齊</span>':''}
           </div>
-          <div class="txt-m">應收 NT$${due.toLocaleString()} / 實收 NT$${total.toLocaleString()}</div>
+          <div class="txt-m">應收 NT$${due.toLocaleString()} / 實收 NT$${total.toLocaleString()}
+            ${roomNotes?'<span style="color:var(--accent);"> 📝'+roomNotes+'</span>':''}
+          </div>
         </div>
         <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;">
           <span class="${st}">${total>=due?'已收齊':total>0?'部分':'未收'}</span>
-          ${total<due?`<button class="btn bs sm" onclick="markRentPaid(${i})" style="font-size:.72rem;padding:.3rem .7rem;">✅ 若已繳租按此</button>`:''}
+          ${total<due?`<button class="btn bs sm" onclick="markRentPaid(${i})" style="font-size:.72rem;padding:.3rem .7rem;">✅ 已繳租</button>`:''}
+          <button class="btn bo sm" style="font-size:.72rem;" onclick="document.getElementById('${detailId}').style.display=document.getElementById('${detailId}').style.display==='none'?'block':'none'">📋 明細</button>
           <button class="btn bo sm" onclick="deleteRent(${i})">刪除</button>
         </div>
       </div>
+      <div id="${detailId}" style="display:none;margin-top:.5rem;">${roomDetails}</div>
     </div>`;
   });
 }
@@ -2127,6 +2165,14 @@ function renderAnnounce(){
   const announceCard=document.getElementById('announce-card');
   if(announceCard){
     announceCard.style.display=(!currentEmail)?'none':'block';
+  }
+  // 郵局帳號：已登入才顯示
+  const postalSection=document.getElementById('postal-public-section');
+  if(postalSection) postalSection.style.display=currentEmail?'block':'none';
+  const pa=DB.postalAccount||{};
+  const postalInfo=document.getElementById('postal-public-info');
+  if(postalInfo){
+    postalInfo.textContent=pa.acc?(pa.name?pa.name+' ':'')+pa.acc:'（帳號設定中，請稍後）';
   }
   if(isLandlord){
     document.getElementById('landlord-announce-edit')?.classList.remove('hidden');
@@ -2644,8 +2690,8 @@ function renderFormer(){
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.4rem;">
         <div>
           <div style="font-weight:900;font-size:.95rem;">${f.name||'—'} <span style="font-size:.75rem;color:var(--muted);font-weight:400;">${RL[f.room]||f.room||''}</span></div>
-          <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem;">📱 ${f.phone||'—'} ・ 🪪 ${f.id||'—'}</div>
-          ${f.address?`<div style="font-size:.78rem;color:var(--muted);">🏠 戶籍：${f.address}</div>`:''}
+          <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem;">📱 ${f.phone?f.phone.slice(0,4)+'****'+f.phone.slice(-3):'—'} ・ 🪪 ${f.id?f.id.slice(0,4)+'****':'—'}</div>
+          ${f.address?`<div style="font-size:.78rem;color:var(--muted);">🏠 戶籍：${f.address.slice(0,5)}…（完整請點✏️）</div>`:''}
           <div style="font-size:.78rem;color:var(--muted);">📅 ${f.movein||'—'} ～ ${f.moveout||'—'} ・ ${contractLabel[f.contract||'']||''}</div>
           ${f.history?`<div style="font-size:.8rem;color:var(--primary);margin-top:.3rem;white-space:pre-wrap;">${f.history}</div>`:''}
           ${f.note?`<div style="font-size:.78rem;color:var(--danger);margin-top:.2rem;">⚠️ ${f.note}</div>`:''}
