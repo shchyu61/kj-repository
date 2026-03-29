@@ -304,8 +304,8 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 <!-- ══ 入居前意願與背景調查 ══ -->
 <div id="page-new-guest" class="page">
   <div class="card mt">
-    <div class="card-title">🏠 嘉義市精選優質租屋－入居前意願與背景調查</div>
-    <div class="alert-box a-info">歡迎您！為了維護優良的居住環境，請先填寫看房預約問卷。</div>
+    <div class="card-title">🏠 嘉義市精選優質租屋－看房預約與背景調查</div>
+    <div class="alert-box a-info">📋 此頁面供有意租屋的朋友填寫，無需登入即可使用。<br>已簽約的房客請點選「📢 公告」查看內部通知。</div>
     <div class="gap mt">
       <a href="https://docs.google.com/forms/d/e/1FAIpQLSfI0NR9XVQ_u91UbHhiUI4xtfo7YOfHcGdl4xmE1fnzlJv-gQ/viewform?usp=sharing&ouid=103834690980604325554" target="_blank" class="btn bs blk" style="text-decoration:none; text-align:center;">📋 點此填寫看房預約問卷</a>
     </div>
@@ -323,7 +323,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="card-title">📋 房客一覽表（房東專用）</div>
     <div class="tbl-wrap">
       <table><thead><tr>
-        <th>房間</th><th>房客姓名</th><th>登入email</th><th>月租金</th><th>入住日</th><th>租約到期日</th><th>押金</th><th>狀態</th><th>操作</th>
+        <th>房間</th><th>房客姓名</th><th>月租金</th><th>入住日</th><th>租約到期日</th><th>收租日</th><th>押金</th><th>狀態</th><th>操作</th>
       </tr></thead><tbody id="tenant-tbody"></tbody></table>
     </div>
   </div>
@@ -532,10 +532,21 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div style="color:var(--muted);">路線：興村街 → <strong style="color:var(--accent);">溪興街153巷</strong> → 軍輝路411號</div>
       <div style="color:var(--muted);">回收日：<strong style="color:var(--primary);">週一、二、四、五</strong> &nbsp; 表定時間：<strong style="color:var(--danger);">17:03</strong></div>
     </div>
-    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.85rem 1rem;margin-bottom:1rem;font-size:.83rem;line-height:1.8;">
+    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.85rem 1rem;margin-bottom:.45rem;font-size:.83rem;line-height:1.8;">
       <div style="font-weight:900;color:var(--primary);margin-bottom:.3rem;">♻️ 資源回收車（KEM-2212 · 18號路線）</div>
       <div style="color:var(--muted);">路線：興村街 → <strong style="color:var(--accent);">溪興街153巷</strong> → 軍輝路411號</div>
       <div style="color:var(--muted);">回收日：<strong style="color:var(--primary);">週一、二、四、五</strong> &nbsp; 表定時間：<strong style="color:var(--danger);">17:03</strong></div>
+    </div>
+    <div style="font-size:.82rem;font-weight:700;color:var(--primary);margin:.5rem 0 .35rem;">📍 定點清運（不沿街，需到定點）</div>
+    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.85rem 1rem;margin-bottom:.45rem;font-size:.83rem;line-height:1.8;">
+      <div style="font-weight:900;color:var(--primary);margin-bottom:.3rem;">🗑️ 方案1：週一、二、四、五</div>
+      <div style="color:var(--muted);">地點：<strong style="color:var(--accent);">興美路、環興街口</strong>（定點停留30分鐘）</div>
+      <div style="color:var(--muted);">表定時間：<strong style="color:var(--danger);">14:35</strong></div>
+    </div>
+    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.85rem 1rem;margin-bottom:1rem;font-size:.83rem;line-height:1.8;">
+      <div style="font-weight:900;color:var(--primary);margin-bottom:.3rem;">🗑️ 方案2：週二、五</div>
+      <div style="color:var(--muted);">地點：<strong style="color:var(--accent);">興美一街與順興二路口</strong>（停1鐘）</div>
+      <div style="color:var(--muted);">表定時間：<strong style="color:var(--danger);">20:39</strong></div>
     </div>
 
     <!-- 大型廢棄物 -->
@@ -1092,9 +1103,11 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div><label>押金<span style="font-size:.7rem;color:var(--gold);font-weight:400;">（自動=月租×2）</span></label>
         <input type="number" id="mt-deposit" placeholder="自動計算"></div>
     </div>
-    <div class="form-row c2">
+    <div class="form-row c3">
       <div><label>入住日期</label><input type="date" id="mt-movein"></div>
       <div><label>租約到期日</label><input type="date" id="mt-expiry"></div>
+      <div><label>契約約定收租日 <span style="font-size:.7rem;color:var(--gold);font-weight:400;">（每月幾號）</span></label>
+        <input type="number" id="mt-rentday" min="1" max="31" placeholder="如：8"></div>
     </div>
     <div class="form-row c2">
       <div><label>身份證字號</label><input type="text" id="mt-id" placeholder="A123456789"></div>
@@ -1527,13 +1540,20 @@ function renderTenants(){
       <div class="room-tenant">${occ?t.name:'（空房）'}</div>
       <div class="room-rent">${occ?'月租 NT$'+(+t.rent||0).toLocaleString():'點擊設定'}</div>
     </div>`;
+    // 遮蔽敏感資料（第4點安全強化）
+    const maskPhone = (p)=>p?p.slice(0,4)+'***'+p.slice(-3):'—';
+    const maskId    = (id)=>id?id.slice(0,5)+'****':'—';
+    const maskAddr  = (a)=>a?a.split('').slice(0,6).join('')+'…':'—';
     tb.innerHTML+=`<tr>
       <td class="rl">${RL[r]}</td>
-      <td>${t.name||'—'}</td>
-      <td style="font-size:.75rem;color:var(--info);">${t.tenantEmail||'—'}</td>
+      <td>
+        ${t.name||'—'}
+        <div style="font-size:.7rem;color:var(--muted);">${maskPhone(t.phone)}</div>
+      </td>
       <td>${t.rent?'NT$'+(+t.rent).toLocaleString():'—'}</td>
       <td>${t.movein||'—'}</td>
       <td>${t.expiry||'—'}</td>
+      <td style="font-weight:700;color:var(--info);">${t.rentDay?'每月'+t.rentDay+'日':'—'}</td>
       <td>${t.deposit?'NT$'+(+t.deposit).toLocaleString():'—'}</td>
       <td><span class="${occ?'pay-paid':'b-vac'}">${occ?'入住中':'空房'}</span></td>
       <td style="white-space:nowrap;">
@@ -1545,7 +1565,7 @@ function renderTenants(){
 }
 window.openAddTenant = function(){
   document.getElementById('mt-title').textContent='新增房客';
-  ['mt-name','mt-phone','mt-rent','mt-deposit','mt-movein','mt-expiry','mt-id','mt-address','mt-history','mt-note'].forEach(id=>document.getElementById(id)&&(document.getElementById(id).value=''));
+  ['mt-name','mt-phone','mt-rent','mt-deposit','mt-movein','mt-expiry','mt-id','mt-address','mt-history','mt-note','mt-rentday'].forEach(id=>document.getElementById(id)&&(document.getElementById(id).value=''));
   const _ct=document.getElementById('mt-contract');if(_ct)_ct.value='';
   document.getElementById('mt-status').value='occupied';
   OM('modal-tenant');
@@ -1560,6 +1580,8 @@ window.openEditTenant = function(r){
   });
   const ctEl=document.getElementById('mt-contract');
   if(ctEl)ctEl.value=t.contract||'';
+  const rdEl=document.getElementById('mt-rentday');
+  if(rdEl)rdEl.value=t.rentDay||'';
   document.getElementById('mt-status').value=t.status||'vacant';
   OM('modal-tenant');
 };
@@ -1576,6 +1598,7 @@ window.saveTenant = async function(){
     address:document.getElementById('mt-address')?.value.trim()||'',
     contract:document.getElementById('mt-contract')?.value||'',
     history:document.getElementById('mt-history')?.value.trim()||'',
+    rentDay:+document.getElementById('mt-rentday')?.value||0,
     note:document.getElementById('mt-note').value.trim(),
     status:document.getElementById('mt-status').value,
   };
@@ -1733,6 +1756,15 @@ window.initRent = function(){
 
   // ── 智能帶入今天日期（預設收款日=今天）──────────────────────────
   const today=new Date().toISOString().split('T')[0];
+  // ── 智能帶入契約約定收租日 ────────────────────────────────────────
+  // 若有設定收租日（如每月8號），自動計算本月該日期
+  function getRentDayStr(rentDay){
+    if(!rentDay)return today; // 無設定→今天
+    const n=new Date();
+    const y=n.getFullYear(), m=n.getMonth()+1;
+    const d=Math.min(rentDay,new Date(y,m,0).getDate()); // 防止超過月底
+    return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
 
   ROOMS.forEach(r=>{
     const t=DB.tenants[r]||{},occ=t.status==='occupied'&&t.name;
@@ -1747,7 +1779,7 @@ window.initRent = function(){
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;align-items:center;margin-bottom:.4rem;">
         <div><label style="margin-bottom:.15rem;">應收（元）</label><input type="number" id="ramt-${r}" value="${autoRent}" ${!occ?'disabled':''}></div>
         <div><label style="margin-bottom:.15rem;">實收（元）</label><input type="number" id="rpay-${r}" value="${autoRent}" ${!occ?'disabled':''}></div>
-        <div><label style="margin-bottom:.15rem;">收款日</label><input type="date" id="rdate-${r}" value="${occ?today:''}" ${!occ?'disabled':''}></div>
+        <div><label style="margin-bottom:.15rem;">收款日<span style="font-size:.65rem;color:var(--gold);">（契約：${occ&&t.rentDay?'每月'+t.rentDay+'日':'未設定'}）</span></label><input type="date" id="rdate-${r}" value="${occ?getRentDayStr(t.rentDay):''}" ${!occ?'disabled':''}></div>
       </div>
       <div>
         <label style="margin-bottom:.15rem;">本期備注 <span style="font-size:.72rem;color:var(--muted);font-weight:400;">（特殊情況才填，如：因故暫不收、補繳說明）</span></label>
@@ -2050,6 +2082,11 @@ const ANN_DELAY_MS = 30 * 60 * 1000; // 30分鐘後悔期
 let _annCountdownTimers = {}; // key=ann.id, value=intervalID
 
 function renderAnnounce(){
+  // 未登入者不顯示房東公告（只看靜態停水停電資訊）
+  const announceCard=document.getElementById('announce-card');
+  if(announceCard){
+    announceCard.style.display=(!currentEmail)?'none':'block';
+  }
   if(isLandlord){
     document.getElementById('landlord-announce-edit')?.classList.remove('hidden');
   }
