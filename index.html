@@ -171,7 +171,11 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 .bill-row.tot{font-weight:900;font-size:.95rem;color:var(--danger);border-top:2px solid var(--border);padding-top:.45rem;margin-top:.2rem;}
 .bill-note{font-size:.85rem;color:var(--muted);margin-top:.8rem;line-height:1.7;}
 .hist-item{background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.9rem 1rem;margin-bottom:.5rem;font-size:.9rem;}
-/* 租戶視圖：個人帳單大字顯示 */
+/* 房東入住日月曆格 */
+.cal-grid{display:grid;grid-template-columns:repeat(7,28px);gap:3px;user-select:none;}
+.cal-cell{width:28px;height:28px;border:1.5px solid var(--border2);border-radius:.35rem;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .1s;background:var(--bg2);color:var(--muted);}
+.cal-cell:hover{border-color:var(--accent);background:#fff4e0;}
+.cal-cell.cal-selected{background:var(--accent);color:#fff;border-color:var(--accent2);}
 .tenant-bill-header{text-align:center;padding:1.2rem;background:linear-gradient(135deg,#3a1f04,#6a3010);border-radius:1rem;color:#ffe8b8;margin-bottom:1rem;}
 .tenant-bill-header .room-label{font-size:.8rem;color:rgba(255,230,180,.6);font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
 .tenant-bill-header .tenant-name{font-family:'Noto Serif TC',serif;font-size:1.3rem;font-weight:700;margin:.3rem 0;}
@@ -345,14 +349,14 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <!-- ── 本期帳單資訊 ── -->
   <div class="card mt">
     <div class="card-title">📋 本期帳單資訊</div>
-    <!-- 問題2：期別第一欄，起迄自動計算 -->
+    <!-- 期別自動算年月，但起迄日可手動修改 -->
     <div class="form-row c3">
       <div><label>📅 帳單期別（如 202512）<span style="font-size:.7rem;color:var(--gold);font-weight:400;"> ← 先填這個</span></label>
-        <input type="text" id="u-period" placeholder="202512" oninput="autoFillDates()"></div>
-      <div><label>計費期間（起）<span style="font-size:.7rem;color:var(--muted);font-weight:400;">（自動=期別當月-2個月的1日）</span></label>
-        <input type="date" id="u-start" readonly style="background:#f0e8d5;cursor:not-allowed;"></div>
-      <div><label>計費期間（迄）<span style="font-size:.7rem;color:var(--muted);font-weight:400;">（自動=期別當月1日）</span></label>
-        <input type="date" id="u-end" readonly style="background:#f0e8d5;cursor:not-allowed;"></div>
+        <input type="text" id="u-period" placeholder="202512" oninput="autoFillDates();if(window.refreshCalendars)refreshCalendars();"></div>
+      <div><label>計費期間（起）<span style="font-size:.7rem;color:var(--gold);font-weight:400;">（年月自動，日期可手改）</span></label>
+        <input type="date" id="u-start" oninput="recalcDays()" style="border:1.5px solid var(--gold);"></div>
+      <div><label>計費期間（迄）<span style="font-size:.7rem;color:var(--gold);font-weight:400;">（年月自動，日期可手改）</span></label>
+        <input type="date" id="u-end" oninput="recalcDays()" style="border:1.5px solid var(--gold);"></div>
     </div>
     <!-- 問題3：用電度數在左、電費在右（比照Excel D3/D4順序） -->
     <div class="form-row c3">
@@ -399,27 +403,59 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <!-- ── 房東家人入住日（問題9） ── -->
   <div class="card landlord-only">
     <div class="card-title">🏠 房東家人入住日（計費用）</div>
-    <div class="alert-box a-info" style="font-size:.85rem;">填入房東實際回嘉義老家居住的日期，系統自動計算天數並納入均分計算。有帶小孩則計3人。</div>
-    <div class="form-row c2">
-      <div>
-        <label>龍潭房東 — 第1個月入住日期（可多選，用逗號分隔）</label>
-        <textarea id="lt-m1" rows="2" placeholder="例：11/2,11/3,11/4,...（填幾號就算幾天）"></textarea>
+    <div class="alert-box a-info" style="font-size:.85rem;">點選方格即標記居住日（可按住滑鼠左鍵拖曳匡選多天）。或直接貼入日期文字（支援逗號/全形空格/空白分隔）。兩種方式可同時使用。</div>
+
+    <!-- 龍潭房東 -->
+    <div style="margin-bottom:.75rem;">
+      <div style="font-weight:900;font-size:.88rem;color:var(--primary);margin-bottom:.35rem;">🏡 龍潭房東</div>
+      <div class="form-row c2" style="margin-bottom:.4rem;">
+        <div>
+          <label id="lt-m1-label">第1個月入住日（文字輸入）</label>
+          <input type="text" id="lt-m1" placeholder="例：2 3 4 5 或 11/2,11/3 均可" oninput="calcLandlordDays()" style="font-size:.85rem;">
+        </div>
+        <div>
+          <label id="lt-m2-label">第2個月入住日（文字輸入）</label>
+          <input type="text" id="lt-m2" placeholder="例：1 2 3 或 12/1,12/2 均可" oninput="calcLandlordDays()" style="font-size:.85rem;">
+        </div>
       </div>
-      <div>
-        <label>龍潭房東 — 第2個月入住日期</label>
-        <textarea id="lt-m2" rows="2" placeholder="例：12/1,12/2,12/3,..."></textarea>
+      <!-- 月曆格 龍潭 -->
+      <div id="lt-cal-wrap" style="display:flex;gap:.75rem;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="lt-cal-m1-title">第1個月</div>
+          <div id="lt-cal-m1" class="cal-grid"></div>
+        </div>
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="lt-cal-m2-title">第2個月</div>
+          <div id="lt-cal-m2" class="cal-grid"></div>
+        </div>
       </div>
     </div>
-    <div class="form-row c2">
-      <div>
-        <label>台中房東 — 第1個月入住日期</label>
-        <textarea id="tc-m1" rows="2" placeholder="例：11/5,11/6,...（無則留空）"></textarea>
+
+    <!-- 台中房東 -->
+    <div style="margin-bottom:.75rem;">
+      <div style="font-weight:900;font-size:.88rem;color:var(--primary);margin-bottom:.35rem;">🏙️ 台中房東</div>
+      <div class="form-row c2" style="margin-bottom:.4rem;">
+        <div>
+          <label id="tc-m1-label">第1個月入住日（文字輸入）</label>
+          <input type="text" id="tc-m1" placeholder="例：5 6 7 或 留空" oninput="calcLandlordDays()" style="font-size:.85rem;">
+        </div>
+        <div>
+          <label id="tc-m2-label">第2個月入住日（文字輸入）</label>
+          <input type="text" id="tc-m2" placeholder="無則留空" oninput="calcLandlordDays()" style="font-size:.85rem;">
+        </div>
       </div>
-      <div>
-        <label>台中房東 — 第2個月入住日期</label>
-        <textarea id="tc-m2" rows="2" placeholder="無則留空"></textarea>
+      <div id="tc-cal-wrap" style="display:flex;gap:.75rem;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="tc-cal-m1-title">第1個月</div>
+          <div id="tc-cal-m1" class="cal-grid"></div>
+        </div>
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="tc-cal-m2-title">第2個月</div>
+          <div id="tc-cal-m2" class="cal-grid"></div>
+        </div>
       </div>
     </div>
+
     <div class="form-row c2">
       <div><label>龍潭房東是否帶小孩？</label>
         <select id="lt-kids" onchange="calcU()">
@@ -434,11 +470,11 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         </select>
       </div>
     </div>
-    <div style="display:flex;gap:.75rem;margin-top:.4rem;">
-      <div style="background:var(--bg2);border-radius:.7rem;padding:.5rem .85rem;font-size:.85rem;">
+    <div style="display:flex;gap:.75rem;margin-top:.4rem;align-items:center;flex-wrap:wrap;">
+      <div style="background:var(--bg2);border-radius:.7rem;padding:.5rem .85rem;font-size:.88rem;">
         龍潭房東：<strong id="lt-days-display" style="color:var(--accent);">0</strong> 天
       </div>
-      <div style="background:var(--bg2);border-radius:.7rem;padding:.5rem .85rem;font-size:.85rem;">
+      <div style="background:var(--bg2);border-radius:.7rem;padding:.5rem .85rem;font-size:.88rem;">
         台中房東：<strong id="tc-days-display" style="color:var(--accent);">0</strong> 天
       </div>
       <button class="btn ba sm" onclick="calcLandlordDays()">🔄 重新計算入住天數</button>
@@ -1630,7 +1666,7 @@ window.ST = function(n){
   document.querySelectorAll('.tab-nav button').forEach(b=>{
     if(b.getAttribute('onclick')===`ST('${n}')`)b.classList.add('active');
   });
-  if(n==='utility')initU();
+  if(n==='utility'){initU();if(window.refreshCalendars)window.refreshCalendars();}
   if(n==='rent')initRent();
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
@@ -1751,18 +1787,35 @@ window.autoFillDates = function(){
   if(!period || period.length < 6) return;
   const y = +period.slice(0,4), m = +period.slice(4,6);
   if(!y || !m || m<1 || m>12) return;
-  // 計費迄 = 帳單期別當月1日
-  const endDate = `${y}-${String(m).padStart(2,'0')}-01`;
-  // 計費起 = 迄日往前推2個月的1日
+
+  // 計費迄 = 帳單期別當月（年月自動，日期預設1日可手改）
+  const endEl = document.getElementById('u-end');
+  const startEl = document.getElementById('u-start');
+
+  // 保留使用者已手動修改的日，否則用1日
+  const endDay = (endEl.value && endEl.value.slice(0,7) === `${y}-${String(m).padStart(2,'0')}`)
+    ? endEl.value.slice(8) : '01';
+  const endDate = `${y}-${String(m).padStart(2,'0')}-${endDay}`;
+
   let startY=y, startM=m-2;
   if(startM<=0){ startM+=12; startY-=1; }
-  const startDate = `${startY}-${String(startM).padStart(2,'0')}-01`;
-  document.getElementById('u-end').value = endDate;
-  document.getElementById('u-start').value = startDate;
-  // 計費天數 = 迄-起（問題8）
-  const diffDays = Math.round((new Date(endDate)-new Date(startDate))/(86400000));
+  const startDay = (startEl.value && startEl.value.slice(0,7) === `${startY}-${String(startM).padStart(2,'0')}`)
+    ? startEl.value.slice(8) : '01';
+  const startDate = `${startY}-${String(startM).padStart(2,'0')}-${startDay}`;
+
+  endEl.value = endDate;
+  startEl.value = startDate;
+  recalcDays();
+};
+
+// 手動修改日期後重算天數
+window.recalcDays = function(){
+  const s = document.getElementById('u-start')?.value;
+  const e = document.getElementById('u-end')?.value;
+  if(!s||!e) return;
+  const diffDays = Math.round((new Date(e)-new Date(s))/86400000);
+  if(diffDays<=0) return;
   window._utilDays = diffDays;
-  // 更新各房天數
   ROOMS.forEach(r=>{
     const pn = +document.getElementById('pn-'+r)?.value||0;
     const pdEl = document.getElementById('pd-'+r);
@@ -1771,17 +1824,102 @@ window.autoFillDates = function(){
   calcU();
 };
 
-// ── 問題9：計算房東入住天數 ──────────────────────────────────
+// ── 月曆格初始化與拖曳選取 ──────────────────────────────────
+(function setupCalendars(){
+  const calIds = ['lt-cal-m1','lt-cal-m2','tc-cal-m1','tc-cal-m2'];
+  let isDragging=false, dragVal=null;
+
+  function buildCal(containerId, days){
+    const el=document.getElementById(containerId);
+    if(!el)return;
+    el.innerHTML='';
+    for(let d=1;d<=days;d++){
+      const cell=document.createElement('div');
+      cell.className='cal-cell';
+      cell.textContent=d;
+      cell.id=`${containerId}-${d}`;
+      // 點擊
+      cell.addEventListener('mousedown',e=>{
+        e.preventDefault();
+        isDragging=true;
+        dragVal=!cell.classList.contains('cal-selected');
+        cell.classList.toggle('cal-selected',dragVal);
+        calcLandlordDays();
+      });
+      cell.addEventListener('mouseover',()=>{
+        if(isDragging){
+          cell.classList.toggle('cal-selected',dragVal);
+          calcLandlordDays();
+        }
+      });
+      el.appendChild(cell);
+    }
+  }
+
+  document.addEventListener('mouseup',()=>{ isDragging=false; });
+
+  // 根據帳單期別更新月曆格月份
+  window.refreshCalendars = function(){
+    const period=document.getElementById('u-period')?.value.trim();
+    let y=new Date().getFullYear(), m=new Date().getMonth()+1;
+    if(period&&period.length>=6){
+      y=+period.slice(0,4); m=+period.slice(4,6);
+    }
+    // 第1個月：m-2, 第2個月：m-1
+    let m1=m-2, y1=y; if(m1<=0){m1+=12;y1--;}
+    let m2=m-1, y2=y; if(m2<=0){m2+=12;y2--;}
+    const days1=new Date(y1,m1,0).getDate();
+    const days2=new Date(y2,m2,0).getDate();
+    buildCal('lt-cal-m1',days1); buildCal('lt-cal-m2',days2);
+    buildCal('tc-cal-m1',days1); buildCal('tc-cal-m2',days2);
+    // 更新標題
+    const fmt=(y,m)=>`${y}/${String(m).padStart(2,'0')}`;
+    document.getElementById('lt-cal-m1-title')&&(document.getElementById('lt-cal-m1-title').textContent=`第1個月（${fmt(y1,m1)}）`);
+    document.getElementById('lt-cal-m2-title')&&(document.getElementById('lt-cal-m2-title').textContent=`第2個月（${fmt(y2,m2)}）`);
+    document.getElementById('tc-cal-m1-title')&&(document.getElementById('tc-cal-m1-title').textContent=`第1個月（${fmt(y1,m1)}）`);
+    document.getElementById('tc-cal-m2-title')&&(document.getElementById('tc-cal-m2-title').textContent=`第2個月（${fmt(y2,m2)}）`);
+    // 更新標籤月份
+    ['lt-m1-label','lt-m2-label','tc-m1-label','tc-m2-label'].forEach((id,i)=>{
+      const el=document.getElementById(id);
+      if(el) el.textContent=`${i%2===0?'第1':'第2'}個月入住日（${i<2?'龍潭':'台中'}，${i%2===0?fmt(y1,m1):fmt(y2,m2)}）`;
+    });
+  };
+  // 延遲初始化（等 DOM 就緒）
+  setTimeout(()=>window.refreshCalendars&&window.refreshCalendars(),300);
+})();
+window.syncMeterDate = function(val){
+  ROOMS.forEach((r,idx)=>{
+    if(idx===0) return; // 第一間已輸入，跳過
+    const el=document.getElementById('md-'+r);
+    if(el && !el.value) el.value=val; // 空白才自動填，已填過的不蓋掉
+  });
+  calcU();
+};
+
+// ── 問題9：計算房東入住天數（支援逗號、全形空格、半形空格）
 window.calcLandlordDays = function(){
   function countDays(text){
     if(!text||!text.trim()) return 0;
-    const days = text.split(',').map(s=>s.trim()).filter(s=>s.length>0);
-    return new Set(days).size; // 去重後計天數
+    // 支援全形逗號、全形空格、半形空格、換行、半形逗號全部當分隔符
+    const normalized = text.replace(/[，\u3000\s]+/g, ',');
+    const days = normalized.split(',').map(s=>s.trim()).filter(s=>s.length>0);
+    return new Set(days).size;
+  }
+  // 也從月曆格取值
+  function countCalDays(prefix){
+    let cnt=0;
+    for(let d=1;d<=31;d++){
+      const el=document.getElementById(`${prefix}-cal-${d}`);
+      if(el&&el.classList.contains('cal-selected')) cnt++;
+    }
+    return cnt;
   }
   const ltDays = countDays(document.getElementById('lt-m1')?.value||'') +
-                 countDays(document.getElementById('lt-m2')?.value||'');
+                 countDays(document.getElementById('lt-m2')?.value||'') +
+                 countCalDays('lt-m1') + countCalDays('lt-m2');
   const tcDays = countDays(document.getElementById('tc-m1')?.value||'') +
-                 countDays(document.getElementById('tc-m2')?.value||'');
+                 countDays(document.getElementById('tc-m2')?.value||'') +
+                 countCalDays('tc-m1') + countCalDays('tc-m2');
   window._ltDays = ltDays;
   window._tcDays = tcDays;
   const ltEl = document.getElementById('lt-days-display');
@@ -1795,13 +1933,17 @@ window.initU = function(){
   const mr=document.getElementById('meter-rows');
   const pr=document.getElementById('person-rows');
   mr.innerHTML='';pr.innerHTML='';
-  ROOMS.forEach(r=>{
+  ROOMS.forEach((r,idx)=>{
     const t=DB.tenants[r]||{};
     // 問題4、5：補足欄位標題 + 本期抄表日期
+    // 問題2：第一行日期輸入後自動套用到其他房間
+    const onDateInput = idx===0
+      ? `onchange="syncMeterDate(this.value)"` 
+      : ``;
     mr.innerHTML+=`<div style="display:grid;grid-template-columns:72px 90px 110px 90px 110px 80px 80px;gap:.4rem;align-items:center;margin-bottom:.4rem;">
       <div class="ulbl">${RL[r]}</div>
       <input type="number" id="mp-${r}" placeholder="上期度數" oninput="calcU()">
-      <input type="date" id="md-${r}" oninput="calcU()" style="font-size:.8rem;">
+      <input type="date" id="md-${r}" ${onDateInput} oninput="calcU()" style="font-size:.8rem;">
       <input type="number" id="mc-${r}" placeholder="本期度數" oninput="calcU()">
       <input type="number" id="mk-${r}" readonly placeholder="自動計算" style="background:#f0e8d5;color:var(--muted);">
       <input type="number" id="mf-${r}" readonly placeholder="自動計算" style="background:#f0e8d5;color:var(--accent);font-weight:700;">
