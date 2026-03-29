@@ -1869,7 +1869,7 @@ function renderRentHistory(){
         </div>
         <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;">
           <span class="${st}">${total>=due?'已收齊':total>0?'部分':'未收'}</span>
-          ${total<due?`<button class="btn bs sm" onclick="markRentPaid(${i})" style="font-size:.72rem;padding:.3rem .7rem;">✅ 已繳租</button>`:''}
+          ${total<due?`<button class="btn bs sm" onclick="markRentPaid(${i})" style="font-size:.72rem;padding:.3rem .7rem;">✅ 若已繳租按此</button>`:''}
           <button class="btn bo sm" onclick="deleteRent(${i})">刪除</button>
         </div>
       </div>
