@@ -1098,6 +1098,10 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div><label>房客姓名</label><input type="text" id="mt-name" placeholder="姓名"></div>
       <div><label>聯絡電話</label><input type="text" id="mt-phone" placeholder="09xx"></div>
     </div>
+    <div class="form-row">
+      <div><label>🔑 房客登入 Email <span style="font-size:.72rem;color:var(--muted);font-weight:400;">（房東設定後，房客用此 email 登入才能看帳單）</span></label>
+        <input type="text" id="mt-email" placeholder="如：tenant@gmail.com（設定前陌生人無法看到私人公告）"></div>
+    </div>
     <div class="form-row c2">
       <div><label>月租金（元）</label><input type="number" id="mt-rent" placeholder="6000" oninput="autoDeposit()"></div>
       <div><label>押金<span style="font-size:.7rem;color:var(--gold);font-weight:400;">（自動=月租×2）</span></label>
@@ -1354,31 +1358,50 @@ const completeLogin = async (email) => {
     const backupBtn = document.querySelector('[onclick="ST(\'backup\')"]');
     if(backupBtn) backupBtn.style.display='inline-block';
   } else {
-    // 房客：只顯示帳單、我的房間、公告
-    document.querySelectorAll('.landlord-only').forEach(el=>el.style.display='none');
-    document.querySelectorAll('.tenant-only').forEach(el=>{
-      el.classList.remove('hidden');
-      el.style.display='inline-block';
-    });
-    // 找到該email對應的房間
-    await loadLandlordData(); // 只讀取公開資料
+    await loadLandlordData();
     myRoom = findMyRoom(email);
-    if(!myRoom){
-      // 首次登入：讓房客自己選房間
+
+    if(myRoom){
+      // ── 層級2：已簽約房客（房東已設定此email）──
+      badge.textContent='🏠 '+RL[myRoom]+'・'+email.split('@')[0];
+      document.querySelectorAll('.landlord-only').forEach(el=>el.style.display='none');
+      document.querySelectorAll('.tenant-only').forEach(el=>{
+        el.classList.remove('hidden');
+        el.style.display='inline-block';
+      });
+      // 公告頁籤顯示
+      document.querySelectorAll('.tab-nav button').forEach(b=>{
+        if(b.getAttribute('onclick')===`ST('announce')`)b.style.display='inline-block';
+        if(b.getAttribute('onclick')===`ST('repair')`)b.style.display='inline-block';
+        if(b.getAttribute('onclick')===`ST('adtext')`)b.style.display='inline-block';
+        if(b.getAttribute('onclick')===`ST('new-guest')`)b.style.display='inline-block';
+      });
       renderTenantView();
       document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-      document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
       document.getElementById('page-my-bill').classList.add('active');
       const tenantTabs=document.querySelectorAll('.tenant-only');
       if(tenantTabs[0])tenantTabs[0].classList.add('active');
-      setTimeout(()=>showRoomSelect(),400);
+
     } else {
-      renderTenantView();
+      // ── 層級3：訪客（陌生人，email不在任何房間）──
+      badge.textContent='👁️ 訪客';
+      badge.style.background='rgba(100,116,139,.15)';
+      badge.style.color='#94a3b8';
+      document.querySelectorAll('.landlord-only').forEach(el=>el.style.display='none');
+      document.querySelectorAll('.tenant-only').forEach(el=>el.style.display='none');
+      // 訪客只顯示：文案、看房問卷
+      document.querySelectorAll('.tab-nav button').forEach(b=>{
+        const oc=b.getAttribute('onclick')||'';
+        if(oc.includes('adtext')||oc.includes('new-guest')){
+          b.style.display='inline-block';
+        } else if(!oc.includes('my-bill')&&!oc.includes('my-info')){
+          b.style.display='none';
+        }
+      });
+      // 直接進看房問卷頁面
       document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-      document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
-      document.getElementById('page-my-bill').classList.add('active');
-      const tenantTabs=document.querySelectorAll('.tenant-only');
-      if(tenantTabs[0])tenantTabs[0].classList.add('active');
+      document.getElementById('page-new-guest').classList.add('active');
+      toast('您尚未有租約，僅可查看文案與填寫看房問卷。如已簽約請聯繫房東開通帳號。');
     }
   }
   if(typeof lucide!=='undefined')lucide.createIcons();
@@ -1565,7 +1588,7 @@ function renderTenants(){
 }
 window.openAddTenant = function(){
   document.getElementById('mt-title').textContent='新增房客';
-  ['mt-name','mt-phone','mt-rent','mt-deposit','mt-movein','mt-expiry','mt-id','mt-address','mt-history','mt-note','mt-rentday'].forEach(id=>document.getElementById(id)&&(document.getElementById(id).value=''));
+  ['mt-name','mt-phone','mt-email','mt-rent','mt-deposit','mt-movein','mt-expiry','mt-id','mt-address','mt-history','mt-note','mt-rentday'].forEach(id=>document.getElementById(id)&&(document.getElementById(id).value=''));
   const _ct=document.getElementById('mt-contract');if(_ct)_ct.value='';
   document.getElementById('mt-status').value='occupied';
   OM('modal-tenant');
@@ -1578,6 +1601,8 @@ window.openEditTenant = function(r){
     const el=document.getElementById('mt-'+f);
     if(el)el.value=t[f]||'';
   });
+  const emailEl=document.getElementById('mt-email');
+  if(emailEl)emailEl.value=t.tenantEmail||'';
   const ctEl=document.getElementById('mt-contract');
   if(ctEl)ctEl.value=t.contract||'';
   const rdEl=document.getElementById('mt-rentday');
@@ -1590,6 +1615,7 @@ window.saveTenant = async function(){
   DB.tenants[r]={
     name:document.getElementById('mt-name').value.trim(),
     phone:document.getElementById('mt-phone').value.trim(),
+    tenantEmail:document.getElementById('mt-email')?.value.trim().toLowerCase()||'',
     rent:+document.getElementById('mt-rent').value||0,
     deposit:+document.getElementById('mt-deposit').value||0,
     movein:document.getElementById('mt-movein').value,
