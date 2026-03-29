@@ -342,42 +342,120 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
 <!-- ══ 房東：水電帳單 ══ -->
 <div id="page-utility" class="page">
+  <!-- ── 本期帳單資訊 ── -->
   <div class="card mt">
     <div class="card-title">📋 本期帳單資訊</div>
+    <!-- 問題2：期別第一欄，起迄自動計算 -->
     <div class="form-row c3">
-      <div><label>計費期間（起）</label><input type="date" id="u-start"></div>
-      <div><label>計費期間（迄）</label><input type="date" id="u-end"></div>
-      <div><label>帳單期別（如 202506）</label><input type="text" id="u-period" placeholder="202506"></div>
+      <div><label>📅 帳單期別（如 202512）<span style="font-size:.7rem;color:var(--gold);font-weight:400;"> ← 先填這個</span></label>
+        <input type="text" id="u-period" placeholder="202512" oninput="autoFillDates()"></div>
+      <div><label>計費期間（起）<span style="font-size:.7rem;color:var(--muted);font-weight:400;">（自動=期別當月-2個月的1日）</span></label>
+        <input type="date" id="u-start" readonly style="background:#f0e8d5;cursor:not-allowed;"></div>
+      <div><label>計費期間（迄）<span style="font-size:.7rem;color:var(--muted);font-weight:400;">（自動=期別當月1日）</span></label>
+        <input type="date" id="u-end" readonly style="background:#f0e8d5;cursor:not-allowed;"></div>
+    </div>
+    <!-- 問題3：用電度數在左、電費在右（比照Excel D3/D4順序） -->
+    <div class="form-row c3">
+      <div><label>⚡ 本期用電度數（度）<span style="font-size:.7rem;color:var(--muted);font-weight:400;">（台電帳單度數）</span></label>
+        <input type="number" id="u-total-kwh" placeholder="如：878" oninput="calcU()"></div>
+      <div><label>💡 電費總金額（元）</label>
+        <input type="number" id="u-elec" placeholder="0" oninput="calcU()"></div>
+      <div><label>每度電費（元/度）<span style="font-size:.7rem;color:var(--gold);font-weight:400;">（自動 = 電費 ÷ 度數）</span></label>
+        <input type="number" id="u-kwh-price" placeholder="自動計算" step="0.001" readonly
+               style="background:#f0e8d5;color:var(--accent);font-weight:700;cursor:not-allowed;"></div>
     </div>
     <div class="form-row c3">
-      <div><label>💡 電費總金額（元）</label><input type="number" id="u-elec" placeholder="0" oninput="calcU()"></div>
       <div><label>💧 水費總金額（元）</label><input type="number" id="u-water" placeholder="0" oninput="calcU()"></div>
       <div><label>🔥 天然氣總金額（元）</label><input type="number" id="u-gas" placeholder="0" oninput="calcU()"></div>
-    </div>
-    <div class="form-row c3">
-      <div><label>⚡ 本期用電度數（度）<span style="font-size:.7rem;color:var(--muted);font-weight:400;">（台電帳單上的度數）</span></label>
-        <input type="number" id="u-total-kwh" placeholder="如：320" oninput="calcU()"></div>
-      <div><label>每度電費（元/度）<span style="font-size:.7rem;color:var(--gold);font-weight:400;">（自動 = 電費 ÷ 度數）</span></label>
-        <input type="number" id="u-kwh-price" placeholder="自動計算" step="0.01" readonly
-               style="background:#f0e8d5;color:var(--accent);font-weight:700;cursor:not-allowed;"></div>
       <div><label>備註</label><input type="text" id="u-note" placeholder="備注"></div>
     </div>
   </div>
+
+  <!-- ── 各房冷氣電表 ── 問題4、5：標題補足 + 本期抄表日期 -->
   <div class="card">
     <div class="card-title">🔌 各房冷氣電表抄錶</div>
+    <div style="display:grid;grid-template-columns:72px 90px 110px 90px 110px 80px 80px;gap:.4rem;align-items:center;margin-bottom:.3rem;font-size:.78rem;font-weight:700;color:var(--muted);padding:0 .1rem;">
+      <div>房間</div>
+      <div>上期電表<br>度數</div>
+      <div>本期抄表<br>日期</div>
+      <div>本期電表<br>度數</div>
+      <div>本期共使用<br>幾度</div>
+      <div>本期共使用<br>電費(元)</div>
+      <div></div>
+    </div>
     <div id="meter-rows"></div>
   </div>
+
+  <!-- ── 各房計費人數與天數 ── 問題8 -->
   <div class="card">
     <div class="card-title">👥 各房計費人數與天數</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem;">💡 計費天數自動由「計費期間（迄-起）」計算，人數為0則天數自動為0。</div>
+    <div style="display:grid;grid-template-columns:72px 90px 80px 1fr;gap:.4rem;align-items:center;margin-bottom:.3rem;font-size:.78rem;font-weight:700;color:var(--muted);">
+      <div>房間</div><div>各房人數<br>(0=空房)</div><div>共計費天數<br>(自動)</div><div>備注/房客姓名</div>
+    </div>
     <div id="person-rows"></div>
   </div>
+
+  <!-- ── 房東家人入住日（問題9） ── -->
+  <div class="card landlord-only">
+    <div class="card-title">🏠 房東家人入住日（計費用）</div>
+    <div class="alert-box a-info" style="font-size:.85rem;">填入房東實際回嘉義老家居住的日期，系統自動計算天數並納入均分計算。有帶小孩則計3人。</div>
+    <div class="form-row c2">
+      <div>
+        <label>龍潭房東 — 第1個月入住日期（可多選，用逗號分隔）</label>
+        <textarea id="lt-m1" rows="2" placeholder="例：11/2,11/3,11/4,...（填幾號就算幾天）"></textarea>
+      </div>
+      <div>
+        <label>龍潭房東 — 第2個月入住日期</label>
+        <textarea id="lt-m2" rows="2" placeholder="例：12/1,12/2,12/3,..."></textarea>
+      </div>
+    </div>
+    <div class="form-row c2">
+      <div>
+        <label>台中房東 — 第1個月入住日期</label>
+        <textarea id="tc-m1" rows="2" placeholder="例：11/5,11/6,...（無則留空）"></textarea>
+      </div>
+      <div>
+        <label>台中房東 — 第2個月入住日期</label>
+        <textarea id="tc-m2" rows="2" placeholder="無則留空"></textarea>
+      </div>
+    </div>
+    <div class="form-row c2">
+      <div><label>龍潭房東是否帶小孩？</label>
+        <select id="lt-kids" onchange="calcU()">
+          <option value="1">否（1人計費）</option>
+          <option value="3">是（3人計費）</option>
+        </select>
+      </div>
+      <div><label>台中房東是否帶小孩？</label>
+        <select id="tc-kids" onchange="calcU()">
+          <option value="1">否（1人計費）</option>
+          <option value="3">是（3人計費）</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:.75rem;margin-top:.4rem;">
+      <div style="background:var(--bg2);border-radius:.7rem;padding:.5rem .85rem;font-size:.85rem;">
+        龍潭房東：<strong id="lt-days-display" style="color:var(--accent);">0</strong> 天
+      </div>
+      <div style="background:var(--bg2);border-radius:.7rem;padding:.5rem .85rem;font-size:.85rem;">
+        台中房東：<strong id="tc-days-display" style="color:var(--accent);">0</strong> 天
+      </div>
+      <button class="btn ba sm" onclick="calcLandlordDays()">🔄 重新計算入住天數</button>
+    </div>
+  </div>
+
+  <!-- ── 計算結果（問題9：加龍潭/台中，問題11：floor/round） ── -->
   <div class="card hidden" id="u-result-card">
-    <div class="card-title">📊 計算結果</div>
+    <div class="card-title">📊 計算結果（各房應付金額）</div>
+    <div class="alert-box a-info" style="font-size:.82rem;">房客欄位（N4~N8）使用<strong>無條件捨去法</strong>優待；龍潭/台中房東欄位（N9~N14）使用<strong>四捨五入</strong>。</div>
     <div class="tbl-wrap">
       <table><thead><tr>
-        <th>房間</th><th>房客</th><th>冷氣電費</th><th>均分電費</th><th>均分水費</th><th>均分瓦斯</th><th style="background:#4a2c0a;">水電瓦斯合計</th>
+        <th>房間/人員</th><th>冷氣電費</th><th>均分電費</th><th>均分水費</th><th>均分瓦斯</th><th style="background:#4a2c0a;">本期合計</th>
       </tr></thead><tbody id="u-result-tbody"></tbody></table>
     </div>
+    <!-- N4~N15 說明欄 -->
+    <div id="u-n-summary" style="margin-top:.85rem;"></div>
     <div class="gap mt">
       <button class="btn bs sm" onclick="saveUtilBill()">💾 儲存並推送給各房客</button>
       <button class="btn bp sm" onclick="showAllBills()">📄 產生帳單通知單</button>
@@ -1088,7 +1166,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="txt-m mb">設定後，房客的 AI 提醒系統說明中會顯示此帳號。</div>
     <div class="form-row c2">
       <div><label>房東郵局（戶名）</label><input type="text" id="postal-name" placeholder="如：許○○"></div>
-      <div><label>房東郵局（帳號共14碼）</label><input type="text" id="postal-acc" placeholder="如：0000000-0000000"></div>
+      <div><label>房東郵局（帳號）</label><input type="text" id="postal-acc" placeholder="如：700-0000000-0000000"></div>
     </div>
     <button class="btn ba sm" onclick="savePostalAccount()">💾 儲存帳號</button>
   </div>
@@ -1667,34 +1745,94 @@ window.autoDeposit = function(){
 // ============================================================
 
 // ══ 房東：水電帳單 ══════════════════════════
+// ── 問題2：帳單期別自動算起迄日期 ─────────────────────────────
+window.autoFillDates = function(){
+  const period = document.getElementById('u-period')?.value.trim();
+  if(!period || period.length < 6) return;
+  const y = +period.slice(0,4), m = +period.slice(4,6);
+  if(!y || !m || m<1 || m>12) return;
+  // 計費迄 = 帳單期別當月1日
+  const endDate = `${y}-${String(m).padStart(2,'0')}-01`;
+  // 計費起 = 迄日往前推2個月的1日
+  let startY=y, startM=m-2;
+  if(startM<=0){ startM+=12; startY-=1; }
+  const startDate = `${startY}-${String(startM).padStart(2,'0')}-01`;
+  document.getElementById('u-end').value = endDate;
+  document.getElementById('u-start').value = startDate;
+  // 計費天數 = 迄-起（問題8）
+  const diffDays = Math.round((new Date(endDate)-new Date(startDate))/(86400000));
+  window._utilDays = diffDays;
+  // 更新各房天數
+  ROOMS.forEach(r=>{
+    const pn = +document.getElementById('pn-'+r)?.value||0;
+    const pdEl = document.getElementById('pd-'+r);
+    if(pdEl) pdEl.value = pn>0 ? diffDays : 0;
+  });
+  calcU();
+};
+
+// ── 問題9：計算房東入住天數 ──────────────────────────────────
+window.calcLandlordDays = function(){
+  function countDays(text){
+    if(!text||!text.trim()) return 0;
+    const days = text.split(',').map(s=>s.trim()).filter(s=>s.length>0);
+    return new Set(days).size; // 去重後計天數
+  }
+  const ltDays = countDays(document.getElementById('lt-m1')?.value||'') +
+                 countDays(document.getElementById('lt-m2')?.value||'');
+  const tcDays = countDays(document.getElementById('tc-m1')?.value||'') +
+                 countDays(document.getElementById('tc-m2')?.value||'');
+  window._ltDays = ltDays;
+  window._tcDays = tcDays;
+  const ltEl = document.getElementById('lt-days-display');
+  const tcEl = document.getElementById('tc-days-display');
+  if(ltEl) ltEl.textContent = ltDays;
+  if(tcEl) tcEl.textContent = tcDays;
+  calcU();
+};
+
 window.initU = function(){
   const mr=document.getElementById('meter-rows');
   const pr=document.getElementById('person-rows');
   mr.innerHTML='';pr.innerHTML='';
   ROOMS.forEach(r=>{
-    mr.innerHTML+=`<div class="urow">
-      <div class="ulbl">${RL[r]}</div>
-      <input type="number" id="mp-${r}" placeholder="上期" oninput="calcU()">
-      <input type="number" id="mc-${r}" placeholder="本期" oninput="calcU()">
-      <input type="number" id="mk-${r}" readonly style="background:#f0e8d5;color:var(--muted);">
-      <input type="number" id="mf-${r}" readonly style="background:#f0e8d5;color:var(--muted);">
-    </div>`;
     const t=DB.tenants[r]||{};
-    pr.innerHTML+=`<div style="display:grid;grid-template-columns:72px 1fr 1fr 1fr;gap:.4rem;align-items:center;margin-bottom:.4rem;">
+    // 問題4、5：補足欄位標題 + 本期抄表日期
+    mr.innerHTML+=`<div style="display:grid;grid-template-columns:72px 90px 110px 90px 110px 80px 80px;gap:.4rem;align-items:center;margin-bottom:.4rem;">
       <div class="ulbl">${RL[r]}</div>
-      <input type="number" id="pn-${r}" value="${t.status==='occupied'?1:0}" min="0" oninput="calcU()">
-      <input type="number" id="pd-${r}" placeholder="天數" oninput="calcU()">
+      <input type="number" id="mp-${r}" placeholder="上期度數" oninput="calcU()">
+      <input type="date" id="md-${r}" oninput="calcU()" style="font-size:.8rem;">
+      <input type="number" id="mc-${r}" placeholder="本期度數" oninput="calcU()">
+      <input type="number" id="mk-${r}" readonly placeholder="自動計算" style="background:#f0e8d5;color:var(--muted);">
+      <input type="number" id="mf-${r}" readonly placeholder="自動計算" style="background:#f0e8d5;color:var(--accent);font-weight:700;">
+    </div>`;
+    const autoDay = window._utilDays||0;
+    const defPerson = t.status==='occupied'?1:0;
+    pr.innerHTML+=`<div style="display:grid;grid-template-columns:72px 90px 80px 1fr;gap:.4rem;align-items:center;margin-bottom:.4rem;">
+      <div class="ulbl">${RL[r]}</div>
+      <input type="number" id="pn-${r}" value="${defPerson}" min="0" oninput="onPersonChange('${r}')">
+      <input type="number" id="pd-${r}" value="${defPerson>0?autoDay:0}" readonly style="background:#f0e8d5;color:var(--muted);">
       <input type="text" id="pnote-${r}" placeholder="${t.name||RL[r]}">
     </div>`;
   });
-  if(!document.getElementById('u-start').value){
-    const n=new Date(),y=n.getFullYear(),m=n.getMonth();
-    const sm=m%2===0?m:m-1;
-    document.getElementById('u-start').value=`${y}-${String(sm+1).padStart(2,'0')}-01`;
-    document.getElementById('u-period').value=`${y}${String(sm+2).padStart(2,'0')}`;
-    const ed=new Date(y,sm+2,0);
-    document.getElementById('u-end').value=`${y}-${String(sm+2).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`;
+  // 初始化日期（若還沒填）
+  if(!document.getElementById('u-period').value){
+    const n=new Date();
+    document.getElementById('u-period').value=`${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}`;
+    autoFillDates();
   }
+  // 初始化房東天數
+  window._ltDays = window._ltDays||0;
+  window._tcDays = window._tcDays||0;
+};
+
+// 人數變更時自動更新天數（問題8）
+window.onPersonChange = function(r){
+  const pn = +document.getElementById('pn-'+r)?.value||0;
+  const pdEl = document.getElementById('pd-'+r);
+  const days = window._utilDays||0;
+  if(pdEl) pdEl.value = pn>0 ? days : 0;
+  calcU();
 };
 
 window.calcU = function(){
@@ -1703,55 +1841,196 @@ window.calcU = function(){
   const G=+document.getElementById('u-gas')?.value||0;
   const totalKwh=+document.getElementById('u-total-kwh')?.value||0;
 
-  // ── 自動計算每度電費（電費總金額 ÷ 用電度數）────────────────
-  let P=0;
+  // 問題7：精確每度電費（不四捨五入，用於計算）
+  let exactP=0;
   const kwhPriceEl=document.getElementById('u-kwh-price');
   if(E>0 && totalKwh>0){
-    P=Math.round(E/totalKwh*10)/10; // 四捨五入到小數1位（同 ROUND(D4/D3,1)）
-    if(kwhPriceEl){ kwhPriceEl.value=P; kwhPriceEl.style.color='var(--accent)'; }
+    exactP = E/totalKwh;  // 精確值，不先ROUND
+    const displayP = Math.round(exactP*10)/10;  // 顯示用（小數1位）
+    if(kwhPriceEl){ kwhPriceEl.value=displayP; kwhPriceEl.style.color='var(--accent)'; }
   } else {
-    if(kwhPriceEl){ kwhPriceEl.value=''; kwhPriceEl.placeholder='請先填電費總金額和用電度數'; }
-    P=0;
+    if(kwhPriceEl){ kwhPriceEl.value=''; kwhPriceEl.placeholder='請先填用電度數和電費'; }
+    exactP=0;
   }
+
+  // 問題6：冷氣用度 = ROUND(本期-上期, 0)
+  // 問題7：冷氣電費 = ROUND(原始差值 × 精確單價, 0)（不是先ROUND度數再×單價！）
   let sumAC=0; const ac={};
   ROOMS.forEach(r=>{
     const prev=+document.getElementById('mp-'+r)?.value||0;
     const curr=+document.getElementById('mc-'+r)?.value||0;
-    const kwh=Math.max(0,curr-prev);
-    const fee=Math.round(kwh*P);
-    ac[r]={kwh,fee}; sumAC+=fee;
+    const rawDiff=Math.max(0,curr-prev);
+    const kwh=Math.round(rawDiff);                    // 問題6: ROUND(差值, 0)
+    const fee=Math.round(rawDiff*exactP);             // 問題7: ROUND(差值×精確單價, 0)
+    ac[r]={kwh,fee,rawDiff}; sumAC+=fee;
     const kEl=document.getElementById('mk-'+r),fEl=document.getElementById('mf-'+r);
-    if(kEl)kEl.value=kwh>0?kwh.toFixed(1):'';
-    if(fEl)fEl.value=fee>0?fee:'';
+    if(kEl)kEl.value=rawDiff>0?kwh:'';
+    if(fEl)fEl.value=rawDiff>0?fee:'';
   });
+
+  // 問題7：共用電費 = 總電費 - 各房冷氣電費合計（用整數）
   const sharedE=Math.max(0,E-sumAC);
-  let totalW=0; const pd={};
+
+  // 問題8/9：人天計算（含龍潭、台中房東）
+  const pd={};
+  let totalW=0;
   ROOMS.forEach(r=>{
     const n=+document.getElementById('pn-'+r)?.value||0;
     const d=+document.getElementById('pd-'+r)?.value||0;
     pd[r]={n,d,w:n*d}; totalW+=n*d;
   });
+  // 龍潭房東
+  const ltDays = window._ltDays||0;
+  const ltPerson = +document.getElementById('lt-kids')?.value||1;
+  const ltW = ltDays * ltPerson;
+  // 台中房東
+  const tcDays = window._tcDays||0;
+  const tcPerson = +document.getElementById('tc-kids')?.value||1;
+  const tcW = tcDays * tcPerson;
+  totalW += ltW + tcW;
+
   if(E===0&&W===0&&G===0){document.getElementById('u-result-card').classList.add('hidden');return;}
   const tb=document.getElementById('u-result-tbody'); tb.innerHTML='';
   window._UR={};
   let sAC=0,sE=0,sW=0,sG=0,sT=0;
+
+  // 問題11：房客（N4~N8）用 floor 優待；房東（N9~N14）用 round
   ROOMS.forEach(r=>{
     const ratio=totalW>0?pd[r].w/totalW:0;
-    const sE2=Math.round(sharedE*ratio),sW2=Math.round(W*ratio),sG2=Math.round(G*ratio);
+    // 問題11：房客用 floor（無條件捨去）
+    const sE2=Math.floor(sharedE*ratio);
+    const sW2=Math.floor(W*ratio);
+    const sG2=Math.floor(G*ratio);
     const tot=ac[r].fee+sE2+sW2+sG2;
     const t=DB.tenants[r]||{};
     window._UR[r]={acFee:ac[r].fee,sharedElec:sE2,water:sW2,gas:sG2,total:tot,ratio};
     sAC+=ac[r].fee;sE+=sE2;sW+=sW2;sG+=sG2;sT+=tot;
-    tb.innerHTML+=`<tr><td class="rl">${RL[r]}</td><td>${t.name||'—'}</td>
-      <td class="amt">NT$${ac[r].fee.toLocaleString()}</td><td class="amt">NT$${sE2.toLocaleString()}</td>
-      <td class="amt">NT$${sW2.toLocaleString()}</td><td class="amt">NT$${sG2.toLocaleString()}</td>
-      <td class="tot">NT$${tot.toLocaleString()}</td></tr>`;
+    const hasOcc=pd[r].n>0;
+    tb.innerHTML+=`<tr style="${!hasOcc?'opacity:.5':''}">
+      <td class="rl">${RL[r]}${!hasOcc?'<span style="font-size:.7rem;color:var(--muted);"> 空房</span>':''}</td>
+      <td class="amt">NT$${ac[r].fee.toLocaleString()}</td>
+      <td class="amt">${sE2?'NT$'+sE2.toLocaleString():'—'}</td>
+      <td class="amt">${sW2?'NT$'+sW2.toLocaleString():'—'}</td>
+      <td class="amt">${sG2?'NT$'+sG2.toLocaleString():'—'}</td>
+      <td class="tot">${tot?'NT$'+tot.toLocaleString():'—'}</td></tr>`;
   });
-  tb.innerHTML+=`<tr style="background:#fff8f0;font-weight:900;"><td class="rl" colspan="2">合計</td>
+
+  // 問題9：龍潭、台中房東（用 round 四捨五入）
+  if(ltW>0){
+    const ratioLT=ltW/totalW;
+    const sE_lt=Math.round(sharedE*ratioLT);
+    const sW_lt=Math.round(W*ratioLT);
+    const sG_lt=Math.round(G*ratioLT);
+    // 龍潭房東住3樓後，冷氣費用round
+    const ltAC=ac['3F後']?.fee||0;
+    const ltTot=ltAC+sE_lt+sW_lt+sG_lt;
+    window._UR['龍潭房東']={acFee:ltAC,sharedElec:sE_lt,water:sW_lt,gas:sG_lt,total:ltTot,days:ltDays};
+    tb.innerHTML+=`<tr style="background:#f0f8ff;">
+      <td class="rl">龍潭房東<span style="font-size:.7rem;color:var(--muted);"> ${ltDays}天×${ltPerson}人</span></td>
+      <td class="amt">${ltAC?'NT$'+ltAC:'—'}</td>
+      <td class="amt">${sE_lt?'NT$'+sE_lt:'—'}</td>
+      <td class="amt">${sW_lt?'NT$'+sW_lt:'—'}</td>
+      <td class="amt">${sG_lt?'NT$'+sG_lt:'—'}</td>
+      <td class="tot">NT$${ltTot.toLocaleString()}</td></tr>`;
+    sT+=ltTot;
+  }
+  if(tcW>0){
+    const ratioTC=tcW/totalW;
+    const sE_tc=Math.round(sharedE*ratioTC);
+    const sW_tc=Math.round(W*ratioTC);
+    const sG_tc=Math.round(G*ratioTC);
+    const tcTot=sE_tc+sW_tc+sG_tc;
+    window._UR['台中房東']={acFee:0,sharedElec:sE_tc,water:sW_tc,gas:sG_tc,total:tcTot,days:tcDays};
+    tb.innerHTML+=`<tr style="background:#f0f8ff;">
+      <td class="rl">台中房東<span style="font-size:.7rem;color:var(--muted);"> ${tcDays}天×${tcPerson}人</span></td>
+      <td class="amt">—</td>
+      <td class="amt">${sE_tc?'NT$'+sE_tc:'—'}</td>
+      <td class="amt">${sW_tc?'NT$'+sW_tc:'—'}</td>
+      <td class="amt">${sG_tc?'NT$'+sG_tc:'—'}</td>
+      <td class="tot">NT$${tcTot.toLocaleString()}</td></tr>`;
+    sT+=tcTot;
+  }
+
+  tb.innerHTML+=`<tr style="background:#fff8f0;font-weight:900;"><td class="rl" colspan="2">合計（內部計算用）</td>
     <td>NT$${sAC.toLocaleString()}</td><td>NT$${sE.toLocaleString()}</td>
     <td>NT$${sW.toLocaleString()}</td><td>NT$${sG.toLocaleString()}</td>
     <td class="tot">NT$${sT.toLocaleString()}</td></tr>`;
+
+  // ══ N4~N15：給房客看的應收總計（仿 Excel 格式）══════════════
+  const UR=window._UR;
+  const ltAC_kwh = ac['3F後']?.kwh||0;
+  const ltAC_fee = ac['3F後']?.fee||0;
+  // 龍潭房東本期水電瓦斯 = 均分電+均分水+均分瓦斯（round）
+  const ltWEG = (UR['龍潭房東']?.sharedElec||0) + (UR['龍潭房東']?.water||0) + (UR['龍潭房東']?.gas||0);
+  // 台中房東本期水電瓦斯
+  const tcWEG = (UR['台中房東']?.sharedElec||0) + (UR['台中房東']?.water||0) + (UR['台中房東']?.gas||0);
+
+  // 各房客應收加總（N4+N5+...+N8）
+  const tenantTotal = ROOMS.reduce((s,r)=>s+(UR[r]?.total||0),0);
+  // N14 = 實際總電費+水費+瓦斯費（精確值）
+  const N14 = E + W + G;
+  // N9「房東贊助房客零頭」= N14 - 各房客合計 - 龍潭水電瓦斯 - 龍潭冷氣 - 台中水電瓦斯 - 台中冷氣
+  const N9 = N14 - tenantTotal - ltWEG - ltAC_fee - tcWEG - (UR['台中房東']?.acFee||0);
+  const displayP = Math.round(exactP*10)/10;
+
+  const summary=document.getElementById('u-n-summary');
+  if(summary){
+    // 仿Excel格式輸出，就是給房客看的那一欄
+    const lines=[];
+    ROOMS.forEach(r=>{
+      const v=UR[r]?.total||0;
+      lines.push({label:RL[r], val:v, color: v>0?'var(--primary)':'var(--muted)'});
+    });
+    if(N9>0) lines.push({label:'房東贊助房客零頭', val:N9, color:'var(--success)', note:'（房東補貼尾差，帳目完整）'});
+    if(ltWEG>0) lines.push({label:'龍潭房東本期水電瓦斯', val:ltWEG, color:'var(--info)'});
+    if(ltAC_fee>0) lines.push({label:'龍潭房東本期冷氣', val:ltAC_fee, color:'var(--info)'});
+    if(tcWEG>0) lines.push({label:'台中房東本期水電瓦斯', val:tcWEG, color:'var(--info)'});
+    const tcAC=UR['台中房東']?.acFee||0;
+    if(tcAC>0) lines.push({label:'台中房東本期冷氣', val:tcAC, color:'var(--info)'});
+
+    summary.innerHTML=`
+    <div style="background:#fffdf0;border:2px solid var(--gold);border-radius:1rem;padding:1rem 1.1rem;margin-top:.5rem;">
+      <div style="font-family:'Noto Serif TC',serif;font-weight:900;font-size:.95rem;color:var(--primary);text-align:center;margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:2px solid var(--border2);">
+        📋 應收總計（本期2個月）
+      </div>
+      ${lines.map(l=>`
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:.28rem .5rem;border-bottom:1px solid var(--border2);">
+        <span style="font-size:.88rem;color:var(--muted);">　${l.label}${l.note?`<span style="font-size:.72rem;color:var(--success);"> ${l.note}</span>`:''}</span>
+        <strong style="font-size:.92rem;color:${l.color};">$${l.val.toLocaleString()}</strong>
+      </div>`).join('')}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem .5rem .25rem;margin-top:.3rem;border-top:2px solid var(--border);">
+        <span style="font-weight:900;font-size:.9rem;color:var(--primary);">以上本期水電瓦斯共</span>
+        <strong style="font-size:1.05rem;color:var(--danger);">$${N14.toLocaleString()}</strong>
+      </div>
+      <div style="text-align:center;font-size:.82rem;color:var(--muted);margin-top:.35rem;padding:.3rem;background:var(--bg2);border-radius:.5rem;">
+        本期平均每度電約 ${displayP.toFixed(2)} 元
+      </div>
+      <div style="margin-top:.75rem;display:flex;gap:.5rem;">
+        <button class="btn ba sm" onclick="copyUtilSummary()" style="flex:1;">📋 複製帳單文字（傳給房客）</button>
+      </div>
+    </div>`;
+
+    // 儲存給複製用
+    window._N_summary={lines, N14, displayP, ltAC_kwh, ltWEG, ltAC_fee, tcWEG, N9};
+  }
+
   document.getElementById('u-result-card').classList.remove('hidden');
+};
+
+// 複製帳單文字給房客
+window.copyUtilSummary = function(){
+  const s=window._N_summary; if(!s)return;
+  let txt='應收總計（本期2個月）\n';
+  s.lines.forEach(l=>{ txt+=`　${l.label}　$${l.val.toLocaleString()}\n`; });
+  txt+=`以上本期水電瓦斯共　$${s.N14.toLocaleString()}\n`;
+  txt+=`本期平均每度電約${s.displayP.toFixed(2)}元`;
+  navigator.clipboard.writeText(txt).then(()=>toast('✅ 帳單文字已複製！可直接貼給房客'))
+    .catch(()=>{
+      const ta=document.createElement('textarea');
+      ta.value=txt; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      toast('✅ 帳單文字已複製！');
+    });
 };
 
 window.saveUtilBill = async function(){
