@@ -173,6 +173,18 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 .tenant-bill-header .next-due{font-size:.82rem;color:rgba(255,230,180,.7);margin-top:.3rem;}
 @media(max-width:600px){.form-row.c3{grid-template-columns:1fr 1fr;}.urow{grid-template-columns:60px 1fr 1fr;}.room-grid{grid-template-columns:1fr 1fr;}}
 @media print{body{background:white;}header,.tab-nav,.no-print{display:none!important;}.page{display:block!important;padding:0;}.card{box-shadow:none;border:1px solid #ccc;}}
+
+/* ── 房東專屬下拉選單 ── */
+.dropdown{position:relative;display:inline-block;}
+.dropdown-btn{flex:1;min-width:80px;padding:.55rem .5rem;border:none;background:transparent;color:rgba(255,230,180,.5);font-family:'Noto Sans TC',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:.25rem;}
+.dropdown-btn.active,.dropdown-btn:hover{color:var(--gold);}
+.dropdown-btn.open{color:var(--gold);border-bottom-color:var(--gold);}
+.dropdown-menu{display:none;position:absolute;top:100%;left:0;min-width:140px;background:#2a1204;border:1.5px solid rgba(200,151,58,.3);border-radius:.75rem;z-index:200;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.dropdown-menu.open{display:block;}
+.dropdown-menu button{display:block;width:100%;padding:.6rem 1rem;border:none;background:transparent;color:rgba(255,230,180,.7);font-family:'Noto Sans TC',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;text-align:left;transition:background .15s;border-bottom:1px solid rgba(255,255,255,.06);}
+.dropdown-menu button:last-child{border-bottom:none;}
+.dropdown-menu button:hover{background:rgba(200,151,58,.2);color:var(--gold);}
+.dropdown-menu button.active{color:var(--gold);background:rgba(200,151,58,.12);}
 </style>
 </head>
 <body>
@@ -259,26 +271,34 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v2.1 · 03/26</span>
+    <span class="version-tag">v2.2 · 03/29</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
-  <!-- 房東看到：所有頁籤 -->
-  <button class="active landlord-only" onclick="ST('tenants')">🏠 房客管理</button>
-  <button class="landlord-only" onclick="ST('utility')">💡 水電帳單</button>
-  <button class="landlord-only" onclick="ST('rent')">💰 收租紀錄</button>
-  <button class="landlord-only" onclick="ST('checkout')">📋 退租點交</button>
-  <!-- 房客看到：只有自己的帳單 -->
+  <!-- 房東專屬下拉選單 -->
+  <div class="dropdown landlord-only" id="landlord-dropdown">
+    <button class="dropdown-btn" id="landlord-dropdown-btn" onclick="toggleLandlordMenu()">
+      🔑 房東專區 ▾
+    </button>
+    <div class="dropdown-menu" id="landlord-dropdown-menu">
+      <button onclick="ST('tenants');closeLandlordMenu()">🏠 房客管理</button>
+      <button onclick="ST('utility');closeLandlordMenu()">💡 水電帳單</button>
+      <button onclick="ST('rent');closeLandlordMenu()">💰 收租紀錄</button>
+      <button onclick="ST('checkout');closeLandlordMenu()">📋 退租點交</button>
+      <button onclick="ST('former');closeLandlordMenu()">📁 舊房客存檔</button>
+      <button onclick="ST('photos');closeLandlordMenu()">🖼️ 照片存檔</button>
+      <button onclick="ST('monitor-cam');closeLandlordMenu()">📷 智慧監控</button>
+      <button onclick="ST('backup');closeLandlordMenu()">💾 備份設定</button>
+    </div>
+  </div>
+  <!-- 房客看到 -->
   <button class="tenant-only hidden" onclick="ST('my-bill')">💡 我的帳單</button>
   <button class="tenant-only hidden" onclick="ST('my-info')">🏠 我的房間</button>
   <!-- 共用 -->
   <button onclick="ST('announce')">📢 公告</button>
   <button onclick="ST('repair')">🔧 報修</button>
   <button onclick="ST('adtext')">📋 文案</button>
-  <button class="landlord-only" onclick="ST('former')">📁 舊房客</button>
-  <button class="landlord-only" onclick="ST('photos')">🖼️ 照片存檔</button>
-  <button class="landlord-only" onclick="ST('monitor-cam')">📷 智慧監控</button>
-  <button class="landlord-only" onclick="ST('backup')">💾 備份</button>
+  <button onclick="ST('new-guest')">🔍 看房問卷</button>
 </nav>
 
 <!-- ══ 入居前意願與背景調查 ══ -->
@@ -355,10 +375,10 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 <div id="page-rent" class="page">
   <div class="card mt">
     <div class="card-title">💰 本期收租登記</div>
-    <div class="form-row c2">
+    <div class="form-row">
       <div><label>年月期別（如 202503）</label><input type="text" id="r-period" placeholder="202503"></div>
-      <div><label>備註</label><input type="text" id="r-note" placeholder="備注"></div>
     </div>
+    <div class="txt-m mb">💡 每間房間各自有備注欄，可記錄特殊情況（如：因故暫不收租、分期補繳等）</div>
     <div id="rent-rows"></div>
     <button class="btn bs blk mt" onclick="saveRent()">💾 儲存收租紀錄</button>
   </div>
@@ -634,13 +654,14 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="card-title">📷 TAPO 智慧監控系統</div>
     <div class="alert-box a-warn">⚙️ 此功能需要 TP-Link TAPO Cloud API 金鑰設定後才能啟用。</div>
 
-    <!-- 攝影機①：5樓洗衣機 -->
+    <!-- 攝影機 A：5樓洗衣機 -->
     <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:1rem;padding:1rem;margin-bottom:.75rem;">
       <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;">
-        <span style="font-size:1.3rem;">🫧</span>
+        <span style="background:#3a1f04;color:var(--gold);font-size:.72rem;font-weight:900;border-radius:.4rem;padding:.15rem .45rem;flex-shrink:0;">A</span>
+        <span style="font-size:1.2rem;">🫧</span>
         <div>
           <div style="font-weight:900;font-size:.92rem;">5樓洗衣機監控</div>
-          <div style="font-size:.72rem;color:var(--muted);">TAPO C320WS · 功能：使用中偵測 + 洗完自動通知房客</div>
+          <div style="font-size:.72rem;color:var(--muted);">TAPO C320WS · 使用中偵測 + 洗完自動通知</div>
         </div>
         <span id="cam1-status" style="margin-left:auto;font-size:.72rem;font-weight:900;background:#f0e8d5;color:var(--muted);border-radius:99px;padding:.15rem .6rem;">未連線</span>
       </div>
@@ -657,18 +678,48 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div class="gap mt" style="margin-top:.6rem;">
         <button class="btn bo sm" onclick="checkWasher()" style="font-size:.75rem;">🔍 立即查詢</button>
         <button class="btn bs sm" onclick="notifyWasherDone()" style="font-size:.75rem;">📧 手動通知：衣服洗好了</button>
+        <button class="btn ba sm" onclick="notifyWasherInUse()" style="font-size:.75rem;">📧 通知：洗衣機使用中</button>
       </div>
     </div>
 
-    <!-- 攝影機②：1樓電子鎖 -->
+    <!-- 攝影機 B：5樓監視器 (TAPO C320WS) -->
     <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:1rem;padding:1rem;margin-bottom:.75rem;">
       <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;">
-        <span style="font-size:1.3rem;">🔒</span>
+        <span style="background:#3a1f04;color:var(--gold);font-size:.72rem;font-weight:900;border-radius:.4rem;padding:.15rem .45rem;flex-shrink:0;">B</span>
+        <span style="font-size:1.2rem;">📷</span>
         <div>
-          <div style="font-weight:900;font-size:.92rem;">1樓大廳電子鎖監控</div>
-          <div style="font-size:.72rem;color:var(--muted);">TAPO C220 · 功能：電池低電量警示音偵測 + 通知房東換電池</div>
+          <div style="font-weight:900;font-size:.92rem;">5樓監視器</div>
+          <div style="font-size:.72rem;color:var(--muted);">TAPO C320WS · 戶外排水孔積水偵測 + 洗衣機輔助通知</div>
         </div>
         <span id="cam2-status" style="margin-left:auto;font-size:.72rem;font-weight:900;background:#f0e8d5;color:var(--muted);border-radius:99px;padding:.15rem .6rem;">未連線</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem;">
+        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
+          <div class="txt-m">目前狀態</div>
+          <div id="cam2-current" style="font-weight:900;font-size:.95rem;color:var(--muted);">— 未連線 —</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
+          <div class="txt-m">最後偵測</div>
+          <div id="cam2-last" style="font-weight:700;font-size:.82rem;color:var(--muted);">—</div>
+        </div>
+      </div>
+      <div class="gap">
+        <button class="btn bo sm" onclick="checkWasher()" style="font-size:.75rem;">🔍 立即查詢</button>
+        <button class="btn bs sm" onclick="notifyWasherInUse()" style="font-size:.75rem;">📧 通知：洗衣機使用中</button>
+        <button class="btn ba sm" onclick="notifyFloodAlert()" style="font-size:.75rem;">🌧️ 通知：地面排水孔積水警告</button>
+      </div>
+    </div>
+
+    <!-- 攝影機 C：1樓大廳電子鎖 (TAPO C220) -->
+    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:1rem;padding:1rem;margin-bottom:.75rem;">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;">
+        <span style="background:#3a1f04;color:var(--gold);font-size:.72rem;font-weight:900;border-radius:.4rem;padding:.15rem .45rem;flex-shrink:0;">C</span>
+        <span style="font-size:1.2rem;">🔒</span>
+        <div>
+          <div style="font-weight:900;font-size:.92rem;">1樓大廳電子鎖監控</div>
+          <div style="font-size:.72rem;color:var(--muted);">TAPO C220 · 電池低電量警示音偵測 + 通知房東換電池</div>
+        </div>
+        <span id="cam3-status" style="margin-left:auto;font-size:.72rem;font-weight:900;background:#f0e8d5;color:var(--muted);border-radius:99px;padding:.15rem .6rem;">未連線</span>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;">
         <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
@@ -686,6 +737,36 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
     </div>
 
+    <!-- 攝影機 D：4樓樓梯間冰箱監視器（有看頭 App）-->
+    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:1rem;padding:1rem;margin-bottom:.75rem;">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;">
+        <span style="background:#3a1f04;color:var(--gold);font-size:.72rem;font-weight:900;border-radius:.4rem;padding:.15rem .45rem;flex-shrink:0;">D</span>
+        <span style="font-size:1.2rem;">📹</span>
+        <div>
+          <div style="font-weight:900;font-size:.92rem;">4樓樓梯間冰箱監視器</div>
+          <div style="font-size:.72rem;color:var(--muted);">有看頭 App · 燈光照亮/轉向功能 · RTSP 串接預留</div>
+        </div>
+        <span id="cam4-status" style="margin-left:auto;font-size:.72rem;font-weight:900;background:#f0e8d5;color:var(--muted);border-radius:99px;padding:.15rem .6rem;">未連線</span>
+      </div>
+      <div class="alert-box a-info" style="font-size:.75rem;margin-bottom:.5rem;">
+        📱 有看頭 App 監控中。若需串接自動化功能，請在下方設定 RTSP 串流位址。<br>
+        裝置資訊：攝像機 ID、MAC 位址、固件版本（請從 App 查詢後填入下方設定）。
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem;">
+        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
+          <div class="txt-m">目前狀態</div>
+          <div id="cam4-current" style="font-weight:900;font-size:.95rem;color:var(--muted);">— 待設定 —</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
+          <div class="txt-m">最後動態</div>
+          <div id="cam4-last" style="font-weight:700;font-size:.82rem;color:var(--muted);">—</div>
+        </div>
+      </div>
+      <div class="gap">
+        <button class="btn bo sm" onclick="toast('⚙️ 有看頭 App 監控，RTSP 串接設定中...')" style="font-size:.75rem;">🔍 查詢狀態</button>
+      </div>
+    </div>
+
     <!-- API 設定區 -->
     <div style="border-top:1.5px solid var(--border2);padding-top:.85rem;margin-top:.25rem;">
       <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.5rem;">⚙️ TAPO Cloud API 設定（需要 TP-Link 帳號）</div>
@@ -694,8 +775,16 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         <div><label>TP-Link 密碼</label><input type="password" id="tapo-pw" placeholder="TP-Link 登入密碼"></div>
       </div>
       <div class="form-row c2">
-        <div><label>洗衣機攝影機 Device ID</label><input type="text" id="tapo-cam1-id" placeholder="從 TAPO App 取得"></div>
-        <div><label>大廳攝影機 Device ID</label><input type="text" id="tapo-cam2-id" placeholder="從 TAPO App 取得"></div>
+        <div><label>攝影機 A（5樓洗衣機 C320WS）Device ID</label><input type="text" id="tapo-cam1-id" placeholder="TAPO App 取得"></div>
+        <div><label>攝影機 B（5樓監視器 C320WS）Device ID</label><input type="text" id="tapo-cam2-id" placeholder="TAPO App 取得"></div>
+      </div>
+      <div class="form-row c2">
+        <div><label>攝影機 C（1樓電子鎖 C220）Device ID</label><input type="text" id="tapo-cam3-id" placeholder="TAPO App 取得"></div>
+        <div><label>攝影機 D（有看頭）MAC 位址</label><input type="text" id="tapo-cam4-id" placeholder="如：AA:BB:CC:DD:EE:FF"></div>
+      </div>
+      <div class="form-row">
+        <div><label>攝影機 D RTSP 串流位址（選填，目前未啟用）</label>
+          <input type="text" id="tapo-cam3-rtsp" placeholder="如：rtsp://帳號:密碼@IP位址:554/stream1"></div>
       </div>
       <div class="alert-box a-info" style="font-size:.75rem;">
         📱 Device ID 取得方式：開啟 TAPO App → 點選攝影機 → 右上角設定 → 設備資訊 → 複製 MAC 位址 (格式如 AA:BB:CC...) 作為 Device ID
@@ -819,7 +908,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div><label>照片說明（存放位置與內容）</label>
         <textarea id="mp2-desc" rows="4" placeholder="例：Google 相簿「嘉義房租/湯富傑」資料夾&#10;- 身分證正面（入住日 2024/01/15）&#10;- 身分證背面（戶籍：嘉義市東區...）&#10;- 勞保證明截圖&#10;- 退租點交照片（2024/07/20）"></textarea>
 
-        <input type="text" id="mp2-url" class="inp w-full" style="margin-top: .5rem;" placeholder="🔗 請貼上 Google 雲端硬碟網址 (選填)"> <!-- ══ 此行才是新增【雲端照片網址】欄位。202603271156版。═ -->
+        <input type="text" id="mp2-url" class="inp" placeholder="🔗 請貼上 Google 雲端硬碟網址 (選填)" style="margin-top: .5rem; width: 100%;"> <!-- ══ 此行才是新增【雲端照片網址】欄位。202603271407版。═ -->
 
       </div>
     </div>
@@ -1057,12 +1146,20 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
 <script type="module">
 // ══ 設定區 ══════════════════════════════════
+// ============================================================
+// 【１．系統設定區】← 房東常改的設定都在這裡，不需往下翻
+// ============================================================
+
+// ── 【１-1】房東帳號（可新增多個，用逗號分隔）──────────────────────
 const LANDLORD_EMAILS = ['shchyu61@gmail.com','jakey20110610@gmail.com']; // 房東 emails
 const LANDLORD_EMAIL = LANDLORD_EMAILS[0]; // 主要帳號（收通知用）
+
+// ── 【１-3】EmailJS 寄信金鑰（更換請到 https://dashboard.emailjs.com）──
 const EJS_SVC  = 'service_knhvcfj';
 const EJS_TPL  = 'template_oqm4kw9';
 const EJS_KEY  = '5dk4HoCBYIS7ypwiw';
 
+// ── 【１-2】房間設定 ────────────────────────────────────────────
 const ROOMS = ['3F前','3F後','4F前','4F後','5F前'];
 const RL    = {'3F前':'3樓前','3F後':'3樓後','4F前':'4樓前','4F後':'4樓後','5F前':'5樓前'};
 const CO_ITEMS = [
@@ -1078,8 +1175,13 @@ const CO_ITEMS = [
 let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
+// ── 【１-4】資料庫初始結構（新增欄位時在此調整）────────────────────
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[] };
 let _ejsOk = false;
+
+// ============================================================
+// 【２１．Firebase 資料存取層】（引用第1章 Firebase 設定）
+// ============================================================
 
 // ══ Firebase helpers ═══════════════════════
 const waitFB = () => new Promise(res => {
@@ -1109,6 +1211,10 @@ if(document.readyState==='loading'){
 }else{ lucide.createIcons(); }
 
 // ══ EmailJS ════════════════════════════════
+// ============================================================
+// 【６．登入與驗證邏輯】（引用第1章 EmailJS / LANDLORD_EMAILS）
+// ============================================================
+
 function initEJS(){ if(_ejsOk)return; try{emailjs.init(EJS_KEY);_ejsOk=true;}catch(e){} }
 
 // ══ 取得 email 輸入 ════════════════════════
@@ -1226,6 +1332,9 @@ const completeLogin = async (email) => {
   if(isLandlord){
     // 房東：顯示全部頁籤，讀取所有資料
     document.querySelectorAll('.landlord-only').forEach(el=>el.style.display='inline-block');
+    // 重設下拉選單按鈕文字
+    const ddBtn=document.getElementById('landlord-dropdown-btn');
+    if(ddBtn)ddBtn.innerHTML='🔑 房東專區 ▾';
     document.querySelectorAll('.tenant-only').forEach(el=>el.style.display='none');
     await loadLandlordData();
     renderTenants(); renderAnnounce();
@@ -1361,7 +1470,19 @@ const saveLandlordData = async () => {
 };
 
 // ══ TABS ═══════════════════════════════════
+// ============================================================
+// 【７．頁面切換與權限控制】（引用第1章 LANDLORD_EMAILS）
+// ============================================================
+
+// 房東專屬頁面清單（房客呼叫 ST 會被擋掉）
+const LANDLORD_PAGES = ['tenants','utility','rent','checkout','former','photos','monitor-cam','backup'];
+
 window.ST = function(n){
+  // ── 權限檢查：房客無法進入房東專屬頁面 ──
+  if(LANDLORD_PAGES.includes(n) && !isLandlord){
+    toast('⚠️ 此頁面僅房東可查看');
+    return;
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+n)?.classList.add('active');
@@ -1374,6 +1495,7 @@ window.ST = function(n){
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
   if(n==='announce')renderAnnounce();
+  updateLandlordMenuActive(n);
   if(n==='repair')renderRepair();
   if(n==='monitor-cam')renderMonitorCam();
   if(n==='former')renderFormer();
@@ -1385,6 +1507,10 @@ window.ST = function(n){
 };
 window.CM = (id)=>document.getElementById(id).classList.remove('open');
 window.OM = (id)=>document.getElementById(id).classList.add('open');
+
+// ============================================================
+// 【８．房客管理功能】
+// ============================================================
 
 // ══ 房東：房客管理 ══════════════════════════
 function renderTenants(){
@@ -1410,7 +1536,10 @@ function renderTenants(){
       <td>${t.expiry||'—'}</td>
       <td>${t.deposit?'NT$'+(+t.deposit).toLocaleString():'—'}</td>
       <td><span class="${occ?'pay-paid':'b-vac'}">${occ?'入住中':'空房'}</span></td>
-      <td><button class="btn bo sm" onclick="openEditTenant('${r}')">編輯</button></td>
+      <td style="white-space:nowrap;">
+        <button class="btn bo sm" onclick="openEditTenant('${r}')" style="margin-bottom:.2rem;">編輯</button>
+        ${occ?`<button class="btn ba sm" onclick="copyTenantToFormer('${r}')" style="font-size:.72rem;">→舊房客</button>`:''}
+      </td>
     </tr>`;
   });
 }
@@ -1457,6 +1586,10 @@ window.autoDeposit = function(){
   const d=document.getElementById('mt-deposit');
   if(d)d.value=v>0?v*2:'';
 };
+
+// ============================================================
+// 【９．水電帳單功能】
+// ============================================================
 
 // ══ 房東：水電帳單 ══════════════════════════
 window.initU = function(){
@@ -1584,21 +1717,42 @@ window.showAllBills = function(){
   });
 };
 
+// ============================================================
+// 【１０．收租紀錄功能】（智能帶入：自動填期別/租金/日期）
+// ============================================================
+
 // ══ 房東：收租紀錄 ══════════════════════════
 window.initRent = function(){
   const rr=document.getElementById('rent-rows'); rr.innerHTML='';
+
+  // ── 智能帶入期別（自動取當月 YYYYMM）──────────────────────────
   if(!document.getElementById('r-period').value){
     const n=new Date();
     document.getElementById('r-period').value=`${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}`;
   }
+
+  // ── 智能帶入今天日期（預設收款日=今天）──────────────────────────
+  const today=new Date().toISOString().split('T')[0];
+
   ROOMS.forEach(r=>{
     const t=DB.tenants[r]||{},occ=t.status==='occupied'&&t.name;
-    rr.innerHTML+=`<div style="display:grid;grid-template-columns:72px 1fr 1fr 1fr 1fr;gap:.5rem;align-items:center;margin-bottom:.5rem;padding:.5rem .75rem;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.8rem;">
-      <div style="font-weight:900;font-size:.85rem;">${RL[r]}</div>
-      <div style="font-size:.78rem;color:var(--accent);font-weight:700;">${occ?t.name:'（空房）'}</div>
-      <div><label style="margin-bottom:.15rem;">應收</label><input type="number" id="ramt-${r}" value="${occ?t.rent||0:0}"></div>
-      <div><label style="margin-bottom:.15rem;">實收</label><input type="number" id="rpay-${r}" value="${occ?t.rent||0:0}"></div>
-      <div><label style="margin-bottom:.15rem;">收款日</label><input type="date" id="rdate-${r}"></div>
+    // 智能帶入：從房客資料自動帶入月租金
+    const autoRent=occ?+t.rent||0:0;
+    rr.innerHTML+=`<div style="background:${occ?'var(--bg2)':'#f5f0e8'};border:1.5px solid ${occ?'var(--border2)':'#e0d8c8'};border-radius:.9rem;padding:.6rem .85rem;margin-bottom:.55rem;opacity:${occ?1:0.6}">
+      <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem;">
+        <div style="font-weight:900;font-size:.88rem;">${RL[r]}</div>
+        <div style="font-size:.8rem;color:var(--accent);font-weight:700;">${occ?t.name:'（空房）'}</div>
+        ${occ?`<span style="font-size:.68rem;background:#e0f4e8;color:var(--success);border-radius:99px;padding:.1rem .5rem;font-weight:700;">月租 NT$${autoRent.toLocaleString()} ✓ 已自動帶入</span>`:''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;align-items:center;margin-bottom:.4rem;">
+        <div><label style="margin-bottom:.15rem;">應收（元）</label><input type="number" id="ramt-${r}" value="${autoRent}" ${!occ?'disabled':''}></div>
+        <div><label style="margin-bottom:.15rem;">實收（元）</label><input type="number" id="rpay-${r}" value="${autoRent}" ${!occ?'disabled':''}></div>
+        <div><label style="margin-bottom:.15rem;">收款日</label><input type="date" id="rdate-${r}" value="${occ?today:''}" ${!occ?'disabled':''}></div>
+      </div>
+      <div>
+        <label style="margin-bottom:.15rem;">本期備注 <span style="font-size:.72rem;color:var(--muted);font-weight:400;">（特殊情況才填，如：因故暫不收、補繳說明）</span></label>
+        <input type="text" id="rnote-${r}" placeholder="${occ?'留空=正常收租':'空房，無需填寫'}" ${!occ?'disabled':''}>
+      </div>
     </div>`;
   });
   renderRentHistory();
@@ -1611,10 +1765,11 @@ window.saveRent = async function(){
     payments[r]={
       amount:+document.getElementById('ramt-'+r)?.value||0,
       paid:+document.getElementById('rpay-'+r)?.value||0,
-      date:document.getElementById('rdate-'+r)?.value||''
+      date:document.getElementById('rdate-'+r)?.value||'',
+      note:document.getElementById('rnote-'+r)?.value.trim()||''
     };
   });
-  const rec={period,note:document.getElementById('r-note').value,payments,savedAt:new Date().toISOString()};
+  const rec={period,payments,savedAt:new Date().toISOString()};
   const idx=DB.rentRecords.findIndex(x=>x.period===period);
   if(idx>=0)DB.rentRecords[idx]=rec; else DB.rentRecords.unshift(rec);
   await saveLandlordData(); renderRentHistory(); toast('收租紀錄已儲存 ✓');
@@ -1637,7 +1792,7 @@ function renderRentHistory(){
           <div style="font-weight:900;">📅 ${rec.period} 收租
             ${isOverdue?'<span style="color:var(--danger);font-size:.72rem;font-weight:900;margin-left:.4rem;">⚠️ 逾期未收齊</span>':''}
           </div>
-          <div class="txt-m">${rec.note||''} · 應收 NT$${due.toLocaleString()} / 實收 NT$${total.toLocaleString()}</div>
+          <div class="txt-m">應收 NT$${due.toLocaleString()} / 實收 NT$${total.toLocaleString()}</div>
         </div>
         <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;">
           <span class="${st}">${total>=due?'已收齊':total>0?'部分':'未收'}</span>
@@ -1733,6 +1888,10 @@ async function checkRentOverdue(){
   }
 }
 
+// ============================================================
+// 【１１．退租點交功能】
+// ============================================================
+
 // ══ 房東：退租點交 ══════════════════════════
 window.initCO = function(){
   const sel=document.getElementById('co-room');
@@ -1806,6 +1965,10 @@ window.saveCO = async function(){
   await saveLandlordData(); toast('退租紀錄已儲存 ✓');
 };
 
+// ============================================================
+// 【１２．房客視圖功能】
+// ============================================================
+
 // ══ 房客：我的帳單 ══════════════════════════
 function renderMyBill(){
   updatePostalDisplay();
@@ -1877,6 +2040,10 @@ function renderMyInfo(){
     leaseEl.innerHTML='<div class="txt-m">租約資訊請洽房東。</div>';
   }
 }
+
+// ============================================================
+// 【１３．公告系統】（含30分鐘後悔期，引用第1章 EmailJS）
+// ============================================================
 
 // ══ 公告 ════════════════════════════════════
 const ANN_DELAY_MS = 30 * 60 * 1000; // 30分鐘後悔期
@@ -2039,6 +2206,10 @@ window.editAnnounce = function(i){
   toast('已載入公告內容，修改後請重新發布');
 };
 
+// ============================================================
+// 【２０．備份與資料管理功能】
+// ============================================================
+
 // ══ 備份 ════════════════════════════════════
 window.renderBK = function(){
   document.getElementById('bk-stats').innerHTML=`
@@ -2103,6 +2274,10 @@ async function checkSession(){
   document.getElementById('security-overlay').style.display='flex';
   setTimeout(()=>lucide.createIcons(),100);
 }
+
+// ============================================================
+// 【１４．報修系統】（引用第1章 EmailJS / LANDLORD_EMAIL）
+// ============================================================
 
 // ══ 報修系統 ════════════════════════════════
 window.submitRepair = async function(){
@@ -2213,6 +2388,11 @@ window.deleteRepair = async function(i){
   await saveLandlordData(); renderRepair(); toast('已刪除');
 };
 
+// ============================================================
+// 【１７．智慧監控功能】（引用第1章 EmailJS / LANDLORD_EMAIL）
+// API 目前為手動模式，待 TAPO Device ID 取得後串接
+// ============================================================
+
 // ══ TAPO 智慧監控（預留 API 串接）════════════
 function renderMonitorCam(){
   const s=DB.tapoSettings||{};
@@ -2220,12 +2400,23 @@ function renderMonitorCam(){
   if(document.getElementById('tapo-pw'))document.getElementById('tapo-pw').value=s.pw||'';
   if(document.getElementById('tapo-cam1-id'))document.getElementById('tapo-cam1-id').value=s.cam1||'';
   if(document.getElementById('tapo-cam2-id'))document.getElementById('tapo-cam2-id').value=s.cam2||'';
+  if(document.getElementById('tapo-cam3-id'))document.getElementById('tapo-cam3-id').value=s.cam3||'';
+  if(document.getElementById('tapo-cam4-id'))document.getElementById('tapo-cam4-id').value=s.cam4||'';
+  if(document.getElementById('tapo-cam3-rtsp'))document.getElementById('tapo-cam3-rtsp').value=s.cam3rtsp||'';
   // 狀態顯示
-  const connected = s.email&&s.cam1&&s.cam2;
-  ['cam1-status','cam2-status'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el){ el.textContent=connected?'設定完成':'未設定'; el.style.background=connected?'#d0f0dc':'#f0e8d5'; el.style.color=connected?'var(--success)':'var(--muted)'; }
-  });
+  const abConnected = s.email&&s.cam1;
+  // A、B：TAPO 連線狀態
+  const cam1el=document.getElementById('cam1-status');
+  if(cam1el){cam1el.textContent=s.cam1?'設定完成':'未設定';cam1el.style.background=s.cam1?'#d0f0dc':'#f0e8d5';cam1el.style.color=s.cam1?'var(--success)':'var(--muted)';}
+  const cam2el=document.getElementById('cam2-status');
+  if(cam2el){cam2el.textContent=s.cam2?'設定完成':'未設定';cam2el.style.background=s.cam2?'#d0f0dc':'#f0e8d5';cam2el.style.color=s.cam2?'var(--success)':'var(--muted)';}
+  // C：電子鎖
+  const cam3el=document.getElementById('cam3-status');
+  if(cam3el){cam3el.textContent=s.cam3?'設定完成':'未設定';cam3el.style.background=s.cam3?'#d0f0dc':'#f0e8d5';cam3el.style.color=s.cam3?'var(--success)':'var(--muted)';}
+  // D：有看頭
+  const cam4el=document.getElementById('cam4-status');
+  const cam4set=!!(s.cam4||s.cam3rtsp);
+  if(cam4el){cam4el.textContent=cam4set?'已設定':'未設定';cam4el.style.background=cam4set?'#d0f0dc':'#f0e8d5';cam4el.style.color=cam4set?'var(--success)':'var(--muted)';}
 }
 window.saveTapoSettings = async function(){
   DB.tapoSettings={
@@ -2233,6 +2424,9 @@ window.saveTapoSettings = async function(){
     pw:document.getElementById('tapo-pw')?.value||'',
     cam1:document.getElementById('tapo-cam1-id')?.value.trim()||'',
     cam2:document.getElementById('tapo-cam2-id')?.value.trim()||'',
+    cam3:document.getElementById('tapo-cam3-id')?.value.trim()||'',
+    cam4:document.getElementById('tapo-cam4-id')?.value.trim()||'',
+    cam3rtsp:document.getElementById('tapo-cam3-rtsp')?.value.trim()||'',
   };
   await saveLandlordData(); renderMonitorCam(); toast('TAPO 設定已儲存 ✓ （API串接開發中）');
 };
@@ -2284,6 +2478,10 @@ function updateRepairBadge(){
 }
 
 
+// ============================================================
+// 【１-5．複製文字工具函數】（通用工具，供各章節引用）
+// ============================================================
+
 // ══ 複製文字工具 ════════════════════════════
 window.copyText = function(elId){
   const el=document.getElementById(elId);
@@ -2297,6 +2495,10 @@ window.copyText = function(elId){
     toast('✅ 已複製！');
   });
 };
+
+// ============================================================
+// 【１５．舊房客存檔功能】
+// ============================================================
 
 // ══ 舊房客 ══════════════════════════════════
 window.openAddFormer = function(){
@@ -2379,6 +2581,10 @@ function renderFormer(){
   });
 }
 
+// ============================================================
+// 【１６．照片備注功能】
+// ============================================================
+
 // ══ 照片備注 ═════════════════════════════════
 window.openAddPhotoNote = function(){
   document.getElementById('mp2-title').textContent='新增照片備注';
@@ -2427,6 +2633,129 @@ function renderPhotos(){
     </div>`;
   });
 }
+
+
+// ============================================================
+// 【１８．導航下拉選單邏輯】
+// ============================================================
+
+// ══ 房東下拉選單 ════════════════════════════
+window.toggleLandlordMenu = function(){
+  const menu=document.getElementById('landlord-dropdown-menu');
+  const btn=document.getElementById('landlord-dropdown-btn');
+  if(!menu)return;
+  menu.classList.toggle('open');
+  btn.classList.toggle('open');
+};
+window.closeLandlordMenu = function(){
+  const menu=document.getElementById('landlord-dropdown-menu');
+  const btn=document.getElementById('landlord-dropdown-btn');
+  if(menu)menu.classList.remove('open');
+  if(btn)btn.classList.remove('open');
+};
+// 點擊頁面其他地方時關閉下拉選單
+document.addEventListener('click',function(e){
+  const dropdown=document.getElementById('landlord-dropdown');
+  if(dropdown && !dropdown.contains(e.target)){
+    closeLandlordMenu();
+  }
+});
+// 更新下拉選單內的 active 狀態
+function updateLandlordMenuActive(pageName){
+  const landlordPages=['tenants','utility','rent','checkout','former','photos','monitor-cam','backup'];
+  if(!landlordPages.includes(pageName))return;
+  const btn=document.getElementById('landlord-dropdown-btn');
+  if(btn){
+    const pageNames={'tenants':'🏠 房客管理','utility':'💡 水電帳單','rent':'💰 收租紀錄',
+      'checkout':'📋 退租點交','former':'📁 舊房客存檔','photos':'🖼️ 照片存檔',
+      'monitor-cam':'📷 智慧監控','backup':'💾 備份設定'};
+    btn.innerHTML='🔑 房東專區：'+pageNames[pageName]+' ▾';
+    btn.classList.add('active');
+  }
+  // 更新選單內 active
+  document.querySelectorAll('#landlord-dropdown-menu button').forEach(b=>{
+    b.classList.remove('active');
+    if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+pageName+"'")){
+      b.classList.add('active');
+    }
+  });
+}
+
+// ══ 現有房客一鍵複製到舊房客 ═══════════════
+window.copyTenantToFormer = async function(r){
+  const t=DB.tenants[r];
+  if(!t||!t.name){toast('此房間無房客資料');return;}
+  if(!confirm(`確定將「${t.name}（${RL[r]}）」的資料複製到舊房客存檔？
+（現有房客資料不會被刪除，您可以之後手動編輯或清空）`))return;
+  if(!DB.formerTenants)DB.formerTenants=[];
+  const f={
+    name:t.name||'',
+    phone:t.phone||'',
+    room:r,
+    id:t.id||'',
+    address:t.address||'',
+    movein:t.movein||'',
+    moveout:'', // 退租日待填
+    contract:t.contract||'',
+    rent:t.rent||0,
+    history:t.history||'',
+    note:'（由現有房客複製 '+new Date().toLocaleDateString('zh-TW')+'，退租日待補填）',
+    savedAt:new Date().toISOString(),
+  };
+  DB.formerTenants.unshift(f);
+  await saveLandlordData();
+  toast('✅ 已複製到舊房客存檔！請到「房東專區 → 舊房客存檔」補填退租日等資料。');
+};
+
+// ══ 洗衣機使用中通知 ══════════════════════
+window.notifyWasherInUse = async function(){
+  const tenants=Object.values(DB.tenants).filter(t=>t.status==='occupied'&&t.tenantEmail);
+  if(!tenants.length){toast('目前無設定 email 的房客');return;}
+  initEJS();
+  const now=new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  let sent=0;
+  for(const t of tenants){
+    try{
+      await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+        to_email:t.tenantEmail,
+        otp:`🫧【洗衣機通知 ${now}】5樓洗衣機目前有人正在使用，請稍後再上樓。如需洗衣服可先準備好，有人完成後會再通知。謝謝！`
+      });
+      sent++;
+    }catch(e){}
+  }
+  toast(`📧 已通知 ${sent} 位房客：洗衣機使用中 ✓`);
+};
+
+// ══ 積水警告通知（攝影機B） ═══════════════
+window.notifyFloodAlert = async function(){
+  const now=new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  const tenants=Object.values(DB.tenants).filter(t=>t.status==='occupied'&&t.tenantEmail);
+  initEJS();
+  let sent=0;
+  // 通知所有房客
+  for(const t of tenants){
+    try{
+      await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+        to_email:t.tenantEmail,
+        otp:`🌧️【積水警告 ${now}】5樓監視器偵測到戶外地面排水孔附近疑似因大雨/颱風造成積水，請注意安全，外出請小心積水路面。`
+      });
+      sent++;
+    }catch(e){}
+  }
+  // 同時通知房東
+  try{
+    await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+      to_email:LANDLORD_EMAIL,
+      otp:`🌧️【積水警告 ${now}】5樓監視器偵測到戶外地面排水孔附近疑似積水，請注意嘉義老家排水狀況。`
+    });
+  }catch(e){}
+  toast(`📧 積水警告已通知房東 + ${sent} 位房客 ✓`);
+};
+
+// ============================================================
+// 【１９．自動化背景任務】（引用第1章 EmailJS / LANDLORD_EMAILS）
+// 登入後自動執行：公告補寄 / 逾期偵測 / 角標更新
+// ============================================================
 
 // ══ 登入後補寄 + 逾期 + 報修角標 ════════════
 async function checkPendingAnnounces(){
