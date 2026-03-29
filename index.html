@@ -343,8 +343,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div><label>💧 水費總金額（元）</label><input type="number" id="u-water" placeholder="0" oninput="calcU()"></div>
       <div><label>🔥 天然氣總金額（元）</label><input type="number" id="u-gas" placeholder="0" oninput="calcU()"></div>
     </div>
-    <div class="form-row c2">
-      <div><label>每度電費（元/度）</label><input type="number" id="u-kwh-price" value="2.3" step="0.01" oninput="calcU()"></div>
+    <div class="form-row c3">
+      <div><label>⚡ 本期用電度數（度）<span style="font-size:.7rem;color:var(--muted);font-weight:400;">（台電帳單上的度數）</span></label>
+        <input type="number" id="u-total-kwh" placeholder="如：320" oninput="calcU()"></div>
+      <div><label>每度電費（元/度）<span style="font-size:.7rem;color:var(--gold);font-weight:400;">（自動 = 電費 ÷ 度數）</span></label>
+        <input type="number" id="u-kwh-price" placeholder="自動計算" step="0.01" readonly
+               style="background:#f0e8d5;color:var(--accent);font-weight:700;cursor:not-allowed;"></div>
       <div><label>備註</label><input type="text" id="u-note" placeholder="備注"></div>
     </div>
   </div>
@@ -1675,7 +1679,18 @@ window.calcU = function(){
   const E=+document.getElementById('u-elec')?.value||0;
   const W=+document.getElementById('u-water')?.value||0;
   const G=+document.getElementById('u-gas')?.value||0;
-  const P=+document.getElementById('u-kwh-price')?.value||2.3;
+  const totalKwh=+document.getElementById('u-total-kwh')?.value||0;
+
+  // ── 自動計算每度電費（電費總金額 ÷ 用電度數）────────────────
+  let P=0;
+  const kwhPriceEl=document.getElementById('u-kwh-price');
+  if(E>0 && totalKwh>0){
+    P=Math.round(E/totalKwh*10)/10; // 四捨五入到小數1位（同 ROUND(D4/D3,1)）
+    if(kwhPriceEl){ kwhPriceEl.value=P; kwhPriceEl.style.color='var(--accent)'; }
+  } else {
+    if(kwhPriceEl){ kwhPriceEl.value=''; kwhPriceEl.placeholder='請先填電費總金額和用電度數'; }
+    P=0;
+  }
   let sumAC=0; const ac={};
   ROOMS.forEach(r=>{
     const prev=+document.getElementById('mp-'+r)?.value||0;
