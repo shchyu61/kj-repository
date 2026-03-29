@@ -80,10 +80,15 @@ header h1 span{color:var(--gold);}
 #btn-logout{display:none;font-size:.76rem;font-weight:900;color:rgba(255,230,180,.6);border:1px solid rgba(255,230,180,.2);background:transparent;border-radius:99px;padding:.2rem .7rem;cursor:pointer;}
 #user-badge{display:none;font-size:.8rem;font-weight:700;color:var(--gold);background:rgba(200,151,58,.15);border:1px solid rgba(200,151,58,.3);border-radius:99px;padding:.2rem .7rem;}
 
-.tab-nav{display:flex;gap:0;overflow-x:auto;background:var(--primary);border-top:1px solid rgba(255,255,255,.08);padding:0 .4rem .5rem;}
-.tab-nav button{flex:1;min-width:72px;padding:.55rem .5rem;border:none;background:transparent;color:rgba(255,230,180,.5);font-family:'Noto Sans TC',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap;}
-.tab-nav button.active{color:var(--gold);border-bottom-color:var(--gold);}
-.tab-nav button:hover{color:#ffe8b8;}
+.tab-nav{display:flex;gap:0;overflow-x:auto;background:var(--primary);border-top:1px solid rgba(255,255,255,.08);padding:.4rem .5rem .5rem;align-items:center;gap:.3rem;}
+/* 共用頁籤按鈕（不套 flex:1，讓寬度自然） */
+.tab-nav>.tab-btn{padding:.5rem .75rem;border:none;background:transparent;color:rgba(255,230,180,.55);font-family:'Noto Sans TC',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap;border-radius:.5rem .5rem 0 0;}
+.tab-nav>.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-nav>.tab-btn:hover{color:#ffe8b8;background:rgba(255,255,255,.05);}
+/* 舊的 .tab-nav button 規則只套用在非 .dropdown-btn 的按鈕 */
+.tab-nav button:not(.dropdown-btn):not(.tab-btn){padding:.5rem .6rem;border:none;background:transparent;color:rgba(255,230,180,.5);font-family:'Noto Sans TC',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab-nav button:not(.dropdown-btn):not(.tab-btn).active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-nav button:not(.dropdown-btn):not(.tab-btn):hover{color:#ffe8b8;}
 /* 房客模式：隱藏房東專用頁籤 */
 .landlord-only{display:none;}
 
@@ -175,7 +180,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 @media print{body{background:white;}header,.tab-nav,.no-print{display:none!important;}.page{display:block!important;padding:0;}.card{box-shadow:none;border:1px solid #ccc;}}
 
 /* ── 房東專屬下拉選單 ── */
-.dropdown{position:relative;display:inline-block;}
+.dropdown{position:relative;display:flex;align-items:center;}
 .dropdown-btn{padding:.55rem .85rem;border:none;background:rgba(200,151,58,.18);color:var(--gold);font-family:'Noto Sans TC',sans-serif;font-size:.95rem;font-weight:900;cursor:pointer;transition:all .2s;border-radius:.6rem;white-space:nowrap;display:flex;align-items:center;gap:.4rem;border:1.5px solid rgba(200,151,58,.35);letter-spacing:.03em;}
 .dropdown-btn:hover{background:rgba(200,151,58,.3);}
 .dropdown-btn.open{background:rgba(200,151,58,.35);color:#fff8e0;}
@@ -1905,7 +1910,7 @@ function renderRentHistory(){
         </div>
         <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;">
           <span class="${st}">${total>=due?'已收齊':total>0?'部分':'未收'}</span>
-          ${total<due?`<button class="btn bs sm" onclick="markRentPaid(${i})" style="font-size:.72rem;padding:.3rem .7rem;">✅ 已繳租</button>`:''}
+          ${total<due?`<button class="btn bs sm" onclick="markRentPaid(${i})" style="font-size:.72rem;padding:.3rem .7rem;">✅ 待繳租後點此處</button>`:''}
           <button class="btn bo sm" style="font-size:.72rem;" onclick="document.getElementById('${detailId}').style.display=document.getElementById('${detailId}').style.display==='none'?'block':'none'">📋 明細</button>
           <button class="btn bo sm" onclick="deleteRent(${i})">刪除</button>
         </div>
