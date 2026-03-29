@@ -80,23 +80,23 @@ header h1 span{color:var(--gold);}
 #btn-logout{display:none;font-size:.76rem;font-weight:900;color:rgba(255,230,180,.6);border:1px solid rgba(255,230,180,.2);background:transparent;border-radius:99px;padding:.2rem .7rem;cursor:pointer;}
 #user-badge{display:none;font-size:.8rem;font-weight:700;color:var(--gold);background:rgba(200,151,58,.15);border:1px solid rgba(200,151,58,.3);border-radius:99px;padding:.2rem .7rem;}
 
-.tab-nav{display:flex;gap:0;overflow-x:auto;background:var(--primary);border-top:1px solid rgba(255,255,255,.08);padding:.4rem .5rem .5rem;align-items:center;gap:.3rem;}
-/* 共用頁籤按鈕（不套 flex:1，讓寬度自然） */
-.tab-nav>.tab-btn{padding:.5rem .75rem;border:none;background:transparent;color:rgba(255,230,180,.55);font-family:'Noto Sans TC',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap;border-radius:.5rem .5rem 0 0;}
+/* ── 頁籤列：移除 overflow 讓下拉選單正常定位 ── */
+.tab-nav{display:flex;gap:.3rem;background:var(--primary);border-top:1px solid rgba(255,255,255,.08);padding:.45rem .6rem .55rem;align-items:center;flex-wrap:nowrap;}
+/* 共用頁籤按鈕 */
+.tab-nav>.tab-btn{padding:.5rem .82rem;border:none;background:transparent;color:rgba(255,230,180,.6);font-family:'Noto Sans TC',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap;border-radius:.5rem .5rem 0 0;}
 .tab-nav>.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
-.tab-nav>.tab-btn:hover{color:#ffe8b8;background:rgba(255,255,255,.05);}
-/* 舊的 .tab-nav button 規則只套用在非 .dropdown-btn 的按鈕 */
-.tab-nav button:not(.dropdown-btn):not(.tab-btn){padding:.5rem .6rem;border:none;background:transparent;color:rgba(255,230,180,.5);font-family:'Noto Sans TC',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab-nav>.tab-btn:hover{color:#ffe8b8;background:rgba(255,255,255,.06);}
+.tab-nav button:not(.dropdown-btn):not(.tab-btn){padding:.5rem .7rem;border:none;background:transparent;color:rgba(255,230,180,.5);font-family:'Noto Sans TC',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap;}
 .tab-nav button:not(.dropdown-btn):not(.tab-btn).active{color:var(--gold);border-bottom-color:var(--gold);}
 .tab-nav button:not(.dropdown-btn):not(.tab-btn):hover{color:#ffe8b8;}
 /* 房客模式：隱藏房東專用頁籤 */
 .landlord-only{display:none;}
 
-.page{display:none;padding:1rem;max-width:860px;margin:0 auto;}
+.page{display:none;padding:1rem;max-width:860px;width:100%;margin:0 auto;box-sizing:border-box;}
 .page.active{display:block;}
 .card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.2rem;box-shadow:var(--shadow);margin-bottom:1rem;}
-.card-title{font-family:'Noto Serif TC',serif;font-size:1.05rem;font-weight:700;color:var(--primary);margin-bottom:.9rem;padding-bottom:.55rem;border-bottom:1.5px solid var(--border2);display:flex;align-items:center;gap:.5rem;}
-label{display:block;font-size:.85rem;font-weight:700;color:var(--muted);margin-bottom:.25rem;}
+.card-title{font-family:'Noto Serif TC',serif;font-size:1.08rem;font-weight:700;color:var(--primary);margin-bottom:.9rem;padding-bottom:.55rem;border-bottom:1.5px solid var(--border2);display:flex;align-items:center;gap:.5rem;}
+label{display:block;font-size:.9rem;font-weight:700;color:var(--muted);margin-bottom:.25rem;}
 input,select,textarea{width:100%;border:1.5px solid var(--border2);background:var(--bg2);border-radius:.65rem;padding:.5rem .75rem;font-size:.95rem;font-family:inherit;color:var(--primary);transition:border-color .15s;outline:none;}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,106,32,.12);}
 input[readonly]{background:#f0e8d5;color:var(--muted);}
@@ -140,37 +140,37 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 .mhdr h3{font-family:'Noto Serif TC',serif;font-weight:700;font-size:1.08rem;}
 .mclose{background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);line-height:1;}
 .mftr{margin-top:1rem;display:flex;gap:.6rem;justify-content:flex-end;}
-.alert-box{padding:.65rem 1rem;border-radius:.7rem;font-size:.9rem;font-weight:700;margin-bottom:.75rem;}
+.alert-box{padding:.7rem 1.1rem;border-radius:.7rem;font-size:.95rem;font-weight:700;margin-bottom:.75rem;}
 .a-info{background:#e8f0fc;color:var(--info);border:1px solid #b0c8f0;}
 .a-warn{background:#fff4d8;color:#8a5a00;border:1px solid #f0d088;}
 .a-ok{background:#e0f4e8;color:var(--success);border:1px solid #a0d8b0;}
 .result-box{background:#fffdf0;border:2px solid var(--gold);border-radius:1rem;padding:1rem 1.2rem;margin-top:1rem;}
-.rrow{display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;border-bottom:1px solid var(--border2);font-size:.92rem;}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;border-bottom:1px solid var(--border2);font-size:.95rem;}
 .rrow:last-child{border-bottom:none;padding-top:.5rem;font-weight:900;font-size:1.05rem;color:var(--danger);}
 .rrow .lbl{color:var(--muted);font-weight:500;}
-.pay-paid{background:#d0f0dc;color:var(--success);font-size:.78rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
-.pay-unpaid{background:#fdecea;color:var(--danger);font-size:.78rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
-.pay-partial{background:#fff4d8;color:#8a5a00;font-size:.78rem;font-weight:900;border-radius:99px;padding:.15rem .55rem;}
+.pay-paid{background:#d0f0dc;color:var(--success);font-size:.8rem;font-weight:900;border-radius:99px;padding:.15rem .6rem;}
+.pay-unpaid{background:#fdecea;color:var(--danger);font-size:.8rem;font-weight:900;border-radius:99px;padding:.15rem .6rem;}
+.pay-partial{background:#fff4d8;color:#8a5a00;font-size:.8rem;font-weight:900;border-radius:99px;padding:.15rem .6rem;}
 .sec-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;}
 .sec-hdr h2{font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:700;}
 .mt{margin-top:.75rem;}
 .mb{margin-bottom:.75rem;}
 .gap{display:flex;gap:.5rem;flex-wrap:wrap;}
 .hidden{display:none!important;}
-.txt-m{color:var(--muted);font-size:.85rem;}
+.txt-m{color:var(--muted);font-size:.9rem;}
 .urow{display:grid;grid-template-columns:72px 1fr 1fr 1fr 1fr;gap:.4rem;align-items:center;margin-bottom:.4rem;}
-.ulbl{font-weight:900;font-size:.9rem;color:var(--primary);}
+.ulbl{font-weight:900;font-size:.92rem;color:var(--primary);}
 .check-row{display:flex;align-items:center;gap:.75rem;padding:.55rem .9rem;border-radius:.7rem;border:1.5px solid var(--border2);margin-bottom:.4rem;background:var(--bg2);}
 .check-row input[type=checkbox]{width:1.1rem;height:1.1rem;accent-color:var(--success);flex-shrink:0;}
-.check-row label{margin:0;font-size:.85rem;font-weight:500;cursor:pointer;flex:1;}
+.check-row label{margin:0;font-size:.9rem;font-weight:500;cursor:pointer;flex:1;}
 .check-row .camt{width:100px;flex-shrink:0;}
 .bill-box{background:#fff;border:2px solid var(--border);border-radius:1rem;padding:1.3rem;margin-top:.75rem;}
 .bill-box h2{font-family:'Noto Serif TC',serif;text-align:center;font-size:1.05rem;margin-bottom:.25rem;}
-.bill-sub{text-align:center;color:var(--muted);font-size:.82rem;margin-bottom:.8rem;}
+.bill-sub{text-align:center;color:var(--muted);font-size:.85rem;margin-bottom:.8rem;}
 .bill-row{display:flex;justify-content:space-between;padding:.25rem 0;font-size:.92rem;}
 .bill-row.tot{font-weight:900;font-size:.95rem;color:var(--danger);border-top:2px solid var(--border);padding-top:.45rem;margin-top:.2rem;}
-.bill-note{font-size:.8rem;color:var(--muted);margin-top:.8rem;line-height:1.7;}
-.hist-item{background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.8rem 1rem;margin-bottom:.5rem;}
+.bill-note{font-size:.85rem;color:var(--muted);margin-top:.8rem;line-height:1.7;}
+.hist-item{background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.9rem 1rem;margin-bottom:.5rem;font-size:.9rem;}
 /* 租戶視圖：個人帳單大字顯示 */
 .tenant-bill-header{text-align:center;padding:1.2rem;background:linear-gradient(135deg,#3a1f04,#6a3010);border-radius:1rem;color:#ffe8b8;margin-bottom:1rem;}
 .tenant-bill-header .room-label{font-size:.8rem;color:rgba(255,230,180,.6);font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
