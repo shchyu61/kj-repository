@@ -378,13 +378,13 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <!-- ── 各房冷氣電表 ── 問題4、5：標題補足 + 本期抄表日期 -->
   <div class="card">
     <div class="card-title">🔌 各房冷氣電表抄錶</div>
-    <div style="display:grid;grid-template-columns:72px 100px 130px 110px 90px 85px 85px;gap:.5rem;align-items:center;margin-bottom:.3rem;font-size:.78rem;font-weight:700;color:var(--muted);padding:0 .1rem;">
+    <div style="display:grid;grid-template-columns:68px minmax(95px,1fr) minmax(120px,1fr) minmax(100px,1fr) minmax(85px,1fr) minmax(85px,1fr) minmax(85px,1fr);gap:.4rem;align-items:start;margin-bottom:.3rem;font-size:.76rem;font-weight:700;color:var(--muted);padding:0 .1rem;line-height:1.3;">
       <div>房間</div>
-      <div>上期電表<br>度數</div>
-      <div>本期抄表<br>日期</div>
-      <div>本期電表<br>度數</div>
-      <div>本期共使用<br>幾度</div>
-      <div>本期共使用<br>電費(元)</div>
+      <div>上期<br>度數</div>
+      <div>本期<br>抄表日期</div>
+      <div>本期<br>度數</div>
+      <div>使用<br>幾度</div>
+      <div>使用<br>電費(元)</div>
       <div></div>
     </div>
     <div id="meter-rows"></div>
@@ -1993,7 +1993,7 @@ window.initU = function(){
     const onDateInput = idx===0
       ? `onchange="syncMeterDate(this.value)"` 
       : ``;
-    mr.innerHTML+=`<div style="display:grid;grid-template-columns:72px 100px 130px 110px 90px 85px 85px;gap:.5rem;align-items:center;margin-bottom:.4rem;">
+    mr.innerHTML+=`<div style="display:grid;grid-template-columns:68px minmax(95px,1fr) minmax(120px,1fr) minmax(100px,1fr) minmax(90px,1fr) minmax(90px,1fr) minmax(90px,1fr);gap:.4rem;align-items:center;margin-bottom:.4rem;">
       <div class="ulbl">${RL[r]}</div>
       <input type="number" id="mp-${r}" placeholder="上期度數" oninput="calcU()">
       <input type="date" id="md-${r}" ${onDateInput} oninput="calcU()" style="font-size:.8rem;">
