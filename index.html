@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v03301718</span>
+    <span class="version-tag">v03302207</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -313,7 +313,8 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <button class="tab-btn" onclick="ST('announce')">📢 公告</button>
   <button class="tab-btn" onclick="ST('repair')">🔧 報修</button>
   <button class="tab-btn" onclick="ST('adtext')">📋 文案</button>
-  <button onclick="ST('new-guest')">🔍 看房問卷</button>
+  <button class="tab-btn" onclick="ST('new-guest')">🔍 看房問卷</button>
+  <button class="tab-btn" onclick="ST('ai-chat')">🤖 AI問答</button>
 </nav>
 
 <!-- ══ 入居前意願與背景調查 ══ -->
@@ -509,7 +510,8 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <!-- N4~N15 說明欄 -->
     <div id="u-n-summary" style="margin-top:.85rem;"></div>
     <div class="gap mt">
-      <button class="btn bs sm" onclick="saveUtilBill()">💾 儲存並推送給各房客</button>
+      <button class="btn bs sm" onclick="saveUtilBill(true)">💾 儲存並推送給各房客</button>
+      <button class="btn bo sm" onclick="saveUtilBill(false)">💾 只儲存（不寄信）</button>
       <button class="btn bp sm" onclick="showAllBills()">📄 產生帳單通知單</button>
     </div>
   </div>
@@ -525,7 +527,10 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
     <div class="txt-m mb">💡 每間房間各自有備注欄，可記錄特殊情況（如：因故暫不收租、分期補繳等）</div>
     <div id="rent-rows"></div>
-    <button class="btn bs blk mt" onclick="saveRent()">💾 儲存收租紀錄</button>
+    <div class="gap mt">
+      <button class="btn bs" style="flex:1;" onclick="saveRent(true)">💾 儲存收租紀錄</button>
+      <button class="btn bo" onclick="saveRent(false)">💾 只儲存（不寄信）</button>
+    </div>
   </div>
   <div class="card">
     <div class="card-title">📋 收租歷史</div>
@@ -1202,6 +1207,32 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   </div>
 </div>
 
+
+<!-- ══ AI 問答（Claude 4.6 Sonnet）══ -->
+<div id="page-ai-chat" class="page">
+  <div class="card mt">
+    <div class="card-title">🤖 AI 問答 · Claude Sonnet 4.6</div>
+    <div class="alert-box a-info" style="font-size:.88rem;">
+      房東如有事無法即時回覆，此 AI 已了解本棟相關資訊，請房客先詢問。<br>
+      如需報修，也可先問 AI 是否有簡易排除方法。
+    </div>
+    <div id="ai-messages" style="min-height:220px;max-height:420px;overflow-y:auto;background:var(--bg2);border:1.5px solid var(--border2);border-radius:.85rem;padding:.85rem;margin-bottom:.75rem;display:flex;flex-direction:column;gap:.65rem;">
+      <div style="background:#f0e8d5;border-radius:.65rem;padding:.65rem .85rem;font-size:.88rem;max-width:85%;align-self:flex-start;">
+        <div style="font-size:.72rem;color:var(--muted);margin-bottom:.2rem;">🤖 Claude AI</div>
+        您好！我是科蓁房租智能AI系統的助理，由 Claude Sonnet 4.6 提供支援。<br>
+        我可以回答關於本棟租屋的問題，例如：水電費計算方式、繳費方式、生活公約、報修程序等。請問有什麼需要幫助的嗎？
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;">
+      <input type="text" id="ai-input" placeholder="輸入問題，按 Enter 或點送出..." style="flex:1;"
+             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIChat();}">
+      <button class="btn ba sm" onclick="sendAIChat()" style="min-width:60px;">送出</button>
+    </div>
+    <div style="font-size:.75rem;color:var(--muted);margin-top:.5rem;text-align:center;">
+      ⚠️ AI 回答僅供參考，重要事項請直接聯繫房東確認。
+    </div>
+  </div>
+</div>
 <!-- ══ 房東：備份 ══ -->
 <div id="page-backup" class="page">
   <div class="card mt">
@@ -1696,6 +1727,7 @@ window.ST = function(n){
   if(n==='my-bill')renderMyBill();
   if(n==='my-info')renderMyInfo();
   if(n==='new-guest'){}
+  if(n==='ai-chat'){}
 };
 window.CM = (id)=>document.getElementById(id).classList.remove('open');
 window.OM = (id)=>document.getElementById(id).classList.add('open');
@@ -1909,7 +1941,40 @@ window.recalcDays = function(){
   // 延遲初始化（等 DOM 就緒）
   setTimeout(()=>window.refreshCalendars&&window.refreshCalendars(),300);
 })();
+// ══ AI問答頁面（Claude Sonnet 4.6）══════════════════════════
+window.sendAIChat = async function(){
+  const input = document.getElementById('ai-input');
+  const msgs = document.getElementById('ai-messages');
+  const userText = input?.value.trim();
+  if(!userText) return;
+  input.value = '';
+  const userBubble = document.createElement('div');
+  userBubble.style.cssText = 'background:var(--accent);color:#fff;border-radius:.65rem;padding:.65rem .85rem;font-size:.88rem;max-width:85%;align-self:flex-end;word-break:break-word;';
+  userBubble.innerHTML = `<div style="font-size:.72rem;color:rgba(255,255,255,.7);margin-bottom:.2rem;">👤 您</div>${userText}`;
+  msgs.appendChild(userBubble);
+  const loading = document.createElement('div');
+  loading.style.cssText = 'background:#f0e8d5;border-radius:.65rem;padding:.65rem .85rem;font-size:.88rem;max-width:85%;align-self:flex-start;';
+  loading.innerHTML = '<div style="font-size:.72rem;color:var(--muted);margin-bottom:.2rem;">🤖 Claude AI</div>思考中...';
+  msgs.appendChild(loading);
+  msgs.scrollTop = msgs.scrollHeight;
+  const sysPrompt = `你是「科蓁房租智能AI系統」助理，使用繁體中文回答。本棟為嘉義市透天厝分層出租，5間房（3樓前/後、4樓前/後、5樓前）。費用規則：郵局轉帳、冷氣依電表計費、水電瓦斯按人均分。垃圾：週一二四五17:03溪興街153巷。洗衣機5樓，洗完會通知。報修請透過報修頁面填寫。如不確定請建議直接聯繫房東。請簡潔回答。`;
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-5-20251022',max_tokens:600,system:sysPrompt,messages:[{role:'user',content:userText}]})
+    });
+    const data = await resp.json();
+    const aiText = data.content?.[0]?.text || '抱歉，目前無法取得回應，請直接聯繫房東。';
+    loading.innerHTML = `<div style="font-size:.72rem;color:var(--muted);margin-bottom:.2rem;">🤖 Claude AI</div>${aiText.replace(/\n/g,'<br>')}`;
+  } catch(e){
+    loading.innerHTML = '<div style="font-size:.72rem;color:var(--muted);margin-bottom:.2rem;">🤖 Claude AI</div>目前無法連線，請直接聯繫房東。';
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+};
+
 window.syncMeterDate = function(val){
+  // 只有完整日期（YYYY-MM-DD，10碼）才同步，避免打到一半就觸發
+  if(!val || val.length < 10) return;
   ROOMS.forEach((r,idx)=>{
     if(idx===0) return; // 第一間已輸入，跳過
     const el=document.getElementById('md-'+r);
@@ -1991,7 +2056,7 @@ window.initU = function(){
     // 問題4、5：補足欄位標題 + 本期抄表日期
     // 問題2：第一行日期輸入後自動套用到其他房間
     const onDateInput = idx===0
-      ? `onchange="syncMeterDate(this.value)"` 
+      ? `onblur="syncMeterDate(this.value)"` 
       : ``;
     mr.innerHTML+=`<div style="display:grid;grid-template-columns:68px minmax(95px,1fr) minmax(120px,1fr) minmax(100px,1fr) minmax(90px,1fr) minmax(90px,1fr) minmax(90px,1fr);gap:.4rem;align-items:center;margin-bottom:.4rem;">
       <div class="ulbl">${RL[r]}</div>
@@ -2108,13 +2173,23 @@ window.calcU = function(){
     const sE2=Math.floor(sharedE*ratio);
     const sW2=Math.floor(W*ratio);
     const sG2=Math.floor(G*ratio);
-    const tot=ac[r].fee+sE2+sW2+sG2;
+    const rawTot=ac[r].fee+sE2+sW2+sG2;
     const t=DB.tenants[r]||{};
+    const hasOcc=pd[r].n>0;
+    const isOwnerRoom = (r==='3F後'); // 3樓後改自住，不收費
+    // 問題1：房客優待無條件捨去到十位數；3樓後自住=0；空房只含冷氣（無均分）
+    let tot;
+    if(isOwnerRoom){
+      tot=0; // N5=0，自住不收費
+    } else if(hasOcc){
+      tot=Math.floor(rawTot/10)*10; // 無條件捨去到十位數
+    } else {
+      tot=rawTot; // 空房（只有冷氣，無均分）顯示原值供房東參考
+    }
     window._UR[r]={acFee:ac[r].fee,sharedElec:sE2,water:sW2,gas:sG2,total:tot,ratio};
     sAC+=ac[r].fee;sE+=sE2;sW+=sW2;sG+=sG2;sT+=tot;
-    const hasOcc=pd[r].n>0;
-    tb.innerHTML+=`<tr style="${!hasOcc?'opacity:.5':''}">
-      <td class="rl">${RL[r]}${!hasOcc?'<span style="font-size:.7rem;color:var(--muted);"> 空房</span>':''}</td>
+    tb.innerHTML+=`<tr style="${(!hasOcc||isOwnerRoom)?'opacity:.55':''}">
+      <td class="rl">${RL[r]}${isOwnerRoom?'<span style="font-size:.7rem;color:var(--accent);"> 自住</span>':!hasOcc?'<span style="font-size:.7rem;color:var(--muted);"> 空房</span>':''}</td>
       <td class="amt">NT$${ac[r].fee.toLocaleString()}</td>
       <td class="amt">${sE2?'NT$'+sE2.toLocaleString():'—'}</td>
       <td class="amt">${sW2?'NT$'+sW2.toLocaleString():'—'}</td>
@@ -2240,7 +2315,7 @@ window.copyUtilSummary = function(){
     });
 };
 
-window.saveUtilBill = async function(){
+window.saveUtilBill = async function(sendEmail=true){
   if(!window._UR){toast('請先完成計算');return;}
   const period=document.getElementById('u-period').value.trim();
   if(!period){toast('請填寫期別');return;}
@@ -2257,7 +2332,7 @@ window.saveUtilBill = async function(){
   };
   const idx=DB.utilBills.findIndex(b=>b.period===period);
   if(idx>=0)DB.utilBills[idx]=bill; else DB.utilBills.unshift(bill);
-  await saveLandlordData(); toast('帳單已儲存並推送 ✓ 期別：'+period);
+  await saveLandlordData(); toast(sendEmail?'帳單已儲存並推送 ✓ 期別：'+period:'帳單已儲存（未通知房客）✓ 期別：'+period);
 };
 
 window.showAllBills = function(){
@@ -2338,7 +2413,7 @@ window.initRent = function(){
   });
   renderRentHistory();
 };
-window.saveRent = async function(){
+window.saveRent = async function(sendEmail=true){
   const period=document.getElementById('r-period').value.trim();
   if(!period){toast('請填寫期別');return;}
   const payments={};
