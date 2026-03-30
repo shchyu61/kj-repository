@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v03302207</span>
+    <span class="version-tag">v03302320</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -303,6 +303,10 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <button onclick="ST('former');closeLandlordMenu()">📁 舊房客存檔</button>
       <button onclick="ST('photos');closeLandlordMenu()">🖼️ 照片存檔</button>
       <button onclick="ST('monitor-cam');closeLandlordMenu()">📷 智慧監控</button>
+      <button onclick="ST('mail-notice');closeLandlordMenu()">📬 信件通知</button>
+      <button onclick="ST('lock-battery');closeLandlordMenu()">🔋 換電池通知</button>
+      <button onclick="ST('mail-notice');closeLandlordMenu()">📬 信件通知</button>
+      <button onclick="ST('lock-battery');closeLandlordMenu()">🔋 電子鎖換電池</button>
       <button onclick="ST('backup');closeLandlordMenu()">💾 備份設定</button>
     </div>
   </div>
@@ -1233,10 +1237,157 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
   </div>
 </div>
+
+<!-- ══ 通知：信件招領 ══ -->
+<div id="page-mail-notice" class="page">
+  <div class="card mt">
+    <div class="card-title">📬 信件通知（掛號／招領／普通信）</div>
+    <div class="alert-box a-info">通知房客一樓信箱有信件或招領單待取。</div>
+    <div class="form-row c2">
+      <div><label>通知房間</label>
+        <select id="mn-room">
+          <option value="">所有房客</option>
+          <option value="3F前">3樓前</option><option value="3F後">3樓後</option>
+          <option value="4F前">4樓前</option><option value="4F後">4樓後</option>
+          <option value="5F前">5樓前</option>
+        </select>
+      </div>
+      <div><label>信件類型</label>
+        <select id="mn-type">
+          <option value="掛號信">掛號信（需簽收）</option>
+          <option value="招領單">招領單（需到郵局領取）</option>
+          <option value="普通信件">普通信件</option>
+          <option value="包裹">包裹/貨物</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div><label>備注（選填）</label>
+        <input type="text" id="mn-note" placeholder="如：已代收，請告知方便時間來取">
+      </div>
+    </div>
+    <div class="gap mt">
+      <button class="btn bs" onclick="sendMailNotice(true)">📧 通知房客</button>
+      <button class="btn bo" onclick="sendMailNotice(false)">💾 只儲存（不寄信）</button>
+    </div>
+    <div class="card" style="margin-top:.75rem;">
+      <div class="card-title">📋 信件通知歷史</div>
+      <div id="mail-history"><div class="txt-m">尚無紀錄</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 通知：電子鎖換電池 ══ -->
+<div id="page-lock-battery" class="page">
+  <div class="card mt">
+    <div class="card-title">🔋 電子鎖換電池通知</div>
+    <div class="alert-box a-warn">
+      房東人在北部，授權房客自行更換。<br>
+      <strong>📍 充電電池+充電器：</strong>面對神明桌<strong>右邊</strong>置物櫃最上方，時鐘下面。<br>
+      <strong>🪛 十字起子：</strong>面對神明桌<strong>左邊</strong>的桌子上（磁性起子，防止小螺絲掉落）。
+    </div>
+    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.85rem 1rem;font-size:.88rem;line-height:1.9;margin-bottom:.75rem;">
+      <div style="font-weight:900;margin-bottom:.4rem;">🔧 更換步驟</div>
+      <div>① 用十字起子開啟電子鎖背蓋（鎖背面螺絲）</div>
+      <div>② 取出舊電池，換入充飽電的充電電池（注意正負極方向）</div>
+      <div>③ 蓋回背蓋，試刷卡或輸入密碼確認正常</div>
+      <div>④ 舊電池放回充電器充電，備用</div>
+      <div style="color:var(--danger);margin-top:.4rem;">⚠️ 更換完畢請回報房東確認，謝謝配合！</div>
+    </div>
+    <div class="form-row">
+      <div><label>備注（選填）</label>
+        <input type="text" id="lb-note" placeholder="如：已更換完成，電量恢復正常">
+      </div>
+    </div>
+    <div class="gap mt">
+      <button class="btn bs" onclick="sendLockBatteryNotice(true)">📧 發送通知給所有房客</button>
+      <button class="btn bo" onclick="sendLockBatteryNotice(false)">💾 只儲存（不寄信）</button>
+    </div>
+    <div class="card" style="margin-top:.75rem;">
+      <div class="card-title">📋 換電池紀錄</div>
+      <div id="battery-history"><div class="txt-m">尚無紀錄</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 信件通知（房東/房客共用）══ -->
+<div id="page-mail-notice" class="page">
+  <div class="card mt">
+    <div class="card-title">📬 信件通知</div>
+    <div class="alert-box a-info" style="font-size:.88rem;">一樓信箱收到信件時，房東可在此記錄並通知房客取件。</div>
+    <div class="form-row c2">
+      <div><label>收件房客</label>
+        <select id="mail-room">
+          <option value="">請選擇</option>
+          <option value="3F前">3樓前</option>
+          <option value="3F後">3樓後</option>
+          <option value="4F前">4樓前</option>
+          <option value="4F後">4樓後</option>
+          <option value="5F前">5樓前</option>
+        </select>
+      </div>
+      <div><label>信件類型</label>
+        <select id="mail-type">
+          <option value="普通信件">📩 普通信件</option>
+          <option value="掛號信">📮 掛號信</option>
+          <option value="招領通知單">📋 招領通知單</option>
+          <option value="包裹">📦 包裹</option>
+          <option value="其他">📄 其他</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div><label>備注（如：寄件人、包裹大小等）</label>
+        <input type="text" id="mail-note" placeholder="如：健保卡、包裹已放一樓..."></div>
+    </div>
+    <div class="gap">
+      <button class="btn bs" onclick="notifyMail(true)">📧 儲存並通知房客</button>
+      <button class="btn bo" onclick="notifyMail(false)">💾 只儲存（不寄信）</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 信件紀錄</div>
+    <div id="mail-history"><div class="txt-m">尚無紀錄</div></div>
+  </div>
+</div>
+
+<!-- ══ 電子鎖換電池通知（房東/房客共用）══ -->
+<div id="page-lock-battery" class="page">
+  <div class="card mt">
+    <div class="card-title">🔋 電子鎖換電池通知</div>
+    <div class="alert-box a-warn" style="font-size:.88rem;">
+      一樓大廳電子鎖電池電量偏低時，授權房客自行更換。換電池材料位置如下：
+    </div>
+    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.9rem 1rem;margin-bottom:.75rem;font-size:.88rem;line-height:2;">
+      <div>🔋 <strong>充電電池 + 充電器</strong>：面對神明桌 <strong style="color:var(--accent);">右邊</strong>置物櫃最上方，時鐘下面</div>
+      <div>🪛 <strong>磁性十字起子</strong>（防掉螺絲）：面對神明桌 <strong style="color:var(--accent);">左邊</strong>的桌子上</div>
+      <div>📋 <strong>換電池步驟</strong>：鬆開電子鎖背蓋螺絲 → 取出舊電池 → 裝入充好電的電池 → 鎖回螺絲</div>
+    </div>
+    <div class="form-row">
+      <div><label>備注（如：已換電池、電量狀況）</label>
+        <input type="text" id="lock-battery-note" placeholder="如：電量偏低，請盡快更換"></div>
+    </div>
+    <div class="gap">
+      <button class="btn bs" onclick="notifyLockBattery(true)">📧 儲存並通知所有人</button>
+      <button class="btn bo" onclick="notifyLockBattery(false)">💾 只儲存（不寄信）</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 換電池紀錄</div>
+    <div id="lock-battery-history"><div class="txt-m">尚無紀錄</div></div>
+  </div>
+</div>
 <!-- ══ 房東：備份 ══ -->
 <div id="page-backup" class="page">
   <div class="card mt">
     <div class="card-title">💾 資料備份與還原</div>
+  </div>
+  <div class="card">
+    <div class="card-title">🤖 AI 知識庫（房東專用）</div>
+    <div class="alert-box a-info" style="font-size:.85rem;">此內容會成為 AI 問答的背景知識，房東可自行增減常見問題排除步驟。留空則使用系統預設。</div>
+    <div><textarea id="ai-knowledge-input" rows="6" placeholder="例：&#10;【熱水器沒熱水】→ 先確認瓦斯開關是否開啟，再確認熱水器電源...&#10;【網路斷線】→ 確認路由器電源，嘗試重啟..."></textarea></div>
+    <button class="btn ba sm mt" onclick="saveAIKnowledge()">💾 儲存 AI 知識庫</button>
+  <div style="display:none">
     <p class="txt-m mb">資料同步儲存於 Firebase 雲端，換裝置無需匯出。本機備份為額外保險。</p>
     <div class="gap">
       <button class="btn bp" onclick="exportData()">⬇ 匯出 JSON 備份</button>
@@ -1351,19 +1502,35 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 <script type="module">
 // ══ 設定區 ══════════════════════════════════
 // ============================================================
-// 【１．系統設定區】← 房東常改的設定都在這裡，不需往下翻
+// 【1. 系統設定區】← 房東常改的設定都在這裡，不需往下翻
 // ============================================================
 
-// ── 【１-1】房東帳號（可新增多個，用逗號分隔）──────────────────────
+// ── 【1-1】房東帳號（可新增多個，用逗號分隔）──────────────────────
 const LANDLORD_EMAILS = ['shchyu61@gmail.com','jakey20110610@gmail.com']; // 房東 emails
 const LANDLORD_EMAIL = LANDLORD_EMAILS[0]; // 主要帳號（收通知用）
 
-// ── 【１-3】EmailJS 寄信金鑰（更換請到 https://dashboard.emailjs.com）──
+// ── 【1-6】AI 問答系統提示（房東可自行新增常見問題排除手冊）──────────
+// 在下方 EXTRA_KNOWLEDGE 加入您想教 AI 的內容，格式自由
+const EXTRA_KNOWLEDGE = `
+【熱水器問題】
+若洗澡沒有熱水：先確認一樓熱水器是否點火（可聽到「噗」聲），若瓦斯閥未開請聯繫房東。
+
+【網路問題】
+若 WiFi 無法連線：先重新開關 WiFi，若仍無效請聯繫房東，說明幾樓哪個房間。
+
+【電子鎖問題】
+若電子鎖無法開門：充電電池和充電器在一樓面對神明桌右邊置物櫃最上方時鐘下面。換電池用的十字起子在神明桌左邊的桌子上（有磁性防掉螺絲）。
+
+【洗衣機問題】
+洗衣機在5樓，限居住房客使用，洗衣時請關上蓋子，洗完請盡快取走衣物。
+`; // ← 在此行之前新增知識，格式不限
+
+// ── 【1-3】EmailJS 寄信金鑰（更換請到 https://dashboard.emailjs.com）──
 const EJS_SVC  = 'service_knhvcfj';
 const EJS_TPL  = 'template_oqm4kw9';
 const EJS_KEY  = '5dk4HoCBYIS7ypwiw';
 
-// ── 【１-2】房間設定 ────────────────────────────────────────────
+// ── 【1-2】房間設定 ────────────────────────────────────────────
 const ROOMS = ['3F前','3F後','4F前','4F後','5F前'];
 const RL    = {'3F前':'3樓前','3F後':'3樓後','4F前':'4樓前','4F後':'4樓後','5F前':'5樓前'};
 const CO_ITEMS = [
@@ -1379,12 +1546,12 @@ const CO_ITEMS = [
 let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
-// ── 【１-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], landlordStay:{} };
+// ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], landlordStay:{}, aiKnowledge:'', mailNotices:[], batteryNotices:[] };
 let _ejsOk = false;
 
 // ============================================================
-// 【２１．Firebase 資料存取層】（引用第1章 Firebase 設定）
+// 【21. Firebase 資料存取層】（引用第1章 Firebase 設定）
 // ============================================================
 
 // ══ Firebase helpers ═══════════════════════
@@ -1416,7 +1583,7 @@ if(document.readyState==='loading'){
 
 // ══ EmailJS ════════════════════════════════
 // ============================================================
-// 【６．登入與驗證邏輯】（引用第1章 EmailJS / LANDLORD_EMAILS）
+// 【6. 登入與驗證邏輯】（引用第1章 EmailJS / LANDLORD_EMAILS）
 // ============================================================
 
 function initEJS(){ if(_ejsOk)return; try{emailjs.init(EJS_KEY);_ejsOk=true;}catch(e){} }
@@ -1676,6 +1843,10 @@ const loadLandlordData = async () => {
       if(d.tapoSettings)DB.tapoSettings=d.tapoSettings;
       if(d.formerTenants)DB.formerTenants=d.formerTenants;
       if(d.photoNotes)DB.photoNotes=d.photoNotes;
+    if(d.landlordStay)DB.landlordStay=d.landlordStay;
+    if(d.aiKnowledge)DB.aiKnowledge=d.aiKnowledge;
+    if(d.mailNotices)DB.mailNotices=d.mailNotices;
+    if(d.batteryNotices)DB.batteryNotices=d.batteryNotices;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -1694,11 +1865,11 @@ const saveLandlordData = async () => {
 
 // ══ TABS ═══════════════════════════════════
 // ============================================================
-// 【７．頁面切換與權限控制】（引用第1章 LANDLORD_EMAILS）
+// 【7. 頁面切換與權限控制】（引用第1章 LANDLORD_EMAILS）
 // ============================================================
 
 // 房東專屬頁面清單（房客呼叫 ST 會被擋掉）
-const LANDLORD_PAGES = ['tenants','utility','rent','checkout','former','photos','monitor-cam','backup'];
+const LANDLORD_PAGES = ['tenants','utility','rent','checkout','former','photos','monitor-cam','backup','mail-notice','lock-battery'];
 
 window.ST = function(n){
   // ── 權限檢查：房客無法進入房東專屬頁面 ──
@@ -1728,12 +1899,16 @@ window.ST = function(n){
   if(n==='my-info')renderMyInfo();
   if(n==='new-guest'){}
   if(n==='ai-chat'){}
+  if(n==='mail-notice')renderMailHistory();
+  if(n==='lock-battery')renderLockBatteryHistory();
+  if(n==='mail-notice')renderMailHistory();
+  if(n==='lock-battery')renderBatteryHistory();
 };
 window.CM = (id)=>document.getElementById(id).classList.remove('open');
 window.OM = (id)=>document.getElementById(id).classList.add('open');
 
 // ============================================================
-// 【８．房客管理功能】
+// 【8. 房客管理功能】
 // ============================================================
 
 // ══ 房東：房客管理 ══════════════════════════
@@ -1825,7 +2000,7 @@ window.autoDeposit = function(){
 };
 
 // ============================================================
-// 【９．水電帳單功能】
+// 【9. 水電帳單功能】
 // ============================================================
 
 // ══ 房東：水電帳單 ══════════════════════════
@@ -1941,7 +2116,11 @@ window.recalcDays = function(){
   // 延遲初始化（等 DOM 就緒）
   setTimeout(()=>window.refreshCalendars&&window.refreshCalendars(),300);
 })();
-// ══ AI問答頁面（Claude Sonnet 4.6）══════════════════════════
+// ============================================================
+// 【２２．AI問答功能】（Claude Sonnet 4.6 API）
+// ============================================================
+
+// ══ AI問答頁面 ══════════════════════════
 window.sendAIChat = async function(){
   const input = document.getElementById('ai-input');
   const msgs = document.getElementById('ai-messages');
@@ -1957,7 +2136,9 @@ window.sendAIChat = async function(){
   loading.innerHTML = '<div style="font-size:.72rem;color:var(--muted);margin-bottom:.2rem;">🤖 Claude AI</div>思考中...';
   msgs.appendChild(loading);
   msgs.scrollTop = msgs.scrollHeight;
-  const sysPrompt = `你是「科蓁房租智能AI系統」助理，使用繁體中文回答。本棟為嘉義市透天厝分層出租，5間房（3樓前/後、4樓前/後、5樓前）。費用規則：郵局轉帳、冷氣依電表計費、水電瓦斯按人均分。垃圾：週一二四五17:03溪興街153巷。洗衣機5樓，洗完會通知。報修請透過報修頁面填寫。如不確定請建議直接聯繫房東。請簡潔回答。`;
+  // sysPrompt 可由房東在【備份設定→AI知識庫】自行編輯
+  const defaultPrompt = `你是「科蓁房租智能AI系統」助理，使用繁體中文回答。本棟為嘉義市透天厝分層出租，5間房（3樓前/後、4樓前/後、5樓前）。費用規則：郵局轉帳、冷氣依電表計費、水電瓦斯按人均分。垃圾：週一二四五17:03溪興街153巷；定點週一二四五14:35興美路環興街口。洗衣機5樓，洗完會通知。報修請透過報修頁面填寫。如不確定請建議直接聯繫房東。請簡潔回答。`;
+  const sysPrompt = DB.aiKnowledge || defaultPrompt;
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -2365,7 +2546,7 @@ window.showAllBills = function(){
 };
 
 // ============================================================
-// 【１０．收租紀錄功能】（智能帶入：自動填期別/租金/日期）
+// 【10. 收租紀錄功能】（智能帶入：自動填期別/租金/日期）
 // ============================================================
 
 // ══ 房東：收租紀錄 ══════════════════════════
@@ -2498,6 +2679,12 @@ window.markRentPaid = async function(i){
 };
 
 // ── 郵局帳號存取 ────────────────────────────
+window.saveAIKnowledge = async function(){
+  const text = document.getElementById('ai-knowledge-input')?.value.trim()||'';
+  DB.aiKnowledge = text;
+  await saveLandlordData();
+  toast('AI 知識庫已儲存 ✓');
+};
 window.savePostalAccount = async function(){
   const name=document.getElementById('postal-name')?.value.trim()||'';
   const acc=document.getElementById('postal-acc')?.value.trim()||'';
@@ -2566,7 +2753,7 @@ async function checkRentOverdue(){
 }
 
 // ============================================================
-// 【１１．退租點交功能】
+// 【11. 退租點交功能】
 // ============================================================
 
 // ══ 房東：退租點交 ══════════════════════════
@@ -2643,7 +2830,7 @@ window.saveCO = async function(){
 };
 
 // ============================================================
-// 【１２．房客視圖功能】
+// 【12. 房客視圖功能】
 // ============================================================
 
 // ══ 房客：我的帳單 ══════════════════════════
@@ -2719,7 +2906,7 @@ function renderMyInfo(){
 }
 
 // ============================================================
-// 【１３．公告系統】（含30分鐘後悔期，引用第1章 EmailJS）
+// 【13. 公告系統】（含30分鐘後悔期，引用第1章 EmailJS）
 // ============================================================
 
 // ══ 公告 ════════════════════════════════════
@@ -2896,8 +3083,195 @@ window.editAnnounce = function(i){
   toast('已載入公告內容，修改後請重新發布');
 };
 
+
 // ============================================================
-// 【２０．備份與資料管理功能】
+// 【22. 信件通知 + 電子鎖換電池通知】
+// ============================================================
+
+window.notifyMail = async function(sendEmail=true){
+  const room = document.getElementById('mail-room')?.value;
+  const type = document.getElementById('mail-type')?.value;
+  const note = document.getElementById('mail-note')?.value.trim();
+  if(!room){toast('請選擇收件房客');return;}
+  const t = DB.tenants[room]||{};
+  const now = new Date().toLocaleString('zh-TW');
+  const record = {room, type, note, time:now, savedAt:new Date().toISOString()};
+  if(!DB.mailRecords) DB.mailRecords=[];
+  DB.mailRecords.unshift(record);
+  await saveLandlordData();
+  if(sendEmail && t.tenantEmail){
+    initEJS();
+    try{
+      await emailjs.send(EJS_SVC, EJS_TPL, {
+        to_email: t.tenantEmail,
+        otp: `📬【信件通知 ${now}】${RL[room]} 收到一封「${type}」${note?'（'+note+'）':''}，請記得至一樓信箱取件。謝謝！`
+      });
+      toast('✅ 已通知 '+RL[room]+' 取件');
+    }catch(e){toast('儲存成功，但寄信失敗：'+e.message);}
+  } else {
+    toast(sendEmail?'儲存成功（該房客未設定email）':'✅ 已儲存（未寄信）');
+  }
+  document.getElementById('mail-note').value='';
+  renderMailHistory();
+};
+
+window.renderMailHistory = function(){
+  const el=document.getElementById('mail-history');
+  if(!el)return;
+  if(!DB.mailRecords||!DB.mailRecords.length){el.innerHTML='<div class="txt-m">尚無紀錄</div>';return;}
+  el.innerHTML=DB.mailRecords.slice(0,20).map((r,i)=>`
+    <div class="hist-item">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-weight:900;">${RL[r.room]||r.room} · ${r.type}</div>
+          <div class="txt-m">${r.note||'—'} · ${r.time}</div>
+        </div>
+        <button class="btn bd sm" onclick="deleteMailRecord(${i})">刪除</button>
+      </div>
+    </div>`).join('');
+};
+
+window.deleteMailRecord = async function(i){
+  if(!confirm('確定刪除？'))return;
+  DB.mailRecords.splice(i,1);
+  await saveLandlordData(); renderMailHistory(); toast('已刪除');
+};
+
+window.notifyLockBattery = async function(sendEmail=true){
+  const note = document.getElementById('lock-battery-note')?.value.trim()||'電量偏低，請盡快更換';
+  const now = new Date().toLocaleString('zh-TW');
+  const record = {note, time:now, savedAt:new Date().toISOString()};
+  if(!DB.lockBatteryRecords) DB.lockBatteryRecords=[];
+  DB.lockBatteryRecords.unshift(record);
+  await saveLandlordData();
+  if(sendEmail){
+    initEJS();
+    const targets = Object.values(DB.tenants).filter(t=>t.status==='occupied'&&t.tenantEmail);
+    let sent=0;
+    for(const t of targets){
+      try{
+        await emailjs.send(EJS_SVC, EJS_TPL, {
+          to_email: t.tenantEmail,
+          otp: `🔋【電子鎖換電池通知 ${now}】一樓大廳電子鎖電池電量偏低，授權房客自行更換。充電電池+充電器在神明桌右邊置物櫃最上方時鐘下面；磁性十字起子在神明桌左邊桌子上。謝謝配合！`
+        });
+        sent++;
+      }catch(e){}
+    }
+    // 也通知房東
+    try{
+      await emailjs.send(EJS_SVC, EJS_TPL, {to_email:LANDLORD_EMAIL,
+        otp:`🔋【電子鎖換電池通知 ${now}】已通知房客更換電子鎖電池。備注：${note}`});
+    }catch(e){}
+    toast(`✅ 已通知房東 + ${sent} 位房客`);
+  } else {
+    toast('✅ 已儲存（未寄信）');
+  }
+  document.getElementById('lock-battery-note').value='';
+  renderLockBatteryHistory();
+};
+
+window.renderLockBatteryHistory = function(){
+  const el=document.getElementById('lock-battery-history');
+  if(!el)return;
+  if(!DB.lockBatteryRecords||!DB.lockBatteryRecords.length){el.innerHTML='<div class="txt-m">尚無紀錄</div>';return;}
+  el.innerHTML=DB.lockBatteryRecords.slice(0,10).map((r,i)=>`
+    <div class="hist-item">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-weight:900;">🔋 電子鎖換電池</div>
+          <div class="txt-m">${r.note||'—'} · ${r.time}</div>
+        </div>
+        <button class="btn bd sm" onclick="deleteLockRecord(${i})">刪除</button>
+      </div>
+    </div>`).join('');
+};
+
+window.deleteLockRecord = async function(i){
+  if(!confirm('確定刪除？'))return;
+  DB.lockBatteryRecords.splice(i,1);
+  await saveLandlordData(); renderLockBatteryHistory(); toast('已刪除');
+};
+
+// ============================================================
+// 【23. 信件通知 + 電子鎖換電池通知功能】
+// ============================================================
+
+window.sendMailNotice = async function(sendEmail=true){
+  const room=document.getElementById('mn-room')?.value||'';
+  const type=document.getElementById('mn-type')?.value||'掛號信';
+  const note=document.getElementById('mn-note')?.value.trim()||'';
+  const now=new Date().toLocaleString('zh-TW');
+  if(!DB.mailNotices)DB.mailNotices=[];
+  DB.mailNotices.unshift({type,room:room||'所有房客',note,sentAt:now,emailed:sendEmail});
+  await saveLandlordData();
+  if(sendEmail){
+    initEJS();
+    const tenants=room
+      ? Object.values(DB.tenants).filter(t=>t.room===room&&t.tenantEmail)
+      : Object.values(DB.tenants).filter(t=>t.tenantEmail&&t.status==='occupied');
+    let sent=0;
+    for(const t of tenants){
+      try{
+        await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+          to_email:t.tenantEmail,
+          otp:`📬【信件通知】您有一件「${type}」在一樓信箱，請盡快取件。${note?'備注：'+note:''}`
+        });
+        sent++;
+      }catch(e){}
+    }
+    toast(`📧 已通知 ${sent} 位房客：${type} ✓`);
+  } else {
+    toast(`💾 已儲存（未寄信）：${type}`);
+  }
+  renderMailHistory();
+};
+
+window.renderMailHistory = function(){
+  const el=document.getElementById('mail-history');
+  if(!el)return;
+  if(!DB.mailNotices||!DB.mailNotices.length){el.innerHTML='<div class="txt-m">尚無紀錄</div>';return;}
+  el.innerHTML=DB.mailNotices.slice(0,10).map(r=>`
+    <div class="hist-item">
+      <div style="font-weight:900;">📬 ${r.type} · ${r.room}</div>
+      <div class="txt-m">${r.sentAt}${r.note?' · '+r.note:''}${r.emailed?' · 已寄信':' · 未寄信'}</div>
+    </div>`).join('');
+};
+
+window.sendLockBatteryNotice = async function(sendEmail=true){
+  const note=document.getElementById('lb-note')?.value.trim()||'';
+  const now=new Date().toLocaleString('zh-TW');
+  if(!DB.batteryNotices)DB.batteryNotices=[];
+  DB.batteryNotices.unshift({note,sentAt:now,emailed:sendEmail});
+  await saveLandlordData();
+  if(sendEmail){
+    initEJS();
+    const msg=`🔋【電子鎖換電池通知】1樓大廳電子鎖電池電量偏低，房東人在北部授權房客自行更換。充電電池和充電器放在面對神明桌右邊置物櫃最上方時鐘下面；磁性十字起子放在面對神明桌左邊的桌子上。更換完畢請回報房東，謝謝！${note?'備注：'+note:''}`;
+    const tenants=Object.values(DB.tenants).filter(t=>t.tenantEmail&&t.status==='occupied');
+    let sent=0;
+    for(const t of tenants){
+      try{ await emailjs.send(EJS_SVC,'template_oqm4kw9',{to_email:t.tenantEmail,otp:msg}); sent++; }catch(e){}
+    }
+    try{ await emailjs.send(EJS_SVC,'template_oqm4kw9',{to_email:LANDLORD_EMAIL,otp:'🔋 換電池通知已發送給房客。'}); }catch(e){}
+    toast(`📧 換電池通知已發送給 ${sent} 位房客 ✓`);
+  } else {
+    toast('💾 已儲存換電池紀錄（未寄信）');
+  }
+  renderBatteryHistory();
+};
+
+window.renderBatteryHistory = function(){
+  const el=document.getElementById('battery-history');
+  if(!el)return;
+  if(!DB.batteryNotices||!DB.batteryNotices.length){el.innerHTML='<div class="txt-m">尚無紀錄</div>';return;}
+  el.innerHTML=DB.batteryNotices.slice(0,10).map(r=>`
+    <div class="hist-item">
+      <div style="font-weight:900;">🔋 換電池通知</div>
+      <div class="txt-m">${r.sentAt}${r.note?' · '+r.note:''}${r.emailed?' · 已寄信':' · 未寄信'}</div>
+    </div>`).join('');
+};
+
+// ============================================================
+// 【20. 備份與資料管理功能】
 // ============================================================
 
 // ══ 備份 ════════════════════════════════════
@@ -2966,7 +3340,7 @@ async function checkSession(){
 }
 
 // ============================================================
-// 【１４．報修系統】（引用第1章 EmailJS / LANDLORD_EMAIL）
+// 【14. 報修系統】（引用第1章 EmailJS / LANDLORD_EMAIL）
 // ============================================================
 
 // ══ 報修系統 ════════════════════════════════
@@ -3079,7 +3453,7 @@ window.deleteRepair = async function(i){
 };
 
 // ============================================================
-// 【１７．智慧監控功能】（引用第1章 EmailJS / LANDLORD_EMAIL）
+// 【17. 智慧監控功能】（引用第1章 EmailJS / LANDLORD_EMAIL）
 // API 目前為手動模式，待 TAPO Device ID 取得後串接
 // ============================================================
 
@@ -3169,7 +3543,7 @@ function updateRepairBadge(){
 
 
 // ============================================================
-// 【１-5．複製文字工具函數】（通用工具，供各章節引用）
+// 【1-5. 複製文字工具函數】（通用工具，供各章節引用）
 // ============================================================
 
 // ══ 複製文字工具 ════════════════════════════
@@ -3187,7 +3561,7 @@ window.copyText = function(elId){
 };
 
 // ============================================================
-// 【１５．舊房客存檔功能】
+// 【15. 舊房客存檔功能】
 // ============================================================
 
 // ══ 舊房客 ══════════════════════════════════
@@ -3272,7 +3646,7 @@ function renderFormer(){
 }
 
 // ============================================================
-// 【１６．照片備注功能】
+// 【16. 照片備注功能】
 // ============================================================
 
 // ══ 照片備注 ═════════════════════════════════
@@ -3326,7 +3700,7 @@ function renderPhotos(){
 
 
 // ============================================================
-// 【１８．導航下拉選單邏輯】
+// 【18. 導航下拉選單邏輯】
 // ============================================================
 
 // ══ 房東下拉選單 ════════════════════════════
@@ -3358,7 +3732,7 @@ function updateLandlordMenuActive(pageName){
   if(btn){
     const pageNames={'tenants':'🏠 房客管理','utility':'💡 水電帳單','rent':'💰 收租紀錄',
       'checkout':'📋 退租點交','former':'📁 舊房客存檔','photos':'🖼️ 照片存檔',
-      'monitor-cam':'📷 智慧監控','backup':'💾 備份設定'};
+      'monitor-cam':'📷 智慧監控','backup':'💾 備份設定','mail-notice':'📬 信件通知','lock-battery':'🔋 換電池通知'};
     btn.innerHTML='🔑 房東專區：'+pageNames[pageName]+' ▾';
     btn.classList.add('active');
   }
@@ -3443,7 +3817,7 @@ window.notifyFloodAlert = async function(){
 };
 
 // ============================================================
-// 【１９．自動化背景任務】（引用第1章 EmailJS / LANDLORD_EMAILS）
+// 【19. 自動化背景任務】（引用第1章 EmailJS / LANDLORD_EMAILS）
 // 登入後自動執行：公告補寄 / 逾期偵測 / 角標更新
 // ============================================================
 
