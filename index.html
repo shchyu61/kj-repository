@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v03311039</span>
+    <span class="version-tag">v03311052</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -764,7 +764,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           📢 發布公告（通知所有房客 Gmail）
         </button>
         <button class="btn bo sm" onclick="saveAnnounce(true)">
-          💾 僅儲存（測試用，不寄 Gmail）
+          💾 僅儲存（不寄 Gmail，房客進網頁可看到）
         </button>
         <button class="btn bo sm" onclick="cancelAnnounce()" style="color:var(--muted);">
           ✕ 取消，回主畫面
@@ -3138,7 +3138,7 @@ window.saveAnnounce = async function(testOnly=false){
     DB.announces.unshift(ann);
     await saveLandlordData(); renderAnnounce();
     document.getElementById('ann-content').value='';
-    toast('💾 公告已儲存（測試模式，不寄 Gmail）✓');
+    toast('💾 公告已儲存（不寄 Gmail，房客進網頁可看到）✓');
   } else {
     // 正式發布：排程 30 分鐘後寄信
     const sendAt=now.getTime()+ANN_DELAY_MS;
