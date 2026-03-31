@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v03310954</span>
+    <span class="version-tag">v03311039</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1389,12 +1389,20 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div id="ai-knowledge-list"><div class="txt-m">尚無紀錄</div></div>
     </div>
   </div>
-  <div style="display:none">
-    <p class="txt-m mb">資料同步儲存於 Firebase 雲端，換裝置無需匯出。本機備份為額外保險。</p>
+  <div class="card">
+    <div class="card-title">💾 資料匯出 / 匯入</div>
+    <div class="alert-box a-info" style="font-size:.88rem;">
+      ⬇ <strong>匯出</strong>：將 Firebase 雲端所有資料下載為 JSON 備份檔（房客名單、水電帳單、AI知識庫、郵局帳號等全部包含）。<br>
+      ⬆ <strong>匯入</strong>：選取之前下載的 JSON 備份檔，還原所有資料到 Firebase 雲端。<br>
+      💡 建議每次大幅更新資料後，執行一次匯出備份。
+    </div>
+    <div id="last-export-info" class="txt-m mb" style="color:var(--accent);"></div>
     <div class="gap">
-      <button class="btn bp" onclick="exportData()">⬇ 匯出 JSON 備份</button>
-      <label class="btn bo" style="cursor:pointer;">⬆ 匯入 JSON 還原<input type="file" accept=".json" class="hidden" onchange="importData(event)"></label>
-      <button class="btn bd sm" onclick="if(confirm('確定清除所有資料？'))clearAll()">🗑️ 清除</button>
+      <button class="btn bp" onclick="exportData()">⬇ 匯出完整備份（JSON）</button>
+      <label class="btn bs" style="cursor:pointer;">⬆ 匯入備份還原<input type="file" accept=".json" class="hidden" onchange="importData(event)"></label>
+    </div>
+    <div style="margin-top:.75rem;border-top:1px solid var(--border2);padding-top:.75rem;">
+      <button class="btn bd sm" onclick="if(confirm('⚠️ 確定清除所有資料？此操作無法復原，建議先匯出備份！'))clearAll()">🗑️ 清除所有資料</button>
     </div>
   </div>
   <div class="card">
@@ -3517,23 +3525,52 @@ window.renderBK = function(){
     <div class="rrow"><span class="lbl">退租紀錄</span><span>${DB.checkouts.length} 筆</span></div>`;
 };
 window.exportData = function(){
-  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  // 匯出時加入備份時間戳記
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v03310939'});
+  const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=`科蓁房租備份_${new Date().toLocaleDateString('zh-TW').replace(/\//g,'')}.json`;
-  a.click();toast('備份已下載 ✓');
+  const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
+  const timeStr = new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}).replace(/:/g,'');
+  a.download=`科蓁房租備份_${dateStr}_${timeStr}.json`;
+  a.click();
+  // 顯示最後匯出時間
+  const info = document.getElementById('last-export-info');
+  if(info) info.textContent = `✅ 最後匯出：${new Date().toLocaleString('zh-TW')}`;
+  toast('✅ 備份已下載！請妥善保存此檔案。');
 };
 window.importData = async function(evt){
   const f=evt.target.files[0];if(!f)return;
+  if(!confirm(`確定匯入「${f.name}」？\n⚠️ 這將覆蓋目前所有雲端資料，建議先匯出備份！`)){evt.target.value='';return;}
   const r=new FileReader();
   r.onload=async e=>{
     try{
       const d=JSON.parse(e.target.result);
+      // 還原所有欄位
       if(d.tenants)DB.tenants=d.tenants;
       if(d.utilBills)DB.utilBills=d.utilBills;
       if(d.rentRecords)DB.rentRecords=d.rentRecords;
       if(d.checkouts)DB.checkouts=d.checkouts;
-      await saveLandlordData();renderTenants();toast('匯入成功 ✓');
-    }catch(e){toast('匯入失敗：'+e.message);}
+      if(d.announces)DB.announces=d.announces;
+      if(d.repairs)DB.repairs=d.repairs;
+      if(d.tapoSettings)DB.tapoSettings=d.tapoSettings;
+      if(d.formerTenants)DB.formerTenants=d.formerTenants;
+      if(d.photoNotes)DB.photoNotes=d.photoNotes;
+      if(d.postalAccount)DB.postalAccount=d.postalAccount;
+      if(d.landlordStay)DB.landlordStay=d.landlordStay;
+      if(d.aiKnowledge)DB.aiKnowledge=d.aiKnowledge;
+      if(d.aiKnowledgeDB)DB.aiKnowledgeDB=d.aiKnowledgeDB;
+      if(d.mailRecords)DB.mailRecords=d.mailRecords;
+      if(d.lockBatteryRecords)DB.lockBatteryRecords=d.lockBatteryRecords;
+      // 儲存回 Firebase
+      await saveLandlordData();
+      // 重新渲染
+      renderTenants();
+      renderBK();
+      updatePostalDisplay();
+      loadPostalInputs();
+      renderAnnounce();
+      toast(`✅ 匯入成功！備份時間：${d._exportedAt||'未知'}`);
+    }catch(e){toast('❌ 匯入失敗：'+e.message);}
     evt.target.value='';
   };r.readAsText(f);
 };
