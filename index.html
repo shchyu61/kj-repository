@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v03310531</span>
+    <span class="version-tag">v03310940</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1549,7 +1549,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], mailNotices:[], batteryNotices:[] };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[] };
 let _ejsOk = false;
 
 // ============================================================
@@ -1845,10 +1845,12 @@ const loadLandlordData = async () => {
       if(d.tapoSettings)DB.tapoSettings=d.tapoSettings;
       if(d.formerTenants)DB.formerTenants=d.formerTenants;
       if(d.photoNotes)DB.photoNotes=d.photoNotes;
-    if(d.landlordStay)DB.landlordStay=d.landlordStay;
-    if(d.aiKnowledge)DB.aiKnowledge=d.aiKnowledge;
-    if(d.mailNotices)DB.mailNotices=d.mailNotices;
-    if(d.batteryNotices)DB.batteryNotices=d.batteryNotices;
+      if(d.postalAccount)DB.postalAccount=d.postalAccount;
+      if(d.landlordStay)DB.landlordStay=d.landlordStay;
+      if(d.aiKnowledge)DB.aiKnowledge=d.aiKnowledge;
+      if(d.aiKnowledgeDB)DB.aiKnowledgeDB=d.aiKnowledgeDB;
+      if(d.mailRecords)DB.mailRecords=d.mailRecords;
+      if(d.lockBatteryRecords)DB.lockBatteryRecords=d.lockBatteryRecords;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -1858,10 +1860,21 @@ const saveLandlordData = async () => {
   if(!isLandlord){ toast('⚠️ 無權限儲存'); return; }
   await initFBAuth();
   await window._setDoc(landlordPath(),{
-    tenants:DB.tenants, utilBills:DB.utilBills,
-    rentRecords:DB.rentRecords, checkouts:DB.checkouts,
-    announces:DB.announces, repairs:DB.repairs||[], tapoSettings:DB.tapoSettings||{},
-    formerTenants:DB.formerTenants||[], photoNotes:DB.photoNotes||[],
+    tenants:DB.tenants,
+    utilBills:DB.utilBills,
+    rentRecords:DB.rentRecords,
+    checkouts:DB.checkouts,
+    announces:DB.announces,
+    repairs:DB.repairs||[],
+    tapoSettings:DB.tapoSettings||{},
+    formerTenants:DB.formerTenants||[],
+    photoNotes:DB.photoNotes||[],
+    postalAccount:DB.postalAccount||{},
+    landlordStay:DB.landlordStay||{},
+    aiKnowledge:DB.aiKnowledge||'',
+    aiKnowledgeDB:DB.aiKnowledgeDB||[],
+    mailRecords:DB.mailRecords||[],
+    lockBatteryRecords:DB.lockBatteryRecords||[],
   });
 };
 
@@ -1886,7 +1899,7 @@ window.ST = function(n){
   document.querySelectorAll('.tab-nav button').forEach(b=>{
     if(b.getAttribute('onclick')===`ST('${n}')`)b.classList.add('active');
   });
-  if(n==='utility'){initU();if(window.refreshCalendars)window.refreshCalendars();}
+  if(n==='utility'){initU(); renderUtilHistory(); if(window.refreshCalendars)window.refreshCalendars();}
   if(n==='rent')initRent();
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
