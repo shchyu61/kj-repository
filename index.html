@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v03310940</span>
+    <span class="version-tag">v03310954</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1767,8 +1767,12 @@ const completeLogin = async (email) => {
     checkRentOverdue();
     updateRepairBadge();
   },1500);
-  // 更新郵局帳號顯示
-  setTimeout(()=>{updatePostalDisplay();loadPostalInputs();},600);
+  // 更新郵局帳號顯示（確保 Firebase 資料已讀取後再更新）
+  setTimeout(()=>{
+    updatePostalDisplay();
+    loadPostalInputs();
+    renderAnnounce(); // 重新渲染公告，確保郵局帳號正確顯示
+  },800);
 };
 
 function findMyRoom(email){
@@ -3035,7 +3039,10 @@ function renderAnnounce(){
     if(a.notified){
       statusHtml='<span style="color:var(--success);margin-left:.5rem;font-weight:900;">✅ 已通知房客</span>';
     } else if(a.testOnly){
-      statusHtml='<span style="color:var(--muted);margin-left:.5rem;">💾 測試儲存（未寄信）</span>';
+      // 只有房東才看到「未寄信」標籤，房客不顯示
+      statusHtml= isLandlord
+        ? '<span style="color:var(--muted);margin-left:.5rem;font-size:.78rem;">💾 已儲存（未寄信）</span>'
+        : '';
     } else if(isPending){
       statusHtml=`<span id="ann-countdown-${a.id}" style="color:#b06a20;margin-left:.5rem;font-weight:900;">⏳ ${mm}:${ss} 後自動寄出</span>`;
     }
