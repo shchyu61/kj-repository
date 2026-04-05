@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v03311310</span>
+    <span class="version-tag">v04051618</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -2527,20 +2527,33 @@ window.saveUtilBill = async function(sendEmail=true){
   if(!window._UR){toast('請先完成計算');return;}
   const period=document.getElementById('u-period').value.trim();
   if(!period){toast('請填寫期別');return;}
+  // 同時儲存各房電表原始數據，方便日後載入編輯
+  const meterData={};
+  ROOMS.forEach(r=>{
+    meterData[r]={
+      prev:+document.getElementById('mp-'+r)?.value||0,
+      curr:+document.getElementById('mc-'+r)?.value||0,
+      date:document.getElementById('md-'+r)?.value||'',
+    };
+  });
   const bill={period,
     dateStart:document.getElementById('u-start').value,
     dateEnd:document.getElementById('u-end').value,
     elecTotal:+document.getElementById('u-elec').value||0,
     waterTotal:+document.getElementById('u-water').value||0,
     gasTotal:+document.getElementById('u-gas').value||0,
-    pricePerKwh:+document.getElementById('u-kwh-price').value||2.3,
+    totalKwh:+document.getElementById('u-total-kwh').value||0,
+    pricePerKwh:+document.getElementById('u-kwh-price').value||0,
     note:document.getElementById('u-note').value||'',
     rooms:JSON.parse(JSON.stringify(window._UR)),
+    meterData,
     savedAt:new Date().toISOString(),
   };
   const idx=DB.utilBills.findIndex(b=>b.period===period);
   if(idx>=0)DB.utilBills[idx]=bill; else DB.utilBills.unshift(bill);
-  await saveLandlordData(); toast(sendEmail?'帳單已儲存並推送 ✓ 期別：'+period:'帳單已儲存（未通知房客）✓ 期別：'+period);
+  await saveLandlordData();
+  renderUtilHistory();
+  toast(sendEmail?'帳單已儲存並推送 ✓ 期別：'+period:'帳單已儲存（未通知房客）✓ 期別：'+period);
 };
 
 window.showAllBills = function(){
@@ -3370,7 +3383,7 @@ window.renderBatteryHistory = function(){
 };
 
 
-// ── 水電帳單歷史顯示（問題2）──────────────────────────────
+// ── 水電帳單歷史：可展開明細、可載入編輯 ──────────────────
 window.renderUtilHistory = function(){
   const el=document.getElementById('util-bill-history');
   if(!el)return;
@@ -3378,21 +3391,94 @@ window.renderUtilHistory = function(){
     el.innerHTML='<div class="txt-m">尚無已儲存的帳單紀錄。</div>';return;
   }
   el.innerHTML=DB.utilBills.map((b,i)=>{
+    // 各房摘要標籤
     const roomSummary=Object.entries(b.rooms||{}).map(([r,ur])=>{
       if(!ur||!ur.total)return '';
       return `<span style="font-size:.8rem;background:var(--bg2);border:1px solid var(--border2);border-radius:.4rem;padding:.1rem .4rem;margin:.1rem;">${RL[r]||r} $${ur.total.toLocaleString()}</span>`;
     }).join('');
+
+    // 各房詳細明細（展開用）
+    const roomDetails=Object.entries(b.rooms||{}).map(([r,ur])=>{
+      if(!ur)return '';
+      return `<tr>
+        <td style="font-weight:700;">${RL[r]||r}</td>
+        <td>$${(ur.acFee||0).toLocaleString()}</td>
+        <td>$${(ur.sharedElec||0).toLocaleString()}</td>
+        <td>$${(ur.water||0).toLocaleString()}</td>
+        <td>$${(ur.gas||0).toLocaleString()}</td>
+        <td style="font-weight:900;color:var(--danger);">$${(ur.total||0).toLocaleString()}</td>
+      </tr>`;
+    }).join('');
+
+    const detailId=`util-detail-${i}`;
     return `<div class="hist-item">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.4rem;">
-        <div>
+        <div style="flex:1;min-width:0;">
           <div style="font-weight:900;">📅 ${b.period} 期水電帳單</div>
-          <div class="txt-m">${b.dateStart||''}～${b.dateEnd||''} · 電費$${b.elecTotal||0}｜水費$${b.waterTotal||0}｜瓦斯$${b.gasTotal||0}</div>
+          <div class="txt-m">${b.dateStart||''}～${b.dateEnd||''} · 電費$${b.elecTotal||0}｜水費$${b.waterTotal||0}｜瓦斯$${b.gasTotal||0}｜度數${b.totalKwh||'—'}度</div>
+          ${b.note?`<div class="txt-m">備注：${b.note}</div>`:''}
           <div style="margin-top:.3rem;flex-wrap:wrap;display:flex;gap:.2rem;">${roomSummary}</div>
         </div>
-        <button class="btn bd sm" onclick="deleteUtilBill(${i})">刪除</button>
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:flex-start;">
+          <button class="btn bo sm" onclick="toggleUtilDetail('${detailId}')">📋 明細</button>
+          <button class="btn ba sm" onclick="loadUtilBillToEdit(${i})">✏️ 載入編輯</button>
+          <button class="btn bd sm" onclick="deleteUtilBill(${i})">🗑️ 刪除</button>
+        </div>
+      </div>
+      <div id="${detailId}" style="display:none;margin-top:.6rem;overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+          <thead><tr style="background:var(--primary);color:#ffe8b8;">
+            <th style="padding:.4rem .6rem;text-align:left;">房間</th>
+            <th style="padding:.4rem .6rem;">冷氣電費</th>
+            <th style="padding:.4rem .6rem;">均分電費</th>
+            <th style="padding:.4rem .6rem;">均分水費</th>
+            <th style="padding:.4rem .6rem;">均分瓦斯</th>
+            <th style="padding:.4rem .6rem;">合計</th>
+          </tr></thead>
+          <tbody>${roomDetails}</tbody>
+        </table>
       </div>
     </div>`;
   }).join('');
+};
+
+window.toggleUtilDetail = function(id){
+  const el=document.getElementById(id);
+  if(el) el.style.display=el.style.display==='none'?'block':'none';
+};
+
+// 將歷史帳單資料載入到計算表單，方便編輯後重新儲存
+window.loadUtilBillToEdit = function(i){
+  const b=DB.utilBills[i];
+  if(!b){toast('找不到帳單資料');return;}
+  if(!confirm(`確定載入「${b.period}」期帳單到計算表單？\n目前表單內容將被覆蓋。`))return;
+  // 填入基本資訊
+  const setVal=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
+  setVal('u-period', b.period);
+  setVal('u-start',  b.dateStart);
+  setVal('u-end',    b.dateEnd);
+  setVal('u-elec',   b.elecTotal);
+  setVal('u-water',  b.waterTotal);
+  setVal('u-gas',    b.gasTotal);
+  setVal('u-total-kwh', b.totalKwh||'');
+  setVal('u-note',   b.note);
+  // 計算起迄天數
+  if(b.dateStart&&b.dateEnd){
+    const diff=Math.round((new Date(b.dateEnd)-new Date(b.dateStart))/86400000)+1;
+    window._utilDays=diff;
+  }
+  // 填入各房間電表度數（若有記錄）
+  if(b.meterData){
+    Object.entries(b.meterData).forEach(([r,m])=>{
+      setVal('mp-'+r, m.prev);
+      setVal('mc-'+r, m.curr);
+      if(m.date) setVal('md-'+r, m.date);
+    });
+  }
+  // 切換到水電帳單頁面上方
+  document.getElementById('page-utility').scrollIntoView({behavior:'smooth'});
+  calcU();
+  toast(`✅ 已載入 ${b.period} 期帳單，可修改後重新儲存。`);
 };
 window.deleteUtilBill = async function(i){
   if(!confirm('確定刪除此期帳單？'))return;
