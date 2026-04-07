@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v04051618</span>
+    <span class="version-tag">v04071052</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1423,6 +1423,40 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
   </div>
   <div class="card"><div class="card-title">📊 資料統計</div><div id="bk-stats"></div></div>
+
+  <!-- 黑名單管理 -->
+  <div class="card">
+    <div class="card-title">🚫 黑名單管理（封鎖前房客）</div>
+    <div class="alert-box a-warn" style="font-size:.85rem;">
+      黑名單帳號嘗試登入時，會顯示「帳號已停用」並記錄在登入紀錄中。<br>
+      ⚠️ 修改後需重新上傳 index.html 才能生效（黑名單寫在程式碼第 1-7 章節）。
+    </div>
+    <div style="font-size:.85rem;color:var(--muted);margin-bottom:.5rem;">目前已封鎖帳號：</div>
+    <div id="blacklist-display" style="margin-bottom:.75rem;"></div>
+    <div class="form-row">
+      <div><label>新增封鎖帳號（email）</label>
+        <div style="display:flex;gap:.4rem;">
+          <input type="email" id="blacklist-input" placeholder="ex-tenant@gmail.com" style="flex:1;">
+          <button class="btn bd sm" onclick="addBlacklistNote()">新增說明</button>
+        </div>
+      </div>
+    </div>
+    <div class="alert-box a-info" style="font-size:.82rem;margin-top:.5rem;">
+      📋 實際封鎖需在程式碼 <strong>【1-7】黑名單</strong> 區塊手動加入 email，此處僅顯示目前已封鎖的清單。
+    </div>
+  </div>
+
+  <!-- 登入紀錄 -->
+  <div class="card">
+    <div class="card-title">🔐 登入紀錄（最近200筆）</div>
+    <div style="display:flex;gap:.5rem;margin-bottom:.6rem;flex-wrap:wrap;">
+      <button class="btn bo sm" onclick="renderLoginLog('all')">全部</button>
+      <button class="btn bs sm" onclick="renderLoginLog('success')">✅ 成功</button>
+      <button class="btn bd sm" onclick="renderLoginLog('fail')">❌ 失敗/封鎖</button>
+      <button class="btn bo sm" onclick="clearLoginLog()">🗑️ 清除紀錄</button>
+    </div>
+    <div id="login-log-list"><div class="txt-m">讀取中...</div></div>
+  </div>
 </div>
 
 <!-- MODAL: tenant -->
@@ -1519,6 +1553,13 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 const LANDLORD_EMAILS = ['shchyu61@gmail.com','jakey20110610@gmail.com']; // 房東 emails
 const LANDLORD_EMAIL = LANDLORD_EMAILS[0]; // 主要帳號（收通知用）
 
+// ── 【1-7】黑名單（已封鎖帳號，搬離或有糾紛的前房客）────────────────
+// 格式：['email1@gmail.com', 'email2@yahoo.com.tw']
+// 黑名單帳號嘗試登入時，顯示「帳號已停用」並記錄在登入紀錄中
+const BLACKLIST_EMAILS = [
+  // 'ex-tenant@gmail.com',  // 範例：搬離房客，2026/04/07封鎖
+];  // ← 在此行之前新增封鎖帳號
+
 // ── 【1-6】AI 問答系統提示（房東可自行新增常見問題排除手冊）──────────
 // 在下方 EXTRA_KNOWLEDGE 加入您想教 AI 的內容，格式自由
 const EXTRA_KNOWLEDGE = `
@@ -1557,7 +1598,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[] };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[] };
 let _ejsOk = false;
 
 // ============================================================
@@ -1598,6 +1639,21 @@ if(document.readyState==='loading'){
 
 function initEJS(){ if(_ejsOk)return; try{emailjs.init(EJS_KEY);_ejsOk=true;}catch(e){} }
 
+// ══ 登入紀錄寫入 Firebase ════════════════════════════
+async function writeLoginLog(email, result, note=''){
+  await initFBAuth();
+  const now = new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei'});
+  const record = {email, result, note, time:now, savedAt:new Date().toISOString()};
+  if(!DB.loginLog) DB.loginLog=[];
+  DB.loginLog.unshift(record);
+  if(DB.loginLog.length>200) DB.loginLog=DB.loginLog.slice(0,200); // 最多保留200筆
+  // loginLog 儲存到 Firebase（用獨立路徑避免影響主資料）
+  try{
+    await window._setDoc(window._doc(window._db,'artifacts',window._APP_ID,'loginLog','data'),
+      {log:DB.loginLog},{merge:false});
+  }catch(e){}
+}
+
 // ══ 取得 email 輸入 ════════════════════════
 function getEmailInput(){
   const v=(document.getElementById('auth-email')?.value||'').trim().toLowerCase();
@@ -1620,6 +1676,12 @@ window.verifyDailyKey = async function(){
   const email=getEmailInput();
   if(!email.includes('@')){ showAuthErr('請先輸入帳號'); return; }
   const input=(document.getElementById('access-key-input')?.value||'').trim();
+  // ── 黑名單檢查 ──
+  if(BLACKLIST_EMAILS.map(e=>e.toLowerCase()).includes(email.toLowerCase())){
+    showAuthErr('此帳號已停用，請聯繫房東。');
+    await writeLoginLog(email,'❌ 封鎖（黑名單）','嘗試使用每日密碼登入');
+    return;
+  }
   // 首次登入必須先做OTP驗證
   await initFBAuth();
   const snap = await window._getDoc(settingsPath(email));
@@ -1628,9 +1690,12 @@ window.verifyDailyKey = async function(){
   const daily=getDailyKey(email);
   const customPw=snap.data().customPw||'';
   const ok=(customPw&&input===atob(customPw))||(input.toLowerCase()===daily);
-  if(ok){ await completeLogin(email); }
-  else{
+  if(ok){
+    await writeLoginLog(email,'✅ 成功','每日密碼');
+    await completeLogin(email);
+  } else {
     showAuthErr('密碼錯誤，請重試。');
+    await writeLoginLog(email,'❌ 失敗','每日密碼錯誤');
     const card=document.getElementById('auth-card');
     card.classList.add('shake'); setTimeout(()=>card.classList.remove('shake'),500);
   }
@@ -1642,6 +1707,12 @@ let _otp='',_otpExp=0,_otpMail='',_otpTmr=null,_otpFail=0,_otpLast=0;
 window.sendOTP = async function(){
   const email=getEmailInput();
   if(!email.includes('@')){ showAuthErr('請先輸入帳號'); return; }
+  // ── 黑名單檢查 ──
+  if(BLACKLIST_EMAILS.map(e=>e.toLowerCase()).includes(email.toLowerCase())){
+    showAuthErr('此帳號已停用，請聯繫房東。');
+    await writeLoginLog(email,'❌ 封鎖（黑名單）','嘗試使用OTP登入');
+    return;
+  }
   const now=Date.now();
   const key='otp_h_'+safeId(email);
   const stored=JSON.parse(sessionStorage.getItem(key)||'{"c":0,"h":-1}');
@@ -1669,10 +1740,16 @@ window.verifyOTP = async function(){
   const input=(document.getElementById('otp-input')?.value||'').trim();
   if(Date.now()>_otpExp){ showAuthErr('密碼已過期，請重新發送'); return; }
   if(_otpFail>=5){ showAuthErr('錯誤次數過多，請重新取得'); return; }
-  if(input!==_otp){ _otpFail++; showAuthErr('驗證碼錯誤（'+_otpFail+'/5）'); return; }
+  if(input!==_otp){
+    _otpFail++;
+    showAuthErr('驗證碼錯誤（'+_otpFail+'/5）');
+    if(_otpFail>=5) await writeLoginLog(_otpMail,'❌ 失敗','OTP錯誤超過5次');
+    return;
+  }
   // OTP成功→標記此email已驗證
   await initFBAuth();
   await window._setDoc(settingsPath(_otpMail),{emailVerified:true},{merge:true});
+  await writeLoginLog(_otpMail,'✅ 成功','OTP驗證');
   await completeLogin(_otpMail);
 };
 
@@ -1863,6 +1940,7 @@ const loadLandlordData = async () => {
       if(d.aiKnowledgeDB)DB.aiKnowledgeDB=d.aiKnowledgeDB;
       if(d.mailRecords)DB.mailRecords=d.mailRecords;
       if(d.lockBatteryRecords)DB.lockBatteryRecords=d.lockBatteryRecords;
+      if(d.loginLog)DB.loginLog=d.loginLog;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -1887,6 +1965,7 @@ const saveLandlordData = async () => {
     aiKnowledgeDB:DB.aiKnowledgeDB||[],
     mailRecords:DB.mailRecords||[],
     lockBatteryRecords:DB.lockBatteryRecords||[],
+    loginLog:DB.loginLog||[],
   });
 };
 
@@ -3383,7 +3462,47 @@ window.renderBatteryHistory = function(){
 };
 
 
-// ── 水電帳單歷史：可展開明細、可載入編輯 ──────────────────
+// ── 登入紀錄顯示 ──────────────────────────────────────────
+window.renderLoginLog = function(filter='all'){
+  const el=document.getElementById('login-log-list');
+  if(!el)return;
+  const log=DB.loginLog||[];
+  if(!log.length){el.innerHTML='<div class="txt-m">尚無登入紀錄</div>';return;}
+  const filtered=log.filter(r=>{
+    if(filter==='success') return r.result&&r.result.startsWith('✅');
+    if(filter==='fail') return r.result&&!r.result.startsWith('✅');
+    return true;
+  });
+  if(!filtered.length){el.innerHTML='<div class="txt-m">此分類無紀錄</div>';return;}
+  el.innerHTML=filtered.slice(0,100).map(r=>{
+    const isOk=r.result&&r.result.startsWith('✅');
+    const isBlock=r.result&&r.result.includes('封鎖');
+    const bg=isOk?'#f0fff4':isBlock?'#fff0f0':'#fff8f0';
+    const border=isOk?'#9be9b0':isBlock?'#ffcccc':'#ffdcb0';
+    return `<div style="background:${bg};border:1px solid ${border};border-radius:.6rem;padding:.45rem .75rem;margin-bottom:.3rem;font-size:.85rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.3rem;">
+        <div>
+          <span style="font-weight:900;">${r.result||'—'}</span>
+          <span style="color:var(--muted);margin-left:.5rem;font-size:.8rem;">${r.note||''}</span>
+        </div>
+        <div style="font-size:.78rem;color:var(--muted);">${r.time||''}</div>
+      </div>
+      <div style="color:#555;margin-top:.15rem;">📧 ${r.email||'—'}</div>
+    </div>`;
+  }).join('');
+};
+window.clearLoginLog = async function(){
+  if(!confirm('確定清除所有登入紀錄？'))return;
+  DB.loginLog=[];
+  await saveLandlordData();
+  renderLoginLog('all');
+  toast('已清除登入紀錄');
+};
+window.addBlacklistNote = function(){
+  const val=document.getElementById('blacklist-input')?.value.trim();
+  if(!val){toast('請輸入 email');return;}
+  toast(`📋 請到程式碼第【1-7】章節手動加入：'${val}'`);
+};
 window.renderUtilHistory = function(){
   const el=document.getElementById('util-bill-history');
   if(!el)return;
@@ -3604,6 +3723,20 @@ window.renderBK = function(){
   const aiEl = document.getElementById('ai-knowledge-input');
   if(aiEl && DB.aiKnowledge) aiEl.value = DB.aiKnowledge;
   renderAIKnowledgeList();
+  // 黑名單顯示
+  const blEl = document.getElementById('blacklist-display');
+  if(blEl){
+    if(!BLACKLIST_EMAILS||!BLACKLIST_EMAILS.length){
+      blEl.innerHTML='<span class="txt-m">（目前無封鎖帳號）</span>';
+    } else {
+      blEl.innerHTML=BLACKLIST_EMAILS.map(e=>`
+        <div style="display:inline-flex;align-items:center;gap:.4rem;background:#fff0f0;border:1px solid #ffcccc;border-radius:.5rem;padding:.25rem .7rem;margin:.2rem;font-size:.85rem;">
+          🚫 ${e}
+        </div>`).join('');
+    }
+  }
+  // 登入紀錄
+  renderLoginLog('all');
   document.getElementById('bk-stats').innerHTML=`
     <div class="rrow"><span class="lbl">入住中</span><span>${Object.values(DB.tenants).filter(t=>t.status==='occupied').length} / ${ROOMS.length} 間</span></div>
     <div class="rrow"><span class="lbl">水電帳單</span><span>${DB.utilBills.length} 期</span></div>
