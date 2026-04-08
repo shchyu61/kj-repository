@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v04082212</span>
+    <span class="version-tag">v04082229</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1810,8 +1810,8 @@ const completeLogin = async (email, method=null) => {
   currentEmail = email;
   isLandlord   = LANDLORD_EMAILS.includes(email);
   localStorage.setItem('kj_rental_email', email);
-  // 只有手動登入才寫記錄（method有值才是手動登入）
-  if(method) await writeLoginLog(email,'✅ 成功',method);
+  // 自動登入記錄為「自動登入」，手動登入記錄實際方式
+  await writeLoginLog(email,'✅ 成功', method||'自動登入（沿用上次）');
 
   document.getElementById('security-overlay').style.display='none';
   document.getElementById('btn-logout').style.display='block';
