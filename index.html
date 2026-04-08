@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v04090030</span>
+    <span class="version-tag">v04090052</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -3619,6 +3619,12 @@ function _renderLoginLogUI(filter, log){
 window.clearLoginLog = async function(){
   if(!confirm('確定清除所有登入紀錄？'))return;
   DB.loginLog=[];
+  // 同時清除獨立路徑的登入紀錄（與 writeLoginLog 同一路徑）
+  try{
+    await initFBAuth();
+    const logPath = window._doc(window._db,'artifacts',window._APP_ID,'loginLog','data');
+    await window._setDoc(logPath, {log:[]}, {merge:false});
+  }catch(e){}
   await saveLandlordData();
   renderLoginLog('all');
   toast('已清除登入紀錄');
