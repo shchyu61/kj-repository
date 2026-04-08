@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v04090001</span>
+    <span class="version-tag">v04090021</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -310,7 +310,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <button class="tab-btn tenant-only hidden" onclick="ST('my-bill')">💡 我的帳單</button>
   <button class="tab-btn tenant-only hidden" onclick="ST('my-info')">🏠 我的房間</button>
   <!-- 共用 -->
-  <button class="tab-btn" onclick="ST('announce');setTimeout(()=>document.getElementById('benefit-section')?.scrollIntoView({behavior:'smooth'}),300)">🎁 房客福利</button>
+  <button class="tab-btn" onclick="ST('announce');setTimeout(()=>document.getElementById('benefit-section')?.scrollIntoView({behavior:'smooth',block:'start'}),300)">🎁 房客福利</button>
   <button class="tab-btn" onclick="ST('announce')">📢 公告</button>
   <button class="tab-btn" onclick="ST('repair')">🔧 報修</button>
   <button class="tab-btn" onclick="ST('adtext')">📋 文案</button>
@@ -742,7 +742,8 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
 
     <!-- 免費理財工具 -->
-    <div id="benefit-section" style="font-size:.88rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">📈 房客專屬福利</div>
+    <div id="benefit-section" style="position:relative;"><div style="position:absolute;top:-80px;"></div></div>
+    <div style="font-size:.88rem;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">📈 房客專屬福利</div>
     <a href="https://shchyu61.github.io/kj-manager/" target="_blank"
        style="display:flex;align-items:center;gap:.75rem;padding:.85rem 1rem;background:linear-gradient(135deg,#1e3a5f,#1a4a8a);border-radius:.9rem;text-decoration:none;transition:opacity .18s;"
        onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
@@ -754,7 +755,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div style="margin-left:auto;color:rgba(255,220,150,.6);font-size:.8rem;">→</div>
     </a>
     <div style="margin-top:.6rem;background:#fff8e8;border:1.5px solid #f0c040;border-radius:.7rem;padding:.6rem .85rem;font-size:.78rem;color:#7a4800;line-height:1.6;">
-      ⚠️ <strong>重要聲明：</strong>此股票追蹤訊號<strong>僅供參考建議</strong>，房客需有自己的判斷！投資有風險，若造成房客股票虧損，<strong>房東不負責賠償任何損失。</strong>投資前請謹慎評估自身風險承受能力。
+      ⚠️ <strong>重要聲明：</strong>此股票追蹤訊號<strong>僅供參考建議</strong>，房客需有自己的判斷！投資有風險，若造成房客股票虧損，<strong style="color:#c00000;font-size:.85rem;border:1.5px solid #c00000;border-radius:.3rem;padding:.05rem .3rem;background:#fff0f0;">【房東不負責賠償任何損失】</strong>投資前請謹慎評估自身風險承受能力。
     </div>
   </div>
 
