@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v04090021</span>
+    <span class="version-tag">v04090030</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -310,7 +310,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <button class="tab-btn tenant-only hidden" onclick="ST('my-bill')">💡 我的帳單</button>
   <button class="tab-btn tenant-only hidden" onclick="ST('my-info')">🏠 我的房間</button>
   <!-- 共用 -->
-  <button class="tab-btn" onclick="ST('announce');setTimeout(()=>document.getElementById('benefit-section')?.scrollIntoView({behavior:'smooth',block:'start'}),300)">🎁 房客福利</button>
+  <button class="tab-btn" onclick="ST('announce');setTimeout(()=>document.getElementById('postal-public-section')?.scrollIntoView({behavior:'smooth',block:'start'}),300)">🎁 房客福利</button>
   <button class="tab-btn" onclick="ST('announce')">📢 公告</button>
   <button class="tab-btn" onclick="ST('repair')">🔧 報修</button>
   <button class="tab-btn" onclick="ST('adtext')">📋 文案</button>
