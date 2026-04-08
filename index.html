@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v04081806</span>
+    <span class="version-tag">v04081835</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1453,7 +1453,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <button class="btn bo sm" onclick="renderLoginLog('all')">全部</button>
       <button class="btn bs sm" onclick="renderLoginLog('success')">✅ 成功</button>
       <button class="btn bd sm" onclick="renderLoginLog('fail')">❌ 失敗/封鎖</button>
-      <button class="btn bo sm" onclick="clearLoginLog()">🗑️ 清除紀錄</button>
+      <button class="btn bo sm" onclick="clearLoginLog()" title="清除一般記錄，黑名單封鎖記錄永久保留">🗑️ 清除一般記錄</button>
     </div>
     <div id="login-log-list"><div class="txt-m">讀取中...</div></div>
   </div>
@@ -3512,11 +3512,16 @@ window.renderLoginLog = function(filter='all'){
   }).join('');
 };
 window.clearLoginLog = async function(){
-  if(!confirm('確定清除所有登入紀錄？'))return;
-  DB.loginLog=[];
+  if(!confirm('確定要清除一般登入紀錄嗎？\n（黑名單封鎖紀錄將永久保留，不會被清除）'))return;
+  // ✅ 只保留黑名單封鎖記錄，清除其他記錄
+  const _kept = (DB.loginLog||[]).filter(l => l.note && l.note.includes('黑名單'));
+  DB.loginLog = _kept;
   await saveLandlordData();
   renderLoginLog('all');
-  toast('已清除登入紀錄');
+  const _msg = _kept.length > 0
+    ? `一般紀錄已清除。已保留 ${_kept.length} 筆黑名單封鎖紀錄（永久保存）。`
+    : '一般紀錄已清除。';
+  toast('✅ ' + _msg);
 };
 window.addBlacklistNote = function(){
   const val=document.getElementById('blacklist-input')?.value.trim();
