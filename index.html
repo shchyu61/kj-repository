@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v04071052</span>
+    <span class="version-tag">v04081806</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1640,6 +1640,23 @@ if(document.readyState==='loading'){
 function initEJS(){ if(_ejsOk)return; try{emailjs.init(EJS_KEY);_ejsOk=true;}catch(e){} }
 
 // ══ 登入紀錄寫入 Firebase ════════════════════════════
+
+// ── 黑名單嘗試登入：即時 Gmail 通知房東 ──────────────────
+function notifyBlacklist(email, method){
+  const now = new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei'});
+  initEJS();
+  try{
+    emailjs.send(EJS_SVC, EJS_TPL, {
+      to_email: LANDLORD_EMAIL,
+      otp: `🚫【黑名單警示 ${now}】
+已封鎖帳號嘗試登入「科蓁房租系統」！
+帳號：${email}
+方式：${method}
+請確認是否需要進一步處理。`
+    });
+  }catch(e){}
+}
+
 async function writeLoginLog(email, result, note=''){
   await initFBAuth();
   const now = new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei'});
@@ -1680,9 +1697,10 @@ window.verifyDailyKey = async function(){
   if(BLACKLIST_EMAILS.map(e=>e.toLowerCase()).includes(email.toLowerCase())){
     showAuthErr('此帳號已停用，請聯繫房東。');
     await writeLoginLog(email,'❌ 封鎖（黑名單）','嘗試使用每日密碼登入');
+    // 立即寄 Gmail 通知房東
+    notifyBlacklist(email,'每日密碼');
     return;
   }
-  // 首次登入必須先做OTP驗證
   await initFBAuth();
   const snap = await window._getDoc(settingsPath(email));
   const verified = snap.exists() && snap.data().emailVerified===true;
@@ -1691,8 +1709,7 @@ window.verifyDailyKey = async function(){
   const customPw=snap.data().customPw||'';
   const ok=(customPw&&input===atob(customPw))||(input.toLowerCase()===daily);
   if(ok){
-    await writeLoginLog(email,'✅ 成功','每日密碼');
-    await completeLogin(email);
+    await completeLogin(email,'每日密碼');
   } else {
     showAuthErr('密碼錯誤，請重試。');
     await writeLoginLog(email,'❌ 失敗','每日密碼錯誤');
@@ -1711,6 +1728,8 @@ window.sendOTP = async function(){
   if(BLACKLIST_EMAILS.map(e=>e.toLowerCase()).includes(email.toLowerCase())){
     showAuthErr('此帳號已停用，請聯繫房東。');
     await writeLoginLog(email,'❌ 封鎖（黑名單）','嘗試使用OTP登入');
+    // 即時通知房東
+    notifyBlacklist(email,'OTP');
     return;
   }
   const now=Date.now();
@@ -1749,8 +1768,7 @@ window.verifyOTP = async function(){
   // OTP成功→標記此email已驗證
   await initFBAuth();
   await window._setDoc(settingsPath(_otpMail),{emailVerified:true},{merge:true});
-  await writeLoginLog(_otpMail,'✅ 成功','OTP驗證');
-  await completeLogin(_otpMail);
+  await completeLogin(_otpMail,'OTP一次性密碼');
 };
 
 window.resetOTP = function(){
@@ -1776,10 +1794,12 @@ function showAuthErr(msg){
 }
 
 // ══ 登入完成 ═══════════════════════════════
-const completeLogin = async (email) => {
+const completeLogin = async (email, method=null) => {
   currentEmail = email;
   isLandlord   = LANDLORD_EMAILS.includes(email);
   localStorage.setItem('kj_rental_email', email);
+  // 只有手動登入才寫記錄（method有值才是手動登入）
+  if(method) await writeLoginLog(email,'✅ 成功',method);
 
   document.getElementById('security-overlay').style.display='none';
   document.getElementById('btn-logout').style.display='block';
