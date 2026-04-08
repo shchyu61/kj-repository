@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v04082229</span>
+    <span class="version-tag">v04082250</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1673,13 +1673,16 @@ async function writeLoginLog(email, result, note=''){
   await initFBAuth();
   const now = new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei'});
   const record = {email, result, note, time:now, savedAt:new Date().toISOString()};
-  if(!DB.loginLog) DB.loginLog=[];
-  DB.loginLog.unshift(record);
-  if(DB.loginLog.length>200) DB.loginLog=DB.loginLog.slice(0,200); // 最多保留200筆
-  // loginLog 儲存到 Firebase（用獨立路徑避免影響主資料）
+  // 先從 Firebase 讀取現有紀錄再追加（避免 DB.loginLog 尚未載入時覆蓋舊資料）
   try{
-    await window._setDoc(window._doc(window._db,'artifacts',window._APP_ID,'loginLog','data'),
-      {log:DB.loginLog},{merge:false});
+    const logPath = window._doc(window._db,'artifacts',window._APP_ID,'loginLog','data');
+    const snap = await window._getDoc(logPath);
+    const existingLog = (snap.exists() && snap.data().log) ? snap.data().log : [];
+    existingLog.unshift(record);
+    const trimmed = existingLog.slice(0, 200);
+    await window._setDoc(logPath, {log: trimmed}, {merge:false});
+    // 同步回 DB.loginLog（讓 renderLoginLog 可以即時顯示）
+    DB.loginLog = trimmed;
   }catch(e){}
 }
 
@@ -3565,10 +3568,25 @@ window.renderBatteryHistory = function(){
 
 
 // ── 登入紀錄顯示 ──────────────────────────────────────────
-window.renderLoginLog = function(filter='all'){
+window.renderLoginLog = async function(filter='all'){
   const el=document.getElementById('login-log-list');
   if(!el)return;
-  const log=DB.loginLog||[];
+  el.innerHTML='<div class="txt-m">讀取中...</div>';
+  // 直接從 Firebase 獨立路徑讀取最新紀錄
+  try{
+    await initFBAuth();
+    const logPath = window._doc(window._db,'artifacts',window._APP_ID,'loginLog','data');
+    const snap = await window._getDoc(logPath);
+    const log = (snap.exists() && snap.data().log) ? snap.data().log : [];
+    DB.loginLog = log; // 同步回 DB
+    _renderLoginLogUI(filter, log);
+  }catch(e){
+    _renderLoginLogUI(filter, DB.loginLog||[]);
+  }
+};
+function _renderLoginLogUI(filter, log){
+  const el=document.getElementById('login-log-list');
+  if(!el)return;
   if(!log.length){el.innerHTML='<div class="txt-m">尚無登入紀錄</div>';return;}
   const filtered=log.filter(r=>{
     if(filter==='success') return r.result&&r.result.startsWith('✅');
