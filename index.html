@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v04081835</span>
+    <span class="version-tag">v04082212</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -527,6 +527,18 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
 <!-- ══ 房東：收租紀錄 ══ -->
 <div id="page-rent" class="page">
+  <!-- 暫停收租設定 -->
+  <div class="card landlord-only" id="rent-pause-card">
+    <div class="card-title">⏸️ 暫停收租設定（沿用至指定期別）</div>
+    <div class="alert-box a-warn" style="font-size:.85rem;">
+      設定後，指定期別內該房間自動帶入「應收0、實收0」，備注自動沿用暫停原因。<br>
+      到期後自動恢復正常收租。
+    </div>
+    <div id="rent-pause-list"><div class="txt-m">讀取中...</div></div>
+    <button class="btn ba sm mt" onclick="openRentPauseModal()">＋ 新增暫停收租</button>
+  </div>
+
+
   <div class="card mt">
     <div class="card-title">💰 本期收租登記</div>
     <div class="form-row">
@@ -1453,7 +1465,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <button class="btn bo sm" onclick="renderLoginLog('all')">全部</button>
       <button class="btn bs sm" onclick="renderLoginLog('success')">✅ 成功</button>
       <button class="btn bd sm" onclick="renderLoginLog('fail')">❌ 失敗/封鎖</button>
-      <button class="btn bo sm" onclick="clearLoginLog()" title="清除一般記錄，黑名單封鎖記錄永久保留">🗑️ 清除一般記錄</button>
+      <button class="btn bo sm" onclick="clearLoginLog()">🗑️ 清除紀錄</button>
     </div>
     <div id="login-log-list"><div class="txt-m">讀取中...</div></div>
   </div>
@@ -1598,7 +1610,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[] };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{} };
 let _ejsOk = false;
 
 // ============================================================
@@ -1961,6 +1973,7 @@ const loadLandlordData = async () => {
       if(d.mailRecords)DB.mailRecords=d.mailRecords;
       if(d.lockBatteryRecords)DB.lockBatteryRecords=d.lockBatteryRecords;
       if(d.loginLog)DB.loginLog=d.loginLog;
+      if(d.rentPause)DB.rentPause=d.rentPause;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -1986,6 +1999,7 @@ const saveLandlordData = async () => {
     mailRecords:DB.mailRecords||[],
     lockBatteryRecords:DB.lockBatteryRecords||[],
     loginLog:DB.loginLog||[],
+    rentPause:DB.rentPause||{},
   });
 };
 
@@ -2689,47 +2703,115 @@ window.showAllBills = function(){
 // ============================================================
 
 // ══ 房東：收租紀錄 ══════════════════════════
+// ── 暫停收租功能 ──────────────────────────────────────────
+window.openRentPauseModal = function(){
+  // 預填當前期別
+  const period=document.getElementById('r-period')?.value||'';
+  if(period){ document.getElementById('rp-from').value=period; document.getElementById('rp-to').value=period; }
+  document.getElementById('rent-pause-modal').style.display='flex';
+};
+window.closeRentPauseModal = function(){
+  document.getElementById('rent-pause-modal').style.display='none';
+};
+window.saveRentPause = async function(){
+  const room=document.getElementById('rp-room').value;
+  const from=document.getElementById('rp-from').value.trim();
+  const to=document.getElementById('rp-to').value.trim();
+  const reason=document.getElementById('rp-reason').value.trim();
+  if(!from||!to||!reason){toast('請填寫完整（期別和原因）');return;}
+  if(+from>+to){toast('起始期別不能晚於結束期別');return;}
+  if(!DB.rentPause)DB.rentPause={};
+  const key=`${room}_${from}_${to}`;
+  DB.rentPause[key]={room,from,to,reason,createdAt:new Date().toLocaleString('zh-TW')};
+  await saveLandlordData();
+  closeRentPauseModal();
+  renderRentPauseList();
+  // 重新初始化收租頁，讓暫停設定生效
+  initRent();
+  toast(`✅ 已設定：${room==='all'?'所有房間':RL[room]||room} ${from}～${to} 暫停收租`);
+};
+window.deleteRentPause = async function(key){
+  if(!confirm('確定刪除此暫停設定？'))return;
+  delete DB.rentPause[key];
+  await saveLandlordData();
+  renderRentPauseList();
+  initRent();
+  toast('已刪除暫停設定');
+};
+window.renderRentPauseList = function(){
+  const el=document.getElementById('rent-pause-list');
+  if(!el)return;
+  const pauses=Object.entries(DB.rentPause||{});
+  if(!pauses.length){el.innerHTML='<div class="txt-m">目前無暫停設定，點下方按鈕新增。</div>';return;}
+  el.innerHTML=pauses.map(([key,p])=>{
+    const roomLabel=p.room==='all'?'所有房間':RL[p.room]||p.room;
+    return `<div class="hist-item" style="background:#fffbf0;border-color:#f0d0a0;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.4rem;">
+        <div>
+          <div style="font-weight:900;">⏸️ ${roomLabel} · ${p.from}～${p.to}</div>
+          <div class="txt-m">原因：${p.reason}</div>
+          <div style="font-size:.72rem;color:var(--muted);">設定時間：${p.createdAt}</div>
+        </div>
+        <button class="btn bd sm" onclick="deleteRentPause('${key}')">刪除</button>
+      </div>
+    </div>`;
+  }).join('');
+};
+// 取得某期別某房間的暫停設定（若有）
+function getRentPauseForRoom(room, period){
+  for(const [key,p] of Object.entries(DB.rentPause||{})){
+    const target=(p.room===room||p.room==='all');
+    if(target && +p.from<=+period && +period<=+to){return p;}
+    if(target && +p.from<=+period && +period<=+p.to){return p;}
+  }
+  return null;
+}
+
 window.initRent = function(){
   const rr=document.getElementById('rent-rows'); rr.innerHTML='';
+  renderRentPauseList();
 
   // ── 智能帶入期別（自動取當月 YYYYMM）──────────────────────────
   if(!document.getElementById('r-period').value){
     const n=new Date();
     document.getElementById('r-period').value=`${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}`;
   }
+  const period=document.getElementById('r-period').value.trim();
 
   // ── 智能帶入今天日期（預設收款日=今天）──────────────────────────
   const today=new Date().toISOString().split('T')[0];
-  // ── 智能帶入契約約定收租日 ────────────────────────────────────────
-  // 若有設定收租日（如每月8號），自動計算本月該日期
   function getRentDayStr(rentDay){
-    if(!rentDay)return today; // 無設定→今天
+    if(!rentDay)return today;
     const n=new Date();
     const y=n.getFullYear(), m=n.getMonth()+1;
-    const d=Math.min(rentDay,new Date(y,m,0).getDate()); // 防止超過月底
+    const d=Math.min(rentDay,new Date(y,m,0).getDate());
     return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   }
 
   ROOMS.forEach(r=>{
     const t=DB.tenants[r]||{},occ=t.status==='occupied'&&t.name;
-    // 智能帶入：從房客資料自動帶入月租金
     const autoRent=occ?+t.rent||0:0;
-    rr.innerHTML+=`<div style="background:${occ?'var(--bg2)':'#f5f0e8'};border:1.5px solid ${occ?'var(--border2)':'#e0d8c8'};border-radius:.9rem;padding:.6rem .85rem;margin-bottom:.55rem;opacity:${occ?1:0.6}">
-      <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem;">
-        <div style="font-weight:900;font-size:.88rem;">${RL[r]}</div>
-        <div style="font-size:.8rem;color:var(--accent);font-weight:700;">${occ?t.name:'（空房）'}</div>
-        ${occ?`<span style="font-size:.68rem;background:#e0f4e8;color:var(--success);border-radius:99px;padding:.1rem .5rem;font-weight:700;">月租 NT$${autoRent.toLocaleString()} ✓ 已自動帶入</span>`:''}
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;align-items:center;margin-bottom:.4rem;">
-        <div><label style="margin-bottom:.15rem;">應收（元）</label><input type="number" id="ramt-${r}" value="${autoRent}" ${!occ?'disabled':''}></div>
-        <div><label style="margin-bottom:.15rem;">實收（元）</label><input type="number" id="rpay-${r}" value="${autoRent}" ${!occ?'disabled':''}></div>
-        <div><label style="margin-bottom:.15rem;">收款日<span style="font-size:.65rem;color:var(--gold);">（契約：${occ&&t.rentDay?'每月'+t.rentDay+'日':'未設定'}）</span></label><input type="date" id="rdate-${r}" value="${occ?getRentDayStr(t.rentDay):''}" ${!occ?'disabled':''}></div>
-      </div>
-      <div>
-        <label style="margin-bottom:.15rem;">本期備注 <span style="font-size:.72rem;color:var(--muted);font-weight:400;">（特殊情況才填，如：因故暫不收、補繳說明）</span></label>
-        <input type="text" id="rnote-${r}" placeholder="${occ?'留空=正常收租':'空房，無需填寫'}" ${!occ?'disabled':''}>
-      </div>
-    </div>`;
+    // ── 暫停收租判斷 ──────────────────────────────────────────────
+    const pause=getRentPauseForRoom(r, period);
+    const isPaused=pause!==null;
+    const pauseReason=isPaused?pause.reason:'';
+     rr.innerHTML+=`<div style="background:${isPaused?'#fffbf0':occ?'var(--bg2)':'#f5f0e8'};border:1.5px solid ${isPaused?'#f0c060':occ?'var(--border2)':'#e0d8c8'};border-radius:.9rem;padding:.6rem .85rem;margin-bottom:.55rem;opacity:${occ?1:0.6}">
+       <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem;flex-wrap:wrap;">
+         <div style="font-weight:900;font-size:.88rem;">${RL[r]}</div>
+         <div style="font-size:.8rem;color:var(--accent);font-weight:700;">${occ?t.name:'（空房）'}</div>
+         ${occ&&!isPaused?`<span style="font-size:.68rem;background:#e0f4e8;color:var(--success);border-radius:99px;padding:.1rem .5rem;font-weight:700;">月租 NT$${autoRent.toLocaleString()} ✓ 已自動帶入</span>`:''}
+         ${isPaused?`<span style="font-size:.72rem;background:#fff0cc;color:#a06000;border-radius:99px;padding:.1rem .6rem;font-weight:900;">⏸️ 本期暫停收租</span>`:''}
+       </div>
+       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;align-items:center;margin-bottom:.4rem;">
+         <div><label style="margin-bottom:.15rem;">應收（元）</label><input type="number" id="ramt-${r}" value="${isPaused?0:autoRent}" ${!occ||isPaused?'disabled':''}></div>
+         <div><label style="margin-bottom:.15rem;">實收（元）</label><input type="number" id="rpay-${r}" value="${isPaused?0:autoRent}" ${!occ||isPaused?'disabled':''}></div>
+         <div><label style="margin-bottom:.15rem;">收款日<span style="font-size:.65rem;color:var(--gold);">（契約：${occ&&t.rentDay?'每月'+t.rentDay+'日':'未設定'}）</span></label><input type="date" id="rdate-${r}" value="${occ&&!isPaused?getRentDayStr(t.rentDay):''}" ${!occ||isPaused?'disabled':''}></div>
+       </div>
+       <div>
+         <label style="margin-bottom:.15rem;">本期備注 <span style="font-size:.72rem;color:var(--muted);font-weight:400;">（特殊情況才填，如：因故暫不收、補繳說明）</span></label>
+         <input type="text" id="rnote-${r}" value="${isPaused?pauseReason:''}" placeholder="${occ?'留空=正常收租':'空房，無需填寫'}" ${!occ?'disabled':''}>
+       </div>
+     </div>`;
   });
   renderRentHistory();
 };
@@ -3512,16 +3594,11 @@ window.renderLoginLog = function(filter='all'){
   }).join('');
 };
 window.clearLoginLog = async function(){
-  if(!confirm('確定要清除一般登入紀錄嗎？\n（黑名單封鎖紀錄將永久保留，不會被清除）'))return;
-  // ✅ 只保留黑名單封鎖記錄，清除其他記錄
-  const _kept = (DB.loginLog||[]).filter(l => l.note && l.note.includes('黑名單'));
-  DB.loginLog = _kept;
+  if(!confirm('確定清除所有登入紀錄？'))return;
+  DB.loginLog=[];
   await saveLandlordData();
   renderLoginLog('all');
-  const _msg = _kept.length > 0
-    ? `一般紀錄已清除。已保留 ${_kept.length} 筆黑名單封鎖紀錄（永久保存）。`
-    : '一般紀錄已清除。';
-  toast('✅ ' + _msg);
+  toast('已清除登入紀錄');
 };
 window.addBlacklistNote = function(){
   const val=document.getElementById('blacklist-input')?.value.trim();
@@ -4350,5 +4427,37 @@ async function checkPendingAnnounces(){
 // ══ INIT ════════════════════════════════════
 checkSession();
 </script>
+<!-- MODAL: 新增暫停收租 -->
+<div id="rent-pause-modal" class="modal-overlay" style="display:none;align-items:center;justify-content:center;">
+  <div class="modal-box" style="max-width:460px;width:100%;">
+    <h3>⏸️ 新增暫停收租</h3>
+    <div class="form-row">
+      <div><label>房間</label>
+        <select id="rp-room">
+          <option value="3F前">3樓前</option>
+          <option value="3F後">3樓後</option>
+          <option value="4F前">4樓前</option>
+          <option value="4F後">4樓後</option>
+          <option value="5F前">5樓前</option>
+          <option value="all">所有房間</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row c2">
+      <div><label>暫停起始期別</label><input type="text" id="rp-from" placeholder="如 202604"></div>
+      <div><label>暫停結束期別（含）</label><input type="text" id="rp-to" placeholder="如 202606"></div>
+    </div>
+    <div class="form-row">
+      <div><label>暫停原因（自動帶入備注）</label>
+        <input type="text" id="rp-reason" placeholder="如：因媽媽離世，房屋尚待計算遺產稅，暫不收租">
+      </div>
+    </div>
+    <div class="gap mt">
+      <button class="btn bs" onclick="saveRentPause()">💾 儲存暫停設定</button>
+      <button class="btn bo" onclick="closeRentPauseModal()">取消</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
