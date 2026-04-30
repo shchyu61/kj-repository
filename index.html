@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v04300959</span>
+    <span class="version-tag">v04301022</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -2528,14 +2528,14 @@ window.calcU = function(){
     const t=DB.tenants[r]||{};
     const hasOcc=pd[r].n>0;
     const isOwnerRoom = (r==='3F後'); // 3樓後改自住，不收費
-    // 問題1：房客優待無條件捨去到十位數；3樓後自住=0；空房只含冷氣（無均分）
+    // 房客優待：有人住→floor到十位；自住/空房→$0（空房冷氣費由龍潭房東承擔）
     let tot;
     if(isOwnerRoom){
-      tot=0; // N5=0，自住不收費
+      tot=0; // 3樓後自住，不收費
     } else if(hasOcc){
-      tot=Math.floor(rawTot/10)*10; // 無條件捨去到十位數
+      tot=Math.floor(rawTot/10)*10; // 有房客：無條件捨去到十位數
     } else {
-      tot=rawTot; // 空房（只有冷氣，無均分）顯示原值供房東參考
+      tot=0; // 空房：顯示$0，費用由龍潭房東吸收，不讓其他房客承擔
     }
     window._UR[r]={acFee:ac[r].fee,sharedElec:sE2,water:sW2,gas:sG2,total:tot,ratio};
     sAC+=ac[r].fee;sE+=sE2;sW+=sW2;sG+=sG2;sT+=tot;
@@ -2573,7 +2573,7 @@ window.calcU = function(){
     const sW_tc=Math.round(W*ratioTC);
     const sG_tc=Math.round(G*ratioTC);
     const tcTot=sE_tc+sW_tc+sG_tc;
-    window._UR['台中房東']={acFee:0,sharedElec:sE_tc,water:sW_tc,gas:sG_tc,total:tcTot,days:tcDays};
+    window._UR['原房東']={acFee:0,sharedElec:sE_tc,water:sW_tc,gas:sG_tc,total:tcTot,days:tcDays};
     tb.innerHTML+=`<tr style="background:#f0f8ff;">
       <td class="rl">原房東（石房東）<span style="font-size:.7rem;color:var(--muted);"> ${tcDays}天×${tcPerson}人</span></td>
       <td class="amt">—</td>
@@ -2595,15 +2595,15 @@ window.calcU = function(){
   const ltAC_fee = ac['3F後']?.fee||0;
   // 龍潭房東本期水電瓦斯 = 均分電+均分水+均分瓦斯（round）
   const ltWEG = (UR['龍潭房東']?.sharedElec||0) + (UR['龍潭房東']?.water||0) + (UR['龍潭房東']?.gas||0);
-  // 台中房東本期水電瓦斯
-  const tcWEG = (UR['台中房東']?.sharedElec||0) + (UR['台中房東']?.water||0) + (UR['台中房東']?.gas||0);
+  // 原房東石房東本期水電瓦斯（tcW來源，UR存為'原房東'）
+  const tcWEG = (UR['原房東']?.sharedElec||0) + (UR['原房東']?.water||0) + (UR['原房東']?.gas||0);
 
   // 各房客應收加總（N4+N5+...+N8）
   const tenantTotal = ROOMS.reduce((s,r)=>s+(UR[r]?.total||0),0);
   // N14 = 實際總電費+水費+瓦斯費（精確值）
   const N14 = E + W + G;
   // N9「房東贊助房客零頭」= N14 - 各房客合計 - 龍潭水電瓦斯 - 龍潭冷氣 - 台中水電瓦斯 - 台中冷氣
-  const N9 = N14 - tenantTotal - ltWEG - ltAC_fee - tcWEG - (UR['台中房東']?.acFee||0);
+  const N9 = N14 - tenantTotal - ltWEG - ltAC_fee - tcWEG - (UR['原房東']?.acFee||0);
   const displayP = Math.round(exactP*10)/10;
 
   const summary=document.getElementById('u-n-summary');
@@ -2643,7 +2643,7 @@ window.calcU = function(){
     </div>`;
 
     // 儲存給複製用
-    window._N_summary={lines, N14, displayP, ltAC_kwh, ltWEG, ltAC_fee, tcWEG, N9};
+    window._N_summary={lines, N14, displayP, ltAC_kwh, ltWEG, ltAC_fee, tcWEG, N9}; // tcWEG=原房東石房東
   }
 
   document.getElementById('u-result-card').classList.remove('hidden');
@@ -3664,7 +3664,7 @@ window.renderUtilHistory = function(){
   }
   el.innerHTML=DB.utilBills.map((b,i)=>{
     // 各房摘要標籤
-    const allRoomOrder=[...ROOMS,'龍潭房東','台中房東','原房東'];
+    const allRoomOrder=[...ROOMS,'龍潭房東','原房東','台中房東'];
     const roomSummary=allRoomOrder.map(r=>{const ur=(b.rooms||{})[r];
       if(!ur||!ur.total)return '';
       return `<span style="font-size:.8rem;background:var(--bg2);border:1px solid var(--border2);border-radius:.4rem;padding:.1rem .4rem;margin:.1rem;">${RL[r]||r} $${ur.total.toLocaleString()}</span>`;
@@ -3672,7 +3672,7 @@ window.renderUtilHistory = function(){
 
     // 各房詳細明細（展開用）
     // 依 ROOMS 固定順序顯示，再加房東
-    const roomOrder=[...ROOMS,'龍潭房東','台中房東','原房東'];
+    const roomOrder=[...ROOMS,'龍潭房東','原房東','台中房東'];
     const roomDetails=roomOrder.map(r=>{
       const ur=(b.rooms||{})[r];
       if(!ur)return '';
