@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v04300921</span>
+    <span class="version-tag">v04300940</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -443,36 +443,18 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
     </div>
 
-    <!-- 台中房東 -->
-    <div style="margin-bottom:.75rem;">
-      <div style="font-weight:900;font-size:.88rem;color:var(--primary);margin-bottom:.35rem;">🕯️ 原房東（石房東）</div>
-      <div class="form-row c3" style="margin-bottom:.4rem;">
-        <div>
-          <label id="tc-m1-label">第1個月（原房東石房東）</label>
-          <input type="text" id="tc-m1" placeholder="貼上Excel日期均可" oninput="calcLandlordDays()" style="font-size:.82rem;">
-        </div>
-        <div>
-          <label id="tc-m2-label">第2個月（原房東石房東）</label>
-          <input type="text" id="tc-m2" placeholder="貼上或點月曆" oninput="calcLandlordDays()" style="font-size:.82rem;">
-        </div>
-        <div>
-          <label id="tc-m3-label">第3個月（原房東石房東）</label>
-          <input type="text" id="tc-m3" placeholder="無則留空" oninput="calcLandlordDays()" style="font-size:.82rem;">
-        </div>
+    <!-- 原房東石房東：不需填填樂，天數=計費天數 -->
+    <div style="background:#f5f0e8;border:1.5px solid #d4b896;border-radius:.8rem;padding:.6rem .85rem;margin-bottom:.75rem;">
+      <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-weight:900;font-size:.88rem;">
+        <input type="checkbox" id="tc-include" onchange="calcLandlordDays()" style="width:16px;height:16px;accent-color:var(--accent);">
+        🕯️ 本期包含原房東（石房東）
+      </label>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:.3rem;line-height:1.5;">
+        勾選後，原房東自動以<strong>計費天數</strong>（如61天）納入均分，不需填日期。<br>
+        ⚠️ 2026/02/15已離世，202604期起無需勾選。
       </div>
-      <div id="tc-cal-wrap" style="display:flex;gap:.75rem;flex-wrap:wrap;">
-        <div>
-          <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="tc-cal-m1-title">第1個月</div>
-          <div id="tc-cal-m1" class="cal-grid"></div>
-        </div>
-        <div>
-          <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="tc-cal-m2-title">第2個月</div>
-          <div id="tc-cal-m2" class="cal-grid"></div>
-        </div>
-        <div>
-          <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="tc-cal-m3-title">第3個月</div>
-          <div id="tc-cal-m3" class="cal-grid"></div>
-        </div>
+      <div id="tc-days-wrap" style="margin-top:.4rem;display:none;">
+        原房東（石房東）：<strong id="tc-days-display" style="color:var(--accent);">0</strong> 天（自動=計費天數）
       </div>
     </div>
 
@@ -483,19 +465,10 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           <option value="3">是（3人計費）</option>
         </select>
       </div>
-      <div><label>原房東（石房東）是否帶小孩？</label>
-        <select id="tc-kids" onchange="calcU()">
-          <option value="1">否（1人計費）</option>
-          <option value="3">是（3人計費）</option>
-        </select>
-      </div>
     </div>
     <div style="display:flex;gap:.75rem;margin-top:.4rem;align-items:center;flex-wrap:wrap;">
       <div style="background:var(--bg2);border-radius:.7rem;padding:.5rem .85rem;font-size:.88rem;">
         龍潭房東：<strong id="lt-days-display" style="color:var(--accent);">0</strong> 天
-      </div>
-      <div style="background:var(--bg2);border-radius:.7rem;padding:.5rem .85rem;font-size:.88rem;">
-        原房東（石房東）：<strong id="tc-days-display" style="color:var(--accent);">0</strong> 天
       </div>
       <button class="btn ba sm" onclick="calcLandlordDays()">🔄 重新計算入住天數</button>
     </div>
@@ -2354,13 +2327,17 @@ window.calcLandlordDays = function(){
     ...combineDays('tc-m3','tc-cal-m3','tc-m3'),
   ]);
   const ltDays = ltSet.size;
-  const tcDays = tcSet.size;
+  // 原房東石房東：勾選時天數=計費天數，不需填填樂
+  const tcInclude = document.getElementById('tc-include')?.checked||false;
+  const tcDays = tcInclude ? (window._utilDays||0) : 0;
   window._ltDays = ltDays;
   window._tcDays = tcDays;
   const ltEl = document.getElementById('lt-days-display');
   const tcEl = document.getElementById('tc-days-display');
+  const tcWrap = document.getElementById('tc-days-wrap');
   if(ltEl) ltEl.textContent = ltDays;
   if(tcEl) tcEl.textContent = tcDays;
+  if(tcWrap) tcWrap.style.display = tcInclude?'block':'none';
   // 自動儲存到 DB（問題7）
   DB.landlordStay = {
     ltM1:document.getElementById('lt-m1')?.value||'',
@@ -2370,7 +2347,7 @@ window.calcLandlordDays = function(){
     tcM2:document.getElementById('tc-m2')?.value||'',
     tcM3:document.getElementById('tc-m3')?.value||'',
     ltKids:document.getElementById('lt-kids')?.value||'1',
-    tcKids:document.getElementById('tc-kids')?.value||'1',
+    tcInclude:document.getElementById('tc-include')?.checked||false,
   };
   saveLandlordData();
   calcU();
@@ -2420,6 +2397,7 @@ window.initU = function(){
     if(el && ls[keyMap[id]]) el.value=ls[keyMap[id]];
   });
   if(ls.ltKids) document.getElementById('lt-kids')&&(document.getElementById('lt-kids').value=ls.ltKids);
+  if(ls.tcInclude!==undefined){const el=document.getElementById('tc-include');if(el)el.checked=ls.tcInclude;}
   if(ls.tcKids) document.getElementById('tc-kids')&&(document.getElementById('tc-kids').value=ls.tcKids);
   window._ltDays = window._ltDays||0;
   window._tcDays = window._tcDays||0;
@@ -3642,13 +3620,17 @@ window.renderUtilHistory = function(){
   }
   el.innerHTML=DB.utilBills.map((b,i)=>{
     // 各房摘要標籤
-    const roomSummary=Object.entries(b.rooms||{}).map(([r,ur])=>{
+    const allRoomOrder=[...ROOMS,'龍潭房東','台中房東','原房東'];
+    const roomSummary=allRoomOrder.map(r=>{const ur=(b.rooms||{})[r];
       if(!ur||!ur.total)return '';
       return `<span style="font-size:.8rem;background:var(--bg2);border:1px solid var(--border2);border-radius:.4rem;padding:.1rem .4rem;margin:.1rem;">${RL[r]||r} $${ur.total.toLocaleString()}</span>`;
     }).join('');
 
     // 各房詳細明細（展開用）
-    const roomDetails=Object.entries(b.rooms||{}).map(([r,ur])=>{
+    // 依 ROOMS 固定順序顯示，再加房東
+    const roomOrder=[...ROOMS,'龍潭房東','台中房東','原房東'];
+    const roomDetails=roomOrder.map(r=>{
+      const ur=(b.rooms||{})[r];
       if(!ur)return '';
       return `<tr>
         <td style="font-weight:700;">${RL[r]||r}</td>
