@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v04090052</span>
+    <span class="version-tag">v04300921</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -445,18 +445,18 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
     <!-- 台中房東 -->
     <div style="margin-bottom:.75rem;">
-      <div style="font-weight:900;font-size:.88rem;color:var(--primary);margin-bottom:.35rem;">🏙️ 台中房東</div>
+      <div style="font-weight:900;font-size:.88rem;color:var(--primary);margin-bottom:.35rem;">🕯️ 原房東（石房東）</div>
       <div class="form-row c3" style="margin-bottom:.4rem;">
         <div>
-          <label id="tc-m1-label">第1個月入住日</label>
+          <label id="tc-m1-label">第1個月（原房東石房東）</label>
           <input type="text" id="tc-m1" placeholder="貼上Excel日期均可" oninput="calcLandlordDays()" style="font-size:.82rem;">
         </div>
         <div>
-          <label id="tc-m2-label">第2個月入住日</label>
+          <label id="tc-m2-label">第2個月（原房東石房東）</label>
           <input type="text" id="tc-m2" placeholder="貼上或點月曆" oninput="calcLandlordDays()" style="font-size:.82rem;">
         </div>
         <div>
-          <label id="tc-m3-label">第3個月入住日</label>
+          <label id="tc-m3-label">第3個月（原房東石房東）</label>
           <input type="text" id="tc-m3" placeholder="無則留空" oninput="calcLandlordDays()" style="font-size:.82rem;">
         </div>
       </div>
@@ -483,7 +483,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           <option value="3">是（3人計費）</option>
         </select>
       </div>
-      <div><label>台中房東是否帶小孩？</label>
+      <div><label>原房東（石房東）是否帶小孩？</label>
         <select id="tc-kids" onchange="calcU()">
           <option value="1">否（1人計費）</option>
           <option value="3">是（3人計費）</option>
@@ -495,7 +495,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         龍潭房東：<strong id="lt-days-display" style="color:var(--accent);">0</strong> 天
       </div>
       <div style="background:var(--bg2);border-radius:.7rem;padding:.5rem .85rem;font-size:.88rem;">
-        台中房東：<strong id="tc-days-display" style="color:var(--accent);">0</strong> 天
+        原房東（石房東）：<strong id="tc-days-display" style="color:var(--accent);">0</strong> 天
       </div>
       <button class="btn ba sm" onclick="calcLandlordDays()">🔄 重新計算入住天數</button>
     </div>
@@ -2553,7 +2553,7 @@ window.calcU = function(){
     const tcTot=sE_tc+sW_tc+sG_tc;
     window._UR['台中房東']={acFee:0,sharedElec:sE_tc,water:sW_tc,gas:sG_tc,total:tcTot,days:tcDays};
     tb.innerHTML+=`<tr style="background:#f0f8ff;">
-      <td class="rl">台中房東<span style="font-size:.7rem;color:var(--muted);"> ${tcDays}天×${tcPerson}人</span></td>
+      <td class="rl">原房東（石房東）<span style="font-size:.7rem;color:var(--muted);"> ${tcDays}天×${tcPerson}人</span></td>
       <td class="amt">—</td>
       <td class="amt">${sE_tc?'NT$'+sE_tc:'—'}</td>
       <td class="amt">${sW_tc?'NT$'+sW_tc:'—'}</td>
@@ -2592,12 +2592,11 @@ window.calcU = function(){
       const v=UR[r]?.total||0;
       lines.push({label:RL[r], val:v, color: v>0?'var(--primary)':'var(--muted)'});
     });
-    if(N9>0) lines.push({label:'房東贊助房客零頭', val:N9, color:'var(--success)', note:'（房東補貼尾差，帳目完整）'});
-    if(ltWEG>0) lines.push({label:'龍潭房東本期水電瓦斯', val:ltWEG, color:'var(--info)'});
-    if(ltAC_fee>0) lines.push({label:'龍潭房東本期冷氣', val:ltAC_fee, color:'var(--info)'});
-    if(tcWEG>0) lines.push({label:'台中房東本期水電瓦斯', val:tcWEG, color:'var(--info)'});
-    const tcAC=UR['台中房東']?.acFee||0;
-    if(tcAC>0) lines.push({label:'台中房東本期冷氣', val:tcAC, color:'var(--info)'});
+    if(N9>0) lines.push({label:'房東贊助房客零頭', val:N9, color:'var(--success)'});
+    if(tcWEG>0) lines.push({label:'房東未常住贊助水電瓦斯', val:tcWEG, color:'var(--info)'});
+    if(ltWEG>0) lines.push({label:'我本期水電瓦斯', val:ltWEG, color:'var(--info)'});
+    if(ltAC_fee>0) lines.push({label:'我本期冷氣', val:ltAC_fee, color:'var(--info)'});
+    // 原房東石房東無個人冷氣費（無專屬冷氣電表）
 
     summary.innerHTML=`
     <div style="background:#fffdf0;border:2px solid var(--gold);border-radius:1rem;padding:1rem 1.1rem;margin-top:.5rem;">
@@ -2634,7 +2633,8 @@ window.copyUtilSummary = function(){
   let txt='應收總計（本期2個月）\n';
   s.lines.forEach(l=>{ txt+=`　${l.label}　$${l.val.toLocaleString()}\n`; });
   txt+=`以上本期水電瓦斯共　$${s.N14.toLocaleString()}\n`;
-  txt+=`本期平均每度電約${s.displayP.toFixed(2)}元`;
+  txt+=`本期平均每度電約${s.displayP.toFixed(2)}元\n`;
+  txt+='（轉帳請用郵局，帳號請見公告）';
   navigator.clipboard.writeText(txt).then(()=>toast('✅ 帳單文字已複製！可直接貼給房客'))
     .catch(()=>{
       const ta=document.createElement('textarea');
