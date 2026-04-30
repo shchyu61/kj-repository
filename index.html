@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v04300940</span>
+    <span class="version-tag">v04300959</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -458,9 +458,48 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
     </div>
 
+    <!-- 台中房東（弟弟）：有填填樂 -->
+    <div style="margin-bottom:.75rem;">
+      <div style="font-weight:900;font-size:.88rem;color:var(--primary);margin:.35rem 0 .3rem;">🏙️ 台中房東（弟弟）</div>
+      <div class="form-row c3" style="margin-bottom:.4rem;">
+        <div>
+          <label id="tc-m1-label">第1個月</label>
+          <input type="text" id="tc-m1" placeholder="貼上Excel日期均可" oninput="calcLandlordDays()" style="font-size:.82rem;">
+        </div>
+        <div>
+          <label id="tc-m2-label">第2個月</label>
+          <input type="text" id="tc-m2" placeholder="貼上或點月曆" oninput="calcLandlordDays()" style="font-size:.82rem;">
+        </div>
+        <div>
+          <label id="tc-m3-label">第3個月</label>
+          <input type="text" id="tc-m3" placeholder="無則留空" oninput="calcLandlordDays()" style="font-size:.82rem;">
+        </div>
+      </div>
+      <div id="tc-cal-wrap" style="display:flex;gap:.75rem;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="tc-cal-m1-title">第1個月</div>
+          <div id="tc-cal-m1" class="cal-grid"></div>
+        </div>
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="tc-cal-m2-title">第2個月</div>
+          <div id="tc-cal-m2" class="cal-grid"></div>
+        </div>
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="tc-cal-m3-title">第3個月</div>
+          <div id="tc-cal-m3" class="cal-grid"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="form-row c2">
       <div><label>龍潭房東是否帶小孩？</label>
         <select id="lt-kids" onchange="calcU()">
+          <option value="1">否（1人計費）</option>
+          <option value="3">是（3人計費）</option>
+        </select>
+      </div>
+      <div><label>台中房東（弟弟）是否帶小孩？</label>
+        <select id="tc-kids" onchange="calcU()">
           <option value="1">否（1人計費）</option>
           <option value="3">是（3人計費）</option>
         </select>
@@ -469,6 +508,9 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div style="display:flex;gap:.75rem;margin-top:.4rem;align-items:center;flex-wrap:wrap;">
       <div style="background:var(--bg2);border-radius:.7rem;padding:.5rem .85rem;font-size:.88rem;">
         龍潭房東：<strong id="lt-days-display" style="color:var(--accent);">0</strong> 天
+      </div>
+      <div style="background:var(--bg2);border-radius:.7rem;padding:.5rem .85rem;font-size:.88rem;" id="tc-days-stat">
+        台中房東：<strong id="tc-days-display2" style="color:var(--accent);">0</strong> 天
       </div>
       <button class="btn ba sm" onclick="calcLandlordDays()">🔄 重新計算入住天數</button>
     </div>
@@ -2338,6 +2380,8 @@ window.calcLandlordDays = function(){
   if(ltEl) ltEl.textContent = ltDays;
   if(tcEl) tcEl.textContent = tcDays;
   if(tcWrap) tcWrap.style.display = tcInclude?'block':'none';
+  const tc2El=document.getElementById('tc-days-display2');
+  if(tc2El) tc2El.textContent=tcSet.size;
   // 自動儲存到 DB（問題7）
   DB.landlordStay = {
     ltM1:document.getElementById('lt-m1')?.value||'',
@@ -3708,6 +3752,11 @@ window.loadUtilBillToEdit = function(i){
     });
   }
   // 切換到水電帳單頁面上方
+  // 重算天數（必須在設定日期後呼叫）
+  if(window.recalcDays) window.recalcDays();
+  setTimeout(()=>{
+    if(window.refreshCalendars) window.refreshCalendars();
+  },100);
   document.getElementById('page-utility').scrollIntoView({behavior:'smooth'});
   calcU();
   toast(`✅ 已載入 ${b.period} 期帳單，可修改後重新儲存。`);
