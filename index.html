@@ -3615,13 +3615,34 @@ function _renderLoginLogUI(filter, log){
   const el=document.getElementById('login-log-list');
   if(!el)return;
   if(!log.length){el.innerHTML='<div class="txt-m">尚無登入紀錄</div>';return;}
+  // ✅ v05242232：各帳號登入次數統計（200筆內成功，同股票系統邏輯）
+  const _me = window._currentUserEmail||'';
+  const _isLL = (typeof LANDLORD_EMAILS!=='undefined') && LANDLORD_EMAILS.includes(_me);
+  const _cntMap={}, _lastMap={};
+  log.filter(r=>r.email&&r.result&&r.result.startsWith('✅')).forEach(r=>{
+    _cntMap[r.email]=(_cntMap[r.email]||0)+1;
+    if(!_lastMap[r.email]) _lastMap[r.email]=r.time;  // 最新在前，取第一個
+  });
+  const _colors=['#1a5a30','#3a1060','#6a4000','#1a3a6a','#6a1a1a'];
+  const _statRows=Object.entries(_cntMap).sort((a,b)=>b[1]-a[1])
+    .map(([email,cnt],i)=>{
+      const isMe=email===_me;
+      const tag=_isLL&&LANDLORD_EMAILS.includes(email)?'🏠 房東':'👥 房客';
+      const label=isMe?`👤 我（${email}）`:(`${tag} ${email}`);
+      return `<span style="font-size:12px;font-weight:700;color:${_colors[i%_colors.length]};display:block;">` +
+             `${label}：${cnt}次　最後登入：${_lastMap[email]||'—'}</span>`;
+    }).join('');
+  const _statHtml=_cntMap&&Object.keys(_cntMap).length?
+    `<div style="background:#f0e8ff;border:1.5px solid #c4a0e0;border-radius:0.75rem;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">`+
+    `<span style="font-size:12px;font-weight:900;color:#3a1060;display:block;margin-bottom:0.3rem;">📊 各帳號成功登入次數（200筆內）</span>`+
+    _statRows+`</div>`:'';
   const filtered=log.filter(r=>{
     if(filter==='success') return r.result&&r.result.startsWith('✅');
     if(filter==='fail') return r.result&&!r.result.startsWith('✅');
     return true;
   });
   if(!filtered.length){el.innerHTML='<div class="txt-m">此分類無紀錄</div>';return;}
-  el.innerHTML=filtered.slice(0,100).map(r=>{
+  el.innerHTML=_statHtml+filtered.slice(0,100).map(r=>{
     const isOk=r.result&&r.result.startsWith('✅');
     const isBlock=r.result&&r.result.includes('封鎖');
     const bg=isOk?'#f0fff4':isBlock?'#fff0f0':'#fff8f0';
