@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v04301022</span>
+    <span class="version-tag">v06072345</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -303,6 +303,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <button onclick="ST('former');closeLandlordMenu()">📁 舊房客存檔</button>
       <button onclick="ST('photos');closeLandlordMenu()">🖼️ 照片存檔</button>
       <button onclick="ST('monitor-cam');closeLandlordMenu()">📷 智慧監控</button>
+      <button onclick="ST('owner-calc');closeLandlordMenu()">💴 房東課（月結算）</button>
       <button onclick="ST('backup');closeLandlordMenu()">💾 備份設定</button>
     </div>
   </div>
@@ -1378,6 +1379,70 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div id="lock-battery-history"><div class="txt-m">尚無紀錄</div></div>
   </div>
 </div>
+<!-- ══ 房東課：每月結算 ══ -->
+<div id="page-owner-calc" class="page">
+  <div class="card mt">
+    <div class="card-title">💴 房東課｜每月收支結算</div>
+    <div class="alert-box a-info" style="font-size:.85rem;">
+      計算當月租金收入扣除各項支出後，2位房東各應得多少。結算後自動寄 Gmail 通知須轉帳金額給您弟。
+    </div>
+    <div class="form-row c2">
+      <div><label>結算月份（如 202604）</label>
+        <input type="text" id="oc-period" placeholder="YYYYMM" oninput="calcOwner()"></div>
+      <div><label>🌐 網路費（元，每月）</label>
+        <input type="number" id="oc-net" placeholder="如 1500" oninput="calcOwner()"></div>
+    </div>
+
+    <!-- 水電瓦斯：偶數月有新帳單 -->
+    <div class="form-row" style="margin-bottom:.3rem;">
+      <div>
+        <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:700;">
+          <input type="checkbox" id="oc-new-bill" onchange="toggleNewBill();calcOwner()" style="width:16px;height:16px;accent-color:var(--accent);">
+          本月收到水電瓦斯新帳單（偶數月：2、4、6、8、10、12月）
+        </label>
+      </div>
+    </div>
+    <div id="oc-new-bill-section" style="display:none;">
+      <div class="form-row c3">
+        <div><label>💧 水費帳單（元）</label>
+          <input type="number" id="oc-water" placeholder="如 500" oninput="calcOwner()"></div>
+        <div><label>⚡ 電費帳單（元）</label>
+          <input type="number" id="oc-elec" placeholder="如 2000" oninput="calcOwner()"></div>
+        <div><label>🔥 瓦斯費帳單（元）</label>
+          <input type="number" id="oc-gas" placeholder="如 1000" oninput="calcOwner()"></div>
+      </div>
+    </div>
+    <div id="oc-last-bill-info" class="alert-box a-info" style="font-size:.82rem;display:none;">
+      📋 使用上期帳單：水費 <strong id="oc-last-water">—</strong> 元 ／ 電費 <strong id="oc-last-elec">—</strong> 元 ／ 瓦斯 <strong id="oc-last-gas">—</strong> 元
+    </div>
+
+    <!-- 計算結果 -->
+    <div id="oc-result" class="card" style="margin-top:.75rem;display:none;background:#fffdf0;border:2px solid var(--gold);">
+      <div class="card-title">📊 本月結算明細</div>
+      <div id="oc-detail"></div>
+      <div style="margin-top:.75rem;padding-top:.6rem;border-top:2px solid var(--border2);">
+        <div style="font-size:.95rem;font-weight:900;color:var(--primary);margin-bottom:.4rem;">
+          每位房東應得：<span id="oc-per-person" style="color:var(--danger);font-size:1.1rem;"></span> 元
+        </div>
+        <div class="alert-box a-warn" style="font-size:.88rem;">
+          📧 點「儲存並通知」後，系統將寄 Gmail 提醒您本月須轉帳給您弟。
+        </div>
+      </div>
+    </div>
+
+    <div class="gap mt">
+      <button class="btn bs" onclick="saveOwnerCalc(true)">💾 儲存並寄 Gmail 通知</button>
+      <button class="btn bo" onclick="saveOwnerCalc(false)">💾 只儲存（不寄信）</button>
+    </div>
+  </div>
+
+  <!-- 歷史紀錄 -->
+  <div class="card">
+    <div class="card-title">📁 歷月結算紀錄</div>
+    <div id="oc-history"><div class="txt-m">讀取中...</div></div>
+  </div>
+</div>
+
 <!-- ══ 房東：備份 ══ -->
 <div id="page-backup" class="page">
   <div class="card mt">
@@ -1630,7 +1695,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{} };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0} };
 let _ejsOk = false;
 
 // ============================================================
@@ -1997,6 +2062,8 @@ const loadLandlordData = async () => {
       if(d.lockBatteryRecords)DB.lockBatteryRecords=d.lockBatteryRecords;
       if(d.loginLog)DB.loginLog=d.loginLog;
       if(d.rentPause)DB.rentPause=d.rentPause;
+      if(d.landlordSettlements)DB.landlordSettlements=d.landlordSettlements;
+      if(d.lastUtilBills)DB.lastUtilBills=d.lastUtilBills;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -2023,6 +2090,8 @@ const saveLandlordData = async () => {
     lockBatteryRecords:DB.lockBatteryRecords||[],
     loginLog:DB.loginLog||[],
     rentPause:DB.rentPause||{},
+    landlordSettlements:DB.landlordSettlements||[],
+    lastUtilBills:DB.lastUtilBills||{water:0,elec:0,gas:0},
   });
 };
 
@@ -2032,7 +2101,7 @@ const saveLandlordData = async () => {
 // ============================================================
 
 // 房東專屬頁面清單（房客呼叫 ST 會被擋掉）
-const LANDLORD_PAGES = ['tenants','utility','rent','checkout','former','photos','monitor-cam','backup'];
+const LANDLORD_PAGES = ['tenants','utility','rent','checkout','former','photos','monitor-cam','backup','owner-calc'];
 
 window.ST = function(n){
   // ── 權限檢查：房客無法進入房東專屬頁面 ──
@@ -2051,6 +2120,7 @@ window.ST = function(n){
   if(n==='rent')initRent();
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
+  if(n==='owner-calc')renderOwnerHistory();
   if(n==='announce')renderAnnounce();
   updateLandlordMenuActive(n);
   if(n==='repair')renderRepair();
@@ -3659,6 +3729,144 @@ function _renderLoginLogUI(filter, log){
     </div>`;
   }).join('');
 };
+// ============================================================
+// 【22. 房東課：每月收支結算】
+// ============================================================
+window.toggleNewBill = function(){
+  const hasNew = document.getElementById('oc-new-bill')?.checked;
+  const newSec = document.getElementById('oc-new-bill-section');
+  const lastInfo = document.getElementById('oc-last-bill-info');
+  if(newSec) newSec.style.display = hasNew ? 'block' : 'none';
+  if(lastInfo) lastInfo.style.display = hasNew ? 'none' : 'block';
+  // 顯示上期帳單金額
+  if(!hasNew){
+    const lb = DB.lastUtilBills||{};
+    const lw=document.getElementById('oc-last-water');
+    const le=document.getElementById('oc-last-elec');
+    const lg=document.getElementById('oc-last-gas');
+    if(lw) lw.textContent=lb.water||'（尚無記錄）';
+    if(le) le.textContent=lb.elec||'（尚無記錄）';
+    if(lg) lg.textContent=lb.gas||'（尚無記錄）';
+  }
+};
+
+window.calcOwner = function(){
+  const period = document.getElementById('oc-period')?.value.trim();
+  const netFee = +document.getElementById('oc-net')?.value||0;
+  const hasNew = document.getElementById('oc-new-bill')?.checked;
+  const lb = DB.lastUtilBills||{};
+
+  // 本期帳單（有新帳單用新的，沒有用上期）
+  const water = hasNew ? +document.getElementById('oc-water')?.value||0 : lb.water||0;
+  const elec  = hasNew ? +document.getElementById('oc-elec')?.value||0  : lb.elec||0;
+  const gas   = hasNew ? +document.getElementById('oc-gas')?.value||0   : lb.gas||0;
+
+  // 租金合計（從DB.tenants讀取有租客的房間）
+  let totalRent=0;
+  const rentDetail=[];
+  ROOMS.forEach(r=>{
+    const t=DB.tenants[r]||{};
+    if(t.status==='occupied' && t.rent){
+      totalRent += +t.rent;
+      rentDetail.push(`${RL[r]}（${t.name||'—'}）$${(+t.rent).toLocaleString()}`);
+    }
+  });
+
+  // 支出（各帳單取一半）
+  const halfWater = Math.round(water/2);
+  const halfElec  = Math.round(elec/2);
+  const halfGas   = Math.round(gas/2);
+  const totalDed  = halfWater + halfElec + halfGas + netFee;
+  const net       = totalRent - totalDed;
+  const perPerson = Math.round(net/2);
+
+  // 顯示結果
+  const resultDiv = document.getElementById('oc-result');
+  const detailDiv = document.getElementById('oc-detail');
+  const perEl     = document.getElementById('oc-per-person');
+  if(!resultDiv||!detailDiv||!perEl) return;
+
+  if(totalRent===0 && netFee===0){ resultDiv.style.display='none'; return; }
+
+  detailDiv.innerHTML=`
+    <div style="font-size:.88rem;line-height:2;padding:.3rem 0;">
+      <div style="font-weight:700;color:var(--muted);margin-bottom:.25rem;">💰 租金收入</div>
+      ${rentDetail.map(r=>`<div>　${r}</div>`).join('')}
+      <div style="font-weight:900;border-top:1px solid var(--border2);margin:.2rem 0;padding-top:.2rem;">
+        租金合計：$${totalRent.toLocaleString()}</div>
+      <div style="font-weight:700;color:var(--muted);margin-top:.5rem;margin-bottom:.25rem;">🧾 支出扣除</div>
+      <div>　水費帳單一半：$${halfWater.toLocaleString()} （帳單$${water.toLocaleString()}）</div>
+      <div>　電費帳單一半：$${halfElec.toLocaleString()} （帳單$${elec.toLocaleString()}）</div>
+      <div>　瓦斯費帳單一半：$${halfGas.toLocaleString()} （帳單$${gas.toLocaleString()}）</div>
+      <div>　網路費：$${netFee.toLocaleString()}</div>
+      <div style="font-weight:900;border-top:1px solid var(--border2);margin:.2rem 0;padding-top:.2rem;">
+        支出合計：$${totalDed.toLocaleString()}</div>
+      <div style="font-weight:900;margin-top:.4rem;font-size:.95rem;">
+        淨收入：$${totalRent.toLocaleString()} - $${totalDed.toLocaleString()} = $${net.toLocaleString()}</div>
+    </div>`;
+  perEl.textContent = perPerson.toLocaleString();
+  resultDiv.style.display='block';
+
+  // 暫存計算結果給儲存使用
+  window._ownerCalcResult = {period, totalRent, water, elec, gas, netFee,
+    halfWater, halfElec, halfGas, totalDed, net, perPerson, hasNew};
+};
+
+window.saveOwnerCalc = async function(sendEmail=true){
+  const r = window._ownerCalcResult;
+  if(!r||!r.period){toast('請先填寫月份並完成計算');return;}
+  const now = new Date().toLocaleString('zh-TW');
+  const record = {...r, savedAt:now};
+
+  // 若有新帳單，更新 lastUtilBills
+  if(r.hasNew){
+    DB.lastUtilBills = {water:r.water, elec:r.elec, gas:r.gas};
+  }
+  if(!DB.landlordSettlements) DB.landlordSettlements=[];
+  const idx = DB.landlordSettlements.findIndex(s=>s.period===r.period);
+  if(idx>=0) DB.landlordSettlements[idx]=record;
+  else DB.landlordSettlements.unshift(record);
+
+  await saveLandlordData();
+
+  if(sendEmail){
+    initEJS();
+    try{
+      await emailjs.send(EJS_SVC,EJS_TPL,{
+        to_email: LANDLORD_EMAIL,
+        otp:`💴【${r.period} 房東課月結算 ${now}】\n租金總收入：$${r.totalRent.toLocaleString()}\n扣除支出：$${r.totalDed.toLocaleString()}（水$${r.halfWater}+電$${r.halfElec}+瓦斯$${r.halfGas}+網路$${r.netFee}）\n淨收入：$${r.net.toLocaleString()}\n每人應得：$${r.perPerson.toLocaleString()}\n\n👉 請轉帳 $${r.perPerson.toLocaleString()} 元給弟弟。`
+      });
+      toast(`✅ 已儲存並寄出通知！${r.period} 每人 $${r.perPerson.toLocaleString()}`);
+    }catch(e){toast('已儲存，但寄信失敗：'+e.message);}
+  } else {
+    toast(`✅ 已儲存！${r.period} 每人 $${r.perPerson.toLocaleString()}`);
+  }
+  renderOwnerHistory();
+};
+
+window.renderOwnerHistory = function(){
+  const el=document.getElementById('oc-history');
+  if(!el)return;
+  const list=DB.landlordSettlements||[];
+  if(!list.length){el.innerHTML='<div class="txt-m">尚無結算紀錄</div>';return;}
+  el.innerHTML=list.slice(0,24).map((r,i)=>`
+    <div class="hist-item">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.3rem;">
+        <div>
+          <div style="font-weight:900;">💴 ${r.period} 月結算</div>
+          <div class="txt-m">租金$${(r.totalRent||0).toLocaleString()} ／ 支出$${(r.totalDed||0).toLocaleString()} ／ 每人 <strong style="color:var(--danger);">$${(r.perPerson||0).toLocaleString()}</strong></div>
+          <div style="font-size:.72rem;color:var(--muted);">${r.savedAt||''}</div>
+        </div>
+        <button class="btn bd sm" onclick="deleteOwnerRecord(${i})">刪除</button>
+      </div>
+    </div>`).join('');
+};
+window.deleteOwnerRecord = async function(i){
+  if(!confirm('確定刪除？'))return;
+  DB.landlordSettlements.splice(i,1);
+  await saveLandlordData(); renderOwnerHistory(); toast('已刪除');
+};
+
 window.clearLoginLog = async function(){
   if(!confirm('確定清除所有登入紀錄？'))return;
   DB.loginLog=[];
