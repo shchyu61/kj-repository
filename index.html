@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06081319</span>
+    <span class="version-tag">v06082333</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1605,6 +1605,15 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
     </div>
 
+    <!-- 稅務每月預留提示 -->
+    <div class="alert-box a-warn" style="font-size:.83rem;margin-top:.6rem;">
+      📋 <strong>每月另需預留稅務備用金：</strong>
+      房屋稅 4292÷2÷12＝<strong>179元</strong>／月　地價稅 500÷2÷12≈<strong>21元</strong>／月　共約 <strong>200元</strong>／月
+    </div>
+    <div class="gap mt">
+      <button class="btn bp sm" onclick="autoFillOwnerBills()">⚡ 自動帶入最近水電帳單</button>
+    </div>
+    <div id="oc-bill-source" style="font-size:.78rem;color:var(--success);margin-top:.3rem;"></div>
     <div class="gap mt">
       <button class="btn bs" onclick="saveOwnerCalc(true)">💾 儲存並寄 Gmail 通知</button>
       <button class="btn bo" onclick="saveOwnerCalc(false)">💾 只儲存（不寄信）</button>
@@ -1889,7 +1898,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0} };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[] };
 let _ejsOk = false;
 
 // ============================================================
@@ -2258,6 +2267,8 @@ const loadLandlordData = async () => {
       if(d.rentPause)DB.rentPause=d.rentPause;
       if(d.landlordSettlements)DB.landlordSettlements=d.landlordSettlements;
       if(d.lastUtilBills)DB.lastUtilBills=d.lastUtilBills;
+      if(d.taxRecords)DB.taxRecords=d.taxRecords;
+      if(d.inheritanceLog)DB.inheritanceLog=d.inheritanceLog;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',renewalIntent:'unknown',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -2286,6 +2297,8 @@ const saveLandlordData = async () => {
     rentPause:DB.rentPause||{},
     landlordSettlements:DB.landlordSettlements||[],
     lastUtilBills:DB.lastUtilBills||{water:0,elec:0,gas:0},
+    taxRecords:DB.taxRecords||{},
+    inheritanceLog:DB.inheritanceLog||[],
   });
 };
 
@@ -4062,6 +4075,27 @@ window.saveOwnerCalc = async function(sendEmail=true){
     toast(`✅ 已儲存！${r.period} 每人 $${r.perPerson.toLocaleString()}`);
   }
   renderOwnerHistory();
+};
+
+// ── 房東課：自動讀取最近水電帳單 ──────────────────────────
+window.autoFillOwnerBills = function(){
+  // 找最近一期水電帳單
+  const bill = DB.utilBills && DB.utilBills.length ? DB.utilBills[0] : null;
+  if(!bill){ toast('尚無已儲存的水電帳單，請先完成水電計算並儲存'); return; }
+  // 填入帳單資料
+  const ckEl=document.getElementById('oc-new-bill');
+  const wEl=document.getElementById('oc-water-input');
+  const eEl=document.getElementById('oc-elec-input');
+  const gEl=document.getElementById('oc-gas-input');
+  if(ckEl) ckEl.checked=true;
+  document.getElementById('oc-new-bill-section-owner')&&(document.getElementById('oc-new-bill-section-owner').style.display='block');
+  if(wEl) wEl.value=bill.waterTotal||0;
+  if(eEl) eEl.value=bill.elecTotal||0;
+  if(gEl) gEl.value=bill.gasTotal||0;
+  const infoEl=document.getElementById('oc-bill-source');
+  if(infoEl) infoEl.textContent='✅ 已自動帶入：'+bill.period+'期帳單（水$'+(bill.waterTotal||0)+'、電$'+(bill.elecTotal||0)+'、瓦斯$'+(bill.gasTotal||0)+'）';
+  calcOwner();
+  toast('✅ 已自動帶入 '+bill.period+' 期水電帳單');
 };
 
 window.renderOwnerHistory = function(){
