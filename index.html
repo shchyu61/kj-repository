@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06080814</span>
+    <span class="version-tag">v06080824</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -351,6 +351,88 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
 <!-- ══ 房東：水電帳單 ══ -->
 <div id="page-utility" class="page">
+
+  <!-- ── 帳單暫存區（帳單未收齊時使用）── -->
+  <div class="card mt" style="background:#f0f8ff;border:1.5px solid #90c0e8;">
+    <div class="card-title">📥 帳單暫存區（帳單未收齊時先暫存）</div>
+    <div class="alert-box a-info" style="font-size:.82rem;">
+      帳單未全部收到時，可先在此暫存已知帳單。等全部收到後再到下方「本期帳單資訊」正式計算和儲存。
+    </div>
+    <div class="form-row c3">
+      <div><label>💧 水費帳單（元）</label>
+        <input type="number" id="draft-water" placeholder="如：310" oninput="saveDraft()">
+        <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;">
+          <input type="checkbox" id="draft-water-paid" onchange="saveDraft()"> 已繳清（信用卡/轉帳）
+        </div>
+      </div>
+      <div><label>⚡ 電費帳單（元）</label>
+        <input type="number" id="draft-elec" placeholder="如：2000" oninput="saveDraft()">
+        <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;">
+          <input type="checkbox" id="draft-elec-paid" onchange="saveDraft()"> 已繳清
+        </div>
+      </div>
+      <div><label>🔥 瓦斯費帳單（元）</label>
+        <input type="number" id="draft-gas" placeholder="如：1000" oninput="saveDraft()">
+        <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;">
+          <input type="checkbox" id="draft-gas-paid" onchange="saveDraft()"> 已繳清
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div><label>📝 暫存備注</label>
+        <input type="text" id="draft-note" placeholder="如：06月水費已收到310元，電費/瓦斯費未到" oninput="saveDraft()">
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem;margin-top:.3rem;">
+      <div id="draft-saved-at" style="font-size:.75rem;color:var(--muted);"></div>
+      <button class="btn ba sm" onclick="loadDraftToMain()">⬆ 將暫存值帶入下方正式計算</button>
+      <button class="btn bd sm" onclick="clearDraft()">🗑️ 清除暫存</button>
+    </div>
+  </div>
+
+  <!-- ── 房東回嘉義暫存填填樂 ── -->
+  <div class="card" style="background:#f5fff0;border:1.5px solid #90d890;">
+    <div class="card-title">🏠 房東回嘉義填填樂（暫存區）</div>
+    <div class="alert-box a-info" style="font-size:.82rem;">
+      隨時可記錄回嘉義的日期，不必等到計算帳單時才填。等要算水電帳單時，再點「帶入帳單計算」。
+    </div>
+    <div class="form-row c3">
+      <div>
+        <label id="draft-lt-m1-label">第1個月</label>
+        <input type="text" id="draft-lt-m1" placeholder="貼上Excel日期均可" oninput="saveLandlordDraft()">
+      </div>
+      <div>
+        <label id="draft-lt-m2-label">第2個月</label>
+        <input type="text" id="draft-lt-m2" placeholder="貼上或點月曆" oninput="saveLandlordDraft()">
+      </div>
+      <div>
+        <label id="draft-lt-m3-label">第3個月</label>
+        <input type="text" id="draft-lt-m3" placeholder="無則留空" oninput="saveLandlordDraft()">
+      </div>
+    </div>
+    <div id="draft-lt-cal-wrap" style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.4rem;">
+      <div>
+        <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="draft-lt-cal-m1-title">第1個月</div>
+        <div id="draft-lt-cal-m1" class="cal-grid"></div>
+      </div>
+      <div>
+        <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="draft-lt-cal-m2-title">第2個月</div>
+        <div id="draft-lt-cal-m2" class="cal-grid"></div>
+      </div>
+      <div>
+        <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="draft-lt-cal-m3-title">第3個月</div>
+        <div id="draft-lt-cal-m3" class="cal-grid"></div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem;margin-top:.5rem;">
+      <div id="draft-lt-saved-at" style="font-size:.75rem;color:var(--muted);"></div>
+      <div style="display:flex;gap:.4rem;">
+        <button class="btn ba sm" onclick="loadLandlordDraftToMain()">⬆ 帶入帳單計算</button>
+        <button class="btn bd sm" onclick="clearLandlordDraft()">🗑️ 清除暫存</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── 本期帳單資訊 ── -->
   <div class="card mt">
     <div class="card-title">📋 本期帳單資訊</div>
@@ -2143,7 +2225,7 @@ window.ST = function(n){
   document.querySelectorAll('.tab-nav button').forEach(b=>{
     if(b.getAttribute('onclick')===`ST('${n}')`)b.classList.add('active');
   });
-  if(n==='utility'){initU(); renderUtilHistory(); if(window.refreshCalendars)window.refreshCalendars();}
+  if(n==='utility'){initU(); renderUtilHistory(); if(window.refreshCalendars)window.refreshCalendars(); loadDraftState(); loadLandlordDraftState();}
   if(n==='rent')initRent();
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
@@ -3918,6 +4000,103 @@ window.deleteOwnerRecord = async function(i){
   if(!confirm('確定刪除？'))return;
   DB.landlordSettlements.splice(i,1);
   await saveLandlordData(); renderOwnerHistory(); toast('已刪除');
+};
+
+// ── 水電帳單暫存區 ─────────────────────────────────────────
+window.saveDraft = function(){
+  const d={
+    water:document.getElementById('draft-water')?.value||'',
+    elec:document.getElementById('draft-elec')?.value||'',
+    gas:document.getElementById('draft-gas')?.value||'',
+    waterPaid:document.getElementById('draft-water-paid')?.checked||false,
+    elecPaid:document.getElementById('draft-elec-paid')?.checked||false,
+    gasPaid:document.getElementById('draft-gas-paid')?.checked||false,
+    note:document.getElementById('draft-note')?.value||'',
+    savedAt:new Date().toLocaleString('zh-TW'),
+  };
+  localStorage.setItem('utilDraft', JSON.stringify(d));
+  const el=document.getElementById('draft-saved-at');
+  if(el) el.textContent='💾 已暫存：'+d.savedAt;
+};
+window.loadDraftState = function(){
+  try{
+    const d=JSON.parse(localStorage.getItem('utilDraft')||'{}');
+    if(document.getElementById('draft-water')) document.getElementById('draft-water').value=d.water||'';
+    if(document.getElementById('draft-elec'))  document.getElementById('draft-elec').value=d.elec||'';
+    if(document.getElementById('draft-gas'))   document.getElementById('draft-gas').value=d.gas||'';
+    if(document.getElementById('draft-water-paid')) document.getElementById('draft-water-paid').checked=d.waterPaid||false;
+    if(document.getElementById('draft-elec-paid'))  document.getElementById('draft-elec-paid').checked=d.elecPaid||false;
+    if(document.getElementById('draft-gas-paid'))   document.getElementById('draft-gas-paid').checked=d.gasPaid||false;
+    if(document.getElementById('draft-note'))  document.getElementById('draft-note').value=d.note||'';
+    const el=document.getElementById('draft-saved-at');
+    if(el&&d.savedAt) el.textContent='💾 上次暫存：'+d.savedAt;
+  }catch(e){}
+};
+window.loadDraftToMain = function(){
+  try{
+    const d=JSON.parse(localStorage.getItem('utilDraft')||'{}');
+    if(d.water && document.getElementById('u-water')) document.getElementById('u-water').value=d.water;
+    if(d.elec  && document.getElementById('u-elec'))  document.getElementById('u-elec').value=d.elec;
+    if(d.gas   && document.getElementById('u-gas'))   document.getElementById('u-gas').value=d.gas;
+    calcU();
+    toast('✅ 暫存帳單已帶入正式計算欄位');
+  }catch(e){toast('帶入失敗：'+e.message);}
+};
+window.clearDraft = function(){
+  if(!confirm('確定清除帳單暫存？'))return;
+  localStorage.removeItem('utilDraft');
+  ['draft-water','draft-elec','draft-gas','draft-note'].forEach(id=>{
+    const el=document.getElementById(id); if(el)el.value='';
+  });
+  ['draft-water-paid','draft-elec-paid','draft-gas-paid'].forEach(id=>{
+    const el=document.getElementById(id); if(el)el.checked=false;
+  });
+  const el=document.getElementById('draft-saved-at');
+  if(el)el.textContent='';
+  toast('已清除帳單暫存');
+};
+
+// ── 房東回嘉義填填樂暫存區 ───────────────────────────────────
+window.saveLandlordDraft = function(){
+  const d={
+    ltM1:document.getElementById('draft-lt-m1')?.value||'',
+    ltM2:document.getElementById('draft-lt-m2')?.value||'',
+    ltM3:document.getElementById('draft-lt-m3')?.value||'',
+    savedAt:new Date().toLocaleString('zh-TW'),
+  };
+  localStorage.setItem('landlordDraft', JSON.stringify(d));
+  const el=document.getElementById('draft-lt-saved-at');
+  if(el) el.textContent='💾 已暫存：'+d.savedAt;
+};
+window.loadLandlordDraftState = function(){
+  try{
+    const d=JSON.parse(localStorage.getItem('landlordDraft')||'{}');
+    if(document.getElementById('draft-lt-m1')) document.getElementById('draft-lt-m1').value=d.ltM1||'';
+    if(document.getElementById('draft-lt-m2')) document.getElementById('draft-lt-m2').value=d.ltM2||'';
+    if(document.getElementById('draft-lt-m3')) document.getElementById('draft-lt-m3').value=d.ltM3||'';
+    const el=document.getElementById('draft-lt-saved-at');
+    if(el&&d.savedAt) el.textContent='💾 上次暫存：'+d.savedAt;
+  }catch(e){}
+};
+window.loadLandlordDraftToMain = function(){
+  try{
+    const d=JSON.parse(localStorage.getItem('landlordDraft')||'{}');
+    if(d.ltM1 && document.getElementById('lt-m1')) document.getElementById('lt-m1').value=d.ltM1;
+    if(d.ltM2 && document.getElementById('lt-m2')) document.getElementById('lt-m2').value=d.ltM2;
+    if(d.ltM3 && document.getElementById('lt-m3')) document.getElementById('lt-m3').value=d.ltM3;
+    calcLandlordDays();
+    toast('✅ 暫存入住日已帶入帳單計算');
+  }catch(e){toast('帶入失敗：'+e.message);}
+};
+window.clearLandlordDraft = function(){
+  if(!confirm('確定清除入住日暫存？'))return;
+  localStorage.removeItem('landlordDraft');
+  ['draft-lt-m1','draft-lt-m2','draft-lt-m3'].forEach(id=>{
+    const el=document.getElementById(id); if(el)el.value='';
+  });
+  const el=document.getElementById('draft-lt-saved-at');
+  if(el)el.textContent='';
+  toast('已清除入住日暫存');
 };
 
 window.clearLoginLog = async function(){
