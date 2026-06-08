@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06080824</span>
+    <span class="version-tag">v06080837</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -356,37 +356,119 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div class="card mt" style="background:#f0f8ff;border:1.5px solid #90c0e8;">
     <div class="card-title">📥 帳單暫存區（帳單未收齊時先暫存）</div>
     <div class="alert-box a-info" style="font-size:.82rem;">
-      帳單未全部收到時，可先在此暫存已知帳單。等全部收到後再到下方「本期帳單資訊」正式計算和儲存。
+      帳單未全部收到時，可先暫存已知帳單。每種帳單可各自選擇是哪個月份的帳單。等全部收到後再點「帶入正式計算」。
     </div>
-    <div class="form-row c3">
-      <div><label>💧 水費帳單（元）</label>
+
+    <!-- 水費 (偶數月) -->
+    <div class="form-row c3" style="background:#f8f8ff;border-radius:.7rem;padding:.5rem .6rem;margin-bottom:.4rem;">
+      <div><label>💧 水費帳單月份</label>
+        <select id="draft-water-month">
+          <option value="">-- 選擇月份 --</option>
+          <option value="02">02月帳單</option>
+          <option value="04">04月帳單</option>
+          <option value="06">06月帳單</option>
+          <option value="08">08月帳單</option>
+          <option value="10">10月帳單</option>
+          <option value="12">12月帳單</option>
+        </select>
+      </div>
+      <div><label>💧 水費金額（元）</label>
         <input type="number" id="draft-water" placeholder="如：310" oninput="saveDraft()">
-        <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;">
-          <input type="checkbox" id="draft-water-paid" onchange="saveDraft()"> 已繳清（信用卡/轉帳）
-        </div>
       </div>
-      <div><label>⚡ 電費帳單（元）</label>
-        <input type="number" id="draft-elec" placeholder="如：2000" oninput="saveDraft()">
-        <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;">
-          <input type="checkbox" id="draft-elec-paid" onchange="saveDraft()"> 已繳清
-        </div>
-      </div>
-      <div><label>🔥 瓦斯費帳單（元）</label>
-        <input type="number" id="draft-gas" placeholder="如：1000" oninput="saveDraft()">
-        <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;">
-          <input type="checkbox" id="draft-gas-paid" onchange="saveDraft()"> 已繳清
+      <div><label>繳費狀態</label>
+        <div style="margin-top:.6rem;">
+          <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;">
+            <input type="checkbox" id="draft-water-paid" onchange="saveDraft()"> ✅ 已繳清（信用卡/轉帳）
+          </label>
         </div>
       </div>
     </div>
+
+    <!-- 電費 (偶數月) -->
+    <div class="form-row c3" style="background:#fffdf0;border-radius:.7rem;padding:.5rem .6rem;margin-bottom:.4rem;">
+      <div><label>⚡ 電費帳單月份</label>
+        <select id="draft-elec-month">
+          <option value="">-- 選擇月份 --</option>
+          <option value="02">02月帳單</option>
+          <option value="04">04月帳單</option>
+          <option value="06">06月帳單</option>
+          <option value="08">08月帳單</option>
+          <option value="10">10月帳單</option>
+          <option value="12">12月帳單</option>
+        </select>
+      </div>
+      <div><label>⚡ 電費金額（元）</label>
+        <input type="number" id="draft-elec" placeholder="如：2000" oninput="saveDraft()">
+      </div>
+      <div><label>用電度數（度，選填）</label>
+        <input type="number" id="draft-elec-kwh" placeholder="如：878" oninput="saveDraft()">
+        <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;margin-top:.2rem;">
+          <input type="checkbox" id="draft-elec-paid" onchange="saveDraft()"> ✅ 已繳清
+        </label>
+      </div>
+    </div>
+
+    <!-- 瓦斯費 (偶數月) -->
+    <div class="form-row c3" style="background:#fff5f0;border-radius:.7rem;padding:.5rem .6rem;margin-bottom:.4rem;">
+      <div><label>🔥 瓦斯費帳單月份</label>
+        <select id="draft-gas-month">
+          <option value="">-- 選擇月份 --</option>
+          <option value="02">02月帳單</option>
+          <option value="04">04月帳單</option>
+          <option value="06">06月帳單</option>
+          <option value="08">08月帳單</option>
+          <option value="10">10月帳單</option>
+          <option value="12">12月帳單</option>
+        </select>
+      </div>
+      <div><label>🔥 瓦斯費金額（元）</label>
+        <input type="number" id="draft-gas" placeholder="如：1000" oninput="saveDraft()">
+      </div>
+      <div><label>繳費狀態</label>
+        <div style="margin-top:.6rem;">
+          <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;">
+            <input type="checkbox" id="draft-gas-paid" onchange="saveDraft()"> ✅ 已繳清
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 網路費 (每月) -->
+    <div class="form-row c3" style="background:#f0fff0;border-radius:.7rem;padding:.5rem .6rem;margin-bottom:.4rem;">
+      <div><label>🌐 網路費帳單月份</label>
+        <select id="draft-net-month">
+          <option value="">-- 選擇月份 --</option>
+          <option value="01">01月</option><option value="02">02月</option>
+          <option value="03">03月</option><option value="04">04月</option>
+          <option value="05">05月</option><option value="06">06月</option>
+          <option value="07">07月</option><option value="08">08月</option>
+          <option value="09">09月</option><option value="10">10月</option>
+          <option value="11">11月</option><option value="12">12月</option>
+        </select>
+      </div>
+      <div><label>🌐 網路費金額（元）</label>
+        <input type="number" id="draft-net" placeholder="如：1500" oninput="saveDraft()">
+      </div>
+      <div><label>繳費狀態</label>
+        <div style="margin-top:.6rem;">
+          <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;">
+            <input type="checkbox" id="draft-net-paid" onchange="saveDraft()"> ✅ 已繳清
+          </label>
+        </div>
+      </div>
+    </div>
+
     <div class="form-row">
       <div><label>📝 暫存備注</label>
-        <input type="text" id="draft-note" placeholder="如：06月水費已收到310元，電費/瓦斯費未到" oninput="saveDraft()">
+        <input type="text" id="draft-note" placeholder="如：06月水費310元已繳清，電費/瓦斯費尚未收到帳單" oninput="saveDraft()">
       </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem;margin-top:.3rem;">
       <div id="draft-saved-at" style="font-size:.75rem;color:var(--muted);"></div>
-      <button class="btn ba sm" onclick="loadDraftToMain()">⬆ 將暫存值帶入下方正式計算</button>
-      <button class="btn bd sm" onclick="clearDraft()">🗑️ 清除暫存</button>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
+        <button class="btn ba sm" onclick="loadDraftToMain()">⬆ 帶入正式帳單計算</button>
+        <button class="btn bd sm" onclick="clearDraft()">🗑️ 清除暫存</button>
+      </div>
     </div>
   </div>
 
@@ -4004,30 +4086,45 @@ window.deleteOwnerRecord = async function(i){
 
 // ── 水電帳單暫存區 ─────────────────────────────────────────
 window.saveDraft = function(){
+  const g=id=>document.getElementById(id);
   const d={
-    water:document.getElementById('draft-water')?.value||'',
-    elec:document.getElementById('draft-elec')?.value||'',
-    gas:document.getElementById('draft-gas')?.value||'',
-    waterPaid:document.getElementById('draft-water-paid')?.checked||false,
-    elecPaid:document.getElementById('draft-elec-paid')?.checked||false,
-    gasPaid:document.getElementById('draft-gas-paid')?.checked||false,
-    note:document.getElementById('draft-note')?.value||'',
+    waterMonth:g('draft-water-month')?.value||'',
+    water:g('draft-water')?.value||'',
+    waterPaid:g('draft-water-paid')?.checked||false,
+    elecMonth:g('draft-elec-month')?.value||'',
+    elec:g('draft-elec')?.value||'',
+    elecKwh:g('draft-elec-kwh')?.value||'',
+    elecPaid:g('draft-elec-paid')?.checked||false,
+    gasMonth:g('draft-gas-month')?.value||'',
+    gas:g('draft-gas')?.value||'',
+    gasPaid:g('draft-gas-paid')?.checked||false,
+    netMonth:g('draft-net-month')?.value||'',
+    net:g('draft-net')?.value||'',
+    netPaid:g('draft-net-paid')?.checked||false,
+    note:g('draft-note')?.value||'',
     savedAt:new Date().toLocaleString('zh-TW'),
   };
   localStorage.setItem('utilDraft', JSON.stringify(d));
-  const el=document.getElementById('draft-saved-at');
-  if(el) el.textContent='💾 已暫存：'+d.savedAt;
+  const el=g('draft-saved-at');
+  if(el){
+    const parts=[];
+    if(d.water) parts.push(`💧${d.waterMonth}月$${d.water}${d.waterPaid?'✅':''}`);
+    if(d.elec)  parts.push(`⚡${d.elecMonth}月$${d.elec}${d.elecPaid?'✅':''}`);
+    if(d.gas)   parts.push(`🔥${d.gasMonth}月$${d.gas}${d.gasPaid?'✅':''}`);
+    if(d.net)   parts.push(`🌐${d.netMonth}月$${d.net}${d.netPaid?'✅':''}`);
+    el.textContent='💾 已暫存 '+d.savedAt+'　'+parts.join('　');
+  }
 };
 window.loadDraftState = function(){
   try{
     const d=JSON.parse(localStorage.getItem('utilDraft')||'{}');
-    if(document.getElementById('draft-water')) document.getElementById('draft-water').value=d.water||'';
-    if(document.getElementById('draft-elec'))  document.getElementById('draft-elec').value=d.elec||'';
-    if(document.getElementById('draft-gas'))   document.getElementById('draft-gas').value=d.gas||'';
-    if(document.getElementById('draft-water-paid')) document.getElementById('draft-water-paid').checked=d.waterPaid||false;
-    if(document.getElementById('draft-elec-paid'))  document.getElementById('draft-elec-paid').checked=d.elecPaid||false;
-    if(document.getElementById('draft-gas-paid'))   document.getElementById('draft-gas-paid').checked=d.gasPaid||false;
-    if(document.getElementById('draft-note'))  document.getElementById('draft-note').value=d.note||'';
+    const sv=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
+    const sc=(id,v)=>{const el=document.getElementById(id);if(el)el.checked=v||false;};
+    sv('draft-water-month',d.waterMonth); sv('draft-water',d.water); sc('draft-water-paid',d.waterPaid);
+    sv('draft-elec-month',d.elecMonth);   sv('draft-elec',d.elec);   sv('draft-elec-kwh',d.elecKwh); sc('draft-elec-paid',d.elecPaid);
+    sv('draft-gas-month',d.gasMonth);     sv('draft-gas',d.gas);     sc('draft-gas-paid',d.gasPaid);
+    sv('draft-net-month',d.netMonth);     sv('draft-net',d.net);     sc('draft-net-paid',d.netPaid);
+    sv('draft-note',d.note);
     const el=document.getElementById('draft-saved-at');
     if(el&&d.savedAt) el.textContent='💾 上次暫存：'+d.savedAt;
   }catch(e){}
@@ -4035,20 +4132,29 @@ window.loadDraftState = function(){
 window.loadDraftToMain = function(){
   try{
     const d=JSON.parse(localStorage.getItem('utilDraft')||'{}');
+    // 帶入水電瓦斯金額到正式計算欄位
     if(d.water && document.getElementById('u-water')) document.getElementById('u-water').value=d.water;
     if(d.elec  && document.getElementById('u-elec'))  document.getElementById('u-elec').value=d.elec;
     if(d.gas   && document.getElementById('u-gas'))   document.getElementById('u-gas').value=d.gas;
+    if(d.elecKwh && document.getElementById('u-total-kwh')) document.getElementById('u-total-kwh').value=d.elecKwh;
     calcU();
-    toast('✅ 暫存帳單已帶入正式計算欄位');
+    // 顯示月份提示
+    const info=[];
+    if(d.water) info.push(`水費${d.waterMonth||'—'}月$${d.water}${d.waterPaid?' ✅已繳':''}`);
+    if(d.elec)  info.push(`電費${d.elecMonth||'—'}月$${d.elec}${d.elecPaid?' ✅已繳':''}`);
+    if(d.gas)   info.push(`瓦斯${d.gasMonth||'—'}月$${d.gas}${d.gasPaid?' ✅已繳':''}`);
+    if(d.net)   info.push(`網路${d.netMonth||'—'}月$${d.net}${d.netPaid?' ✅已繳':''}`);
+    toast('✅ 已帶入正式計算：'+info.join('、'));
   }catch(e){toast('帶入失敗：'+e.message);}
 };
 window.clearDraft = function(){
   if(!confirm('確定清除帳單暫存？'))return;
   localStorage.removeItem('utilDraft');
-  ['draft-water','draft-elec','draft-gas','draft-note'].forEach(id=>{
+  ['draft-water-month','draft-water','draft-elec-month','draft-elec','draft-elec-kwh',
+   'draft-gas-month','draft-gas','draft-net-month','draft-net','draft-note'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.value='';
   });
-  ['draft-water-paid','draft-elec-paid','draft-gas-paid'].forEach(id=>{
+  ['draft-water-paid','draft-elec-paid','draft-gas-paid','draft-net-paid'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.checked=false;
   });
   const el=document.getElementById('draft-saved-at');
