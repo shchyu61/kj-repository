@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06080849</span>
+    <span class="version-tag">v06081319</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -472,40 +472,43 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
   </div>
 
-  <!-- ── 房東回嘉義暫存填填樂 ── -->
+  <!-- ── 房東回嘉義填填樂（暫存區，純文字輸入）── -->
   <div class="card" style="background:#f5fff0;border:1.5px solid #90d890;">
     <div class="card-title">🏠 房東回嘉義填填樂（暫存區）</div>
-    <div class="alert-box a-info" style="font-size:.82rem;">
-      隨時可記錄回嘉義的日期，不必等到計算帳單時才填。等要算水電帳單時，再點「帶入帳單計算」。
+    <div class="alert-box a-info" style="font-size:.85rem;line-height:1.9;">
+      <strong>支援格式（以下任一格式均可辨識，可混用）：</strong><br>
+      ✅ 空格分隔：<code>5 6 7 8 9</code>（7/5~7/9 共5天，只打日期數字）<br>
+      ✅ 逗號分隔：<code>5,6,7,8,9</code>（同上）<br>
+      ✅ 月/日格式：<code>7/5 7/8 7/9</code>（7月5日、8日、9日 共3天）<br>
+      ✅ 完整日期：<code>2026-07-05 2026-07-08 2026-07-09</code><br>
+      ✅ 從Excel貼上：直接貼上，自動辨識Tab/換行分隔<br>
+      <span style="color:#a06000;">⚠️ 每個月份各自填入對應月份的欄位，只打「日期」數字即可。</span>
     </div>
+
+    <div style="background:#fffdf0;border-radius:.6rem;padding:.5rem .75rem;margin-bottom:.5rem;font-size:.83rem;">
+      <strong>📌 範例：下個月7/5、7/8、7/9回嘉義住3天</strong><br>
+      → 在「第X個月」欄位填入（依帳單計費月份對應）：<code>5 8 9</code><br>
+      → 系統自動計算：<strong>3天</strong>
+    </div>
+
     <div class="form-row c3">
       <div>
-        <label id="draft-lt-m1-label">第1個月</label>
-        <input type="text" id="draft-lt-m1" placeholder="貼上Excel日期均可" oninput="saveLandlordDraft()">
+        <label id="draft-lt-m1-label">第1個月入住日</label>
+        <input type="text" id="draft-lt-m1" placeholder="如：5 8 9（日期數字）" oninput="saveLandlordDraft();previewDraftDays()">
+        <div id="draft-lt-m1-preview" style="font-size:.78rem;color:var(--success);margin-top:.2rem;"></div>
       </div>
       <div>
-        <label id="draft-lt-m2-label">第2個月</label>
-        <input type="text" id="draft-lt-m2" placeholder="貼上或點月曆" oninput="saveLandlordDraft()">
+        <label id="draft-lt-m2-label">第2個月入住日</label>
+        <input type="text" id="draft-lt-m2" placeholder="如：1 2 3 4 5" oninput="saveLandlordDraft();previewDraftDays()">
+        <div id="draft-lt-m2-preview" style="font-size:.78rem;color:var(--success);margin-top:.2rem;"></div>
       </div>
       <div>
-        <label id="draft-lt-m3-label">第3個月</label>
-        <input type="text" id="draft-lt-m3" placeholder="無則留空" oninput="saveLandlordDraft()">
+        <label id="draft-lt-m3-label">第3個月入住日（選填）</label>
+        <input type="text" id="draft-lt-m3" placeholder="無則留空" oninput="saveLandlordDraft();previewDraftDays()">
+        <div id="draft-lt-m3-preview" style="font-size:.78rem;color:var(--success);margin-top:.2rem;"></div>
       </div>
     </div>
-    <div id="draft-lt-cal-wrap" style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.4rem;">
-      <div>
-        <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="draft-lt-cal-m1-title">第1個月</div>
-        <div id="draft-lt-cal-m1" class="cal-grid"></div>
-      </div>
-      <div>
-        <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="draft-lt-cal-m2-title">第2個月</div>
-        <div id="draft-lt-cal-m2" class="cal-grid"></div>
-      </div>
-      <div>
-        <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:.25rem;" id="draft-lt-cal-m3-title">第3個月</div>
-        <div id="draft-lt-cal-m3" class="cal-grid"></div>
-      </div>
-    </div>
+    <div id="draft-lt-total-preview" style="font-size:.88rem;font-weight:900;color:var(--accent);margin-top:.3rem;padding:.3rem .5rem;background:var(--bg2);border-radius:.5rem;display:none;"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem;margin-top:.5rem;">
       <div id="draft-lt-saved-at" style="font-size:.75rem;color:var(--muted);"></div>
       <div style="display:flex;gap:.4rem;">
@@ -4160,6 +4163,36 @@ window.clearDraft = function(){
   const el=document.getElementById('draft-saved-at');
   if(el)el.textContent='';
   toast('已清除帳單暫存');
+};
+
+// ── 房東填填樂暫存區：即時預覽天數 ─────────────────────────
+window.previewDraftDays = function(){
+  function countDays(text){
+    if(!text||!text.trim()) return 0;
+    const normalized = text.replace(/[，\u3000\t\n\r]+/g,' ').replace(/,/g,' ');
+    const tokens = normalized.split(/\s+/).map(s=>s.trim()).filter(s=>s.length>0);
+    const days = new Set();
+    tokens.forEach(t=>{
+      const m = t.match(/^(?:\d+\/)?0*(\d+)$/);
+      if(m) days.add(m[1]);
+    });
+    return days.size;
+  }
+  let total=0;
+  ['1','2','3'].forEach(n=>{
+    const val=document.getElementById('draft-lt-m'+n)?.value||'';
+    const cnt=countDays(val);
+    const el=document.getElementById('draft-lt-m'+n+'-preview');
+    if(el) el.textContent = val.trim() ? `→ 辨識到 ${cnt} 天` : '';
+    total+=cnt;
+  });
+  const tot=document.getElementById('draft-lt-total-preview');
+  if(tot){
+    if(total>0){
+      tot.textContent=`📅 暫存合計：${total} 天（帶入帳單後將加入均分計算）`;
+      tot.style.display='block';
+    } else { tot.style.display='none'; }
+  }
 };
 
 // ── 房東回嘉義填填樂暫存區 ───────────────────────────────────
