@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06080837</span>
+    <span class="version-tag">v06080849</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -2362,7 +2362,7 @@ function renderTenants(){
       </td>
       <td>${t.rent?'NT$'+(+t.rent).toLocaleString():'—'}</td>
       <td>${t.movein||'—'}</td>
-      <td>${t.expiry||'—'}<br><span style="font-size:.7rem;color:${t.renewalIntent==='yes'?'var(--success)':t.renewalIntent==='no'?'var(--danger)':'var(--muted)'}">${t.renewalIntent==='yes'?'✅續約':t.renewalIntent==='no'?'❌不續約':'❓未知'}</span></td>
+      <td>${t.expiry||'—'}<br><span style="font-size:.7rem;color:${t.renewalIntent==='yes'?'var(--success)':t.renewalIntent==='no'?'var(--danger)':'var(--muted)'}">${t.renewalIntent==='yes'?'✅到期待續約':t.renewalIntent==='no'?'❌到期不續約':'❓續約未知'}</span></td>
       <td style="font-weight:700;color:var(--info);">${t.rentDay?'每月'+t.rentDay+'日':'—'}</td>
       <td>${t.deposit?'NT$'+(+t.deposit).toLocaleString():'—'}</td>
       <td><span class="${occ?'pay-paid':'b-vac'}">${occ?'入住中':'空房'}</span></td>
