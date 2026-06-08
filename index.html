@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06072345</span>
+    <span class="version-tag">v06080814</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -686,6 +686,14 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
 <!-- ══ 公告（房東/房客共用）══ -->
 <div id="page-announce" class="page">
+  <div class="card mt" style="background:#fff8e8;border:2px solid #e8a000;">
+    <div style="font-size:1rem;font-weight:900;color:#8a4000;margin-bottom:.4rem;">📋 重要說明：公告效力與法律保障</div>
+    <div style="font-size:.85rem;color:#6a3000;line-height:1.8;">
+      ⚠️ <strong>本網頁公告及 Line 房客群組記事本，房東均可自由編輯，對房客不具法律保障。</strong><br>
+      ✅ 為維護房客法律權益，房東每次發出「房東公告」時，除更新 Line 房客群組記事本外，<strong>將在房客群組聊天訊息視窗重複發出相同公告</strong>，以聊天訊息留存為法律依據。<br>
+      📌 <strong>正式公告以 Line 房客群組聊天記錄為主，本網頁公告僅供查閱參考。</strong>
+    </div>
+  </div>
 
   <!-- 固定資訊區：停水停電 + 垃圾資源回收 + 實用連結 -->
   <div class="card mt">
@@ -1592,6 +1600,25 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div><label>契約約定收租日 <span style="font-size:.7rem;color:var(--gold);font-weight:400;">（每月幾號）</span></label>
         <input type="number" id="mt-rentday" min="1" max="31" placeholder="如：8"></div>
     </div>
+    <!-- 續約意願：決定到期前45天是否自動寄Gmail -->
+    <div class="form-row">
+      <div><label>到期續約意願 <span style="font-size:.72rem;color:var(--muted);">（已選前兩項→到期前45天不寄通知，避免困擾房客）</span></label>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:.3rem;">
+          <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-weight:700;font-size:.88rem;">
+            <input type="radio" name="mt-renewal" id="mt-renewal-yes" value="yes" style="accent-color:var(--success);">
+            ✅ 到期要續約
+          </label>
+          <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-weight:700;font-size:.88rem;">
+            <input type="radio" name="mt-renewal" id="mt-renewal-no" value="no" style="accent-color:var(--danger);">
+            ❌ 到期不續約
+          </label>
+          <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-weight:700;font-size:.88rem;">
+            <input type="radio" name="mt-renewal" id="mt-renewal-unknown" value="unknown" checked style="accent-color:var(--muted);">
+            ❓ 未知是否續約
+          </label>
+        </div>
+      </div>
+    </div>
     <div class="form-row c2">
       <div><label>身份證字號</label><input type="text" id="mt-id" placeholder="A123456789"></div>
       <div><label>身分證反面【戶籍地】</label><input type="text" id="mt-address" placeholder="如：嘉義市東區○○路○號"></div>
@@ -2065,7 +2092,7 @@ const loadLandlordData = async () => {
       if(d.landlordSettlements)DB.landlordSettlements=d.landlordSettlements;
       if(d.lastUtilBills)DB.lastUtilBills=d.lastUtilBills;
     }
-    ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',id:'',note:'',status:'vacant'};});
+    ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',renewalIntent:'unknown',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
 };
 
@@ -2171,7 +2198,7 @@ function renderTenants(){
       </td>
       <td>${t.rent?'NT$'+(+t.rent).toLocaleString():'—'}</td>
       <td>${t.movein||'—'}</td>
-      <td>${t.expiry||'—'}</td>
+      <td>${t.expiry||'—'}<br><span style="font-size:.7rem;color:${t.renewalIntent==='yes'?'var(--success)':t.renewalIntent==='no'?'var(--danger)':'var(--muted)'}">${t.renewalIntent==='yes'?'✅續約':t.renewalIntent==='no'?'❌不續約':'❓未知'}</span></td>
       <td style="font-weight:700;color:var(--info);">${t.rentDay?'每月'+t.rentDay+'日':'—'}</td>
       <td>${t.deposit?'NT$'+(+t.deposit).toLocaleString():'—'}</td>
       <td><span class="${occ?'pay-paid':'b-vac'}">${occ?'入住中':'空房'}</span></td>
@@ -2185,6 +2212,7 @@ function renderTenants(){
 window.openAddTenant = function(){
   document.getElementById('mt-title').textContent='新增房客';
   ['mt-name','mt-phone','mt-email','mt-rent','mt-deposit','mt-movein','mt-expiry','mt-id','mt-address','mt-history','mt-note','mt-rentday'].forEach(id=>document.getElementById(id)&&(document.getElementById(id).value=''));
+  document.querySelectorAll('input[name="mt-renewal"]').forEach(r=>{r.checked=r.value==='unknown';});
   const _ct=document.getElementById('mt-contract');if(_ct)_ct.value='';
   document.getElementById('mt-status').value='occupied';
   OM('modal-tenant');
@@ -2203,6 +2231,8 @@ window.openEditTenant = function(r){
   if(ctEl)ctEl.value=t.contract||'';
   const rdEl=document.getElementById('mt-rentday');
   if(rdEl)rdEl.value=t.rentDay||'';
+  const ri=document.querySelector(`input[name="mt-renewal"][value="${t.renewalIntent||'unknown'}"]`);
+  if(ri)ri.checked=true;
   document.getElementById('mt-status').value=t.status||'vacant';
   OM('modal-tenant');
 };
@@ -2216,6 +2246,7 @@ window.saveTenant = async function(){
     deposit:+document.getElementById('mt-deposit').value||0,
     movein:document.getElementById('mt-movein').value,
     expiry:document.getElementById('mt-expiry').value,
+    renewalIntent:document.querySelector('input[name="mt-renewal"]:checked')?.value||'unknown',
     id:document.getElementById('mt-id').value.trim(),
     address:document.getElementById('mt-address')?.value.trim()||'',
     contract:document.getElementById('mt-contract')?.value||'',
@@ -2813,6 +2844,22 @@ window.openRentPauseModal = function(){
 window.closeRentPauseModal = function(){
   document.getElementById('rent-pause-modal').style.display='none';
 };
+window.editRentPause = function(key){
+  const p=(DB.rentPause||{})[key];
+  if(!p) return;
+  // 預填 Modal
+  const roomEl=document.getElementById('rp-room');
+  const fromEl=document.getElementById('rp-from');
+  const toEl=document.getElementById('rp-to');
+  const reasonEl=document.getElementById('rp-reason');
+  if(roomEl) roomEl.value=p.room;
+  if(fromEl) fromEl.value=p.from;
+  if(toEl)   toEl.value=p.to;
+  if(reasonEl) reasonEl.value=p.reason;
+  // 先刪除舊的再儲存新的
+  window._editRentPauseKey=key;
+  document.getElementById('rent-pause-modal').style.display='flex';
+};
 window.saveRentPause = async function(){
   const room=document.getElementById('rp-room').value;
   const from=document.getElementById('rp-from').value.trim();
@@ -2821,6 +2868,11 @@ window.saveRentPause = async function(){
   if(!from||!to||!reason){toast('請填寫完整（期別和原因）');return;}
   if(+from>+to){toast('起始期別不能晚於結束期別');return;}
   if(!DB.rentPause)DB.rentPause={};
+  // 若是編輯模式，先刪除舊紀錄
+  if(window._editRentPauseKey && window._editRentPauseKey !== `${room}_${from}_${to}`){
+    delete DB.rentPause[window._editRentPauseKey];
+  }
+  window._editRentPauseKey=null;
   const key=`${room}_${from}_${to}`;
   DB.rentPause[key]={room,from,to,reason,createdAt:new Date().toLocaleString('zh-TW')};
   await saveLandlordData();
@@ -2852,6 +2904,7 @@ window.renderRentPauseList = function(){
           <div class="txt-m">原因：${p.reason}</div>
           <div style="font-size:.72rem;color:var(--muted);">設定時間：${p.createdAt}</div>
         </div>
+        <button class="btn bo sm" onclick="editRentPause('${key}')">✏️ 延期</button>
         <button class="btn bd sm" onclick="deleteRentPause('${key}')">刪除</button>
       </div>
     </div>`;
@@ -4186,7 +4239,7 @@ window.importData = async function(evt){
 };
 window.clearAll = async function(){
   DB={tenants:{},utilBills:[],rentRecords:[],checkouts:[],announces:[]};
-  ROOMS.forEach(r=>{DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',id:'',note:'',status:'vacant'};});
+  ROOMS.forEach(r=>{DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',renewalIntent:'unknown',id:'',note:'',status:'vacant'};});
   await saveLandlordData();renderTenants();renderBK();toast('資料已清除');
 };
 
