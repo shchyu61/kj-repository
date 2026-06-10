@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06082333</span>
+    <span class="version-tag">v06101613</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -304,6 +304,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <button onclick="ST('photos');closeLandlordMenu()">🖼️ 照片存檔</button>
       <button onclick="ST('monitor-cam');closeLandlordMenu()">📷 智慧監控</button>
       <button onclick="ST('owner-calc');closeLandlordMenu()">💴 房東課（月結算）</button>
+      <button onclick="ST('maintenance');closeLandlordMenu()">🔧 定期維護提醒</button>
       <button onclick="ST('backup');closeLandlordMenu()">💾 備份設定</button>
     </div>
   </div>
@@ -1627,6 +1628,101 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   </div>
 </div>
 
+<!-- ══ 房東：定期維護提醒 ══ -->
+<div id="page-maintenance" class="page">
+  <div class="card mt">
+    <div class="card-title">🔧 定期維護提醒（冷氣/洗衣機/水塔/廚房濾心）</div>
+    <div class="alert-box a-warn" style="font-size:.85rem;">
+      以下項目為定期必須維護的設備，建議每次維護後記錄日期和費用，方便計算下次維護時間和每月預存金額。
+    </div>
+
+    <!-- 廚房濾心 -->
+    <div class="card" style="border:2px solid #4a90d9;background:#f0f8ff;">
+      <div class="card-title">💧 廚房濾心（千山淨水）</div>
+      <div class="alert-box a-info" style="font-size:.85rem;line-height:1.8;">
+        📱 官方LINE預約換濾心：<br>
+        <a href="https://cswater.com.tw/CY" target="_blank" style="color:#1a5fb4;font-weight:900;font-size:.95rem;">
+          🔗 https://cswater.com.tw/CY
+        </a><br>
+        ⚠️ 市面仿冒品眾多，蝦皮/實體賣場均有仿冒，請務必透過官方LINE、千山官網或全台直營門市購買正品。
+      </div>
+      <div class="form-row c3">
+        <div><label>上次換濾心日期</label>
+          <input type="date" id="filter-last-date" oninput="calcMaintenance('filter')">
+        </div>
+        <div><label>上次費用（元）</label>
+          <input type="number" id="filter-last-cost" placeholder="如：3000" oninput="calcMaintenance('filter')">
+        </div>
+        <div><label>建議更換週期（月）</label>
+          <input type="number" id="filter-cycle" value="12" oninput="calcMaintenance('filter')">
+        </div>
+      </div>
+      <div id="filter-result" class="alert-box a-warn" style="font-size:.88rem;display:none;"></div>
+      <button class="btn bs sm mt" onclick="saveMaintenanceRecord('filter')">💾 儲存記錄</button>
+    </div>
+
+    <!-- 冷氣 -->
+    <div class="card" style="border:2px solid #e8a000;background:#fffdf0;">
+      <div class="card-title">❄️ 冷氣室內外機清洗</div>
+      <div class="form-row c3">
+        <div><label>上次清洗日期</label>
+          <input type="date" id="ac-last-date" oninput="calcMaintenance('ac')">
+        </div>
+        <div><label>上次費用（元）</label>
+          <input type="number" id="ac-last-cost" placeholder="如：2500" oninput="calcMaintenance('ac')">
+        </div>
+        <div><label>建議清洗週期（月）</label>
+          <input type="number" id="ac-cycle" value="24" oninput="calcMaintenance('ac')">
+        </div>
+      </div>
+      <div id="ac-result" class="alert-box a-warn" style="font-size:.88rem;display:none;"></div>
+      <button class="btn bs sm mt" onclick="saveMaintenanceRecord('ac')">💾 儲存記錄</button>
+    </div>
+
+    <!-- 洗衣機 -->
+    <div class="card" style="border:2px solid #2ecc71;background:#f0fff8;">
+      <div class="card-title">🫧 洗衣機內槽清洗</div>
+      <div class="form-row c3">
+        <div><label>上次清洗日期</label>
+          <input type="date" id="washer-last-date" oninput="calcMaintenance('washer')">
+        </div>
+        <div><label>上次費用（元）</label>
+          <input type="number" id="washer-last-cost" placeholder="如：1500" oninput="calcMaintenance('washer')">
+        </div>
+        <div><label>建議清洗週期（月）</label>
+          <input type="number" id="washer-cycle" value="24" oninput="calcMaintenance('washer')">
+        </div>
+      </div>
+      <div id="washer-result" class="alert-box a-warn" style="font-size:.88rem;display:none;"></div>
+      <button class="btn bs sm mt" onclick="saveMaintenanceRecord('washer')">💾 儲存記錄</button>
+    </div>
+
+    <!-- 水塔 -->
+    <div class="card" style="border:2px solid #9b59b6;background:#fdf0ff;">
+      <div class="card-title">🏗️ 水塔清洗</div>
+      <div class="form-row c3">
+        <div><label>上次清洗日期</label>
+          <input type="date" id="tank-last-date" oninput="calcMaintenance('tank')">
+        </div>
+        <div><label>上次費用（元）</label>
+          <input type="number" id="tank-last-cost" placeholder="如：3000" oninput="calcMaintenance('tank')">
+        </div>
+        <div><label>建議清洗週期（月）</label>
+          <input type="number" id="tank-cycle" value="24" oninput="calcMaintenance('tank')">
+        </div>
+      </div>
+      <div id="tank-result" class="alert-box a-warn" style="font-size:.88rem;display:none;"></div>
+      <button class="btn bs sm mt" onclick="saveMaintenanceRecord('tank')">💾 儲存記錄</button>
+    </div>
+  </div>
+
+  <!-- 歷史記錄 -->
+  <div class="card">
+    <div class="card-title">📋 維護歷史記錄</div>
+    <div id="maintenance-history"><div class="txt-m">讀取中...</div></div>
+  </div>
+</div>
+
 <!-- ══ 房東：備份 ══ -->
 <div id="page-backup" class="page">
   <div class="card mt">
@@ -1898,7 +1994,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[] };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[] };
 let _ejsOk = false;
 
 // ============================================================
@@ -2269,6 +2365,7 @@ const loadLandlordData = async () => {
       if(d.lastUtilBills)DB.lastUtilBills=d.lastUtilBills;
       if(d.taxRecords)DB.taxRecords=d.taxRecords;
       if(d.inheritanceLog)DB.inheritanceLog=d.inheritanceLog;
+      if(d.maintenanceRecords)DB.maintenanceRecords=d.maintenanceRecords;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',renewalIntent:'unknown',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -2299,6 +2396,7 @@ const saveLandlordData = async () => {
     lastUtilBills:DB.lastUtilBills||{water:0,elec:0,gas:0},
     taxRecords:DB.taxRecords||{},
     inheritanceLog:DB.inheritanceLog||[],
+    maintenanceRecords:DB.maintenanceRecords||[],
   });
 };
 
@@ -2308,7 +2406,7 @@ const saveLandlordData = async () => {
 // ============================================================
 
 // 房東專屬頁面清單（房客呼叫 ST 會被擋掉）
-const LANDLORD_PAGES = ['tenants','utility','rent','checkout','former','photos','monitor-cam','backup','owner-calc'];
+const LANDLORD_PAGES = ['tenants','utility','rent','checkout','former','photos','monitor-cam','backup','owner-calc','maintenance'];
 
 window.ST = function(n){
   // ── 權限檢查：房客無法進入房東專屬頁面 ──
@@ -2328,6 +2426,7 @@ window.ST = function(n){
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
   if(n==='owner-calc')renderOwnerHistory();
+  if(n==='maintenance'){renderMaintenanceHistory();loadMaintenanceState();}
   if(n==='announce')renderAnnounce();
   updateLandlordMenuActive(n);
   if(n==='repair')renderRepair();
@@ -4096,6 +4195,93 @@ window.autoFillOwnerBills = function(){
   if(infoEl) infoEl.textContent='✅ 已自動帶入：'+bill.period+'期帳單（水$'+(bill.waterTotal||0)+'、電$'+(bill.elecTotal||0)+'、瓦斯$'+(bill.gasTotal||0)+'）';
   calcOwner();
   toast('✅ 已自動帶入 '+bill.period+' 期水電帳單');
+};
+
+// ── 定期維護提醒 ──────────────────────────────────────────
+const MAINTENANCE_ITEMS = {
+  filter: {label:'廚房濾心', icon:'💧'},
+  ac:     {label:'冷氣清洗', icon:'❄️'},
+  washer: {label:'洗衣機清洗', icon:'🫧'},
+  tank:   {label:'水塔清洗', icon:'🏗️'},
+};
+window.calcMaintenance = function(type){
+  const lastDate=document.getElementById(type+'-last-date')?.value;
+  const cost=+document.getElementById(type+'-last-cost')?.value||0;
+  const cycle=+document.getElementById(type+'-cycle')?.value||24;
+  const el=document.getElementById(type+'-result');
+  if(!el)return;
+  if(!lastDate){el.style.display='none';return;}
+  const last=new Date(lastDate);
+  const next=new Date(last);
+  next.setMonth(next.getMonth()+cycle);
+  const now=new Date();
+  const daysLeft=Math.round((next-now)/86400000);
+  const monthlyBudget=Math.ceil(cost/cycle);
+  let msg='';
+  if(daysLeft<0){
+    msg=`🚨 已逾期 ${Math.abs(daysLeft)} 天！應於 ${next.toLocaleDateString('zh-TW')} 前維護，請盡快安排。`;
+    el.style.background='#fff0f0'; el.style.borderColor='#e00';
+  } else if(daysLeft<=30){
+    msg=`⚠️ 距下次維護還有 ${daysLeft} 天（${next.toLocaleDateString('zh-TW')}），請提前安排預約。`;
+    el.style.background='#fff8e0'; el.style.borderColor='#e8a000';
+  } else {
+    msg=`✅ 距下次維護還有 ${daysLeft} 天（${next.toLocaleDateString('zh-TW')}），目前無需處理。`;
+    el.style.background='#f0fff4'; el.style.borderColor='#2ecc71';
+  }
+  if(cost>0) msg+=`　每月建議預存：${monthlyBudget}元`;
+  el.textContent=msg; el.style.display='block';
+};
+window.saveMaintenanceRecord = async function(type){
+  const lastDate=document.getElementById(type+'-last-date')?.value;
+  const cost=+document.getElementById(type+'-last-cost')?.value||0;
+  const cycle=+document.getElementById(type+'-cycle')?.value||24;
+  if(!lastDate){toast('請填寫上次維護日期');return;}
+  if(!DB.maintenanceRecords) DB.maintenanceRecords=[];
+  const record={type,label:MAINTENANCE_ITEMS[type]?.label,lastDate,cost,cycle,
+    savedAt:new Date().toLocaleString('zh-TW')};
+  const idx=DB.maintenanceRecords.findIndex(r=>r.type===type);
+  if(idx>=0) DB.maintenanceRecords[idx]=record;
+  else DB.maintenanceRecords.push(record);
+  await saveLandlordData();
+  renderMaintenanceHistory();
+  toast('✅ 已儲存 '+(MAINTENANCE_ITEMS[type]?.label||type)+' 維護記錄');
+};
+window.loadMaintenanceState = function(){
+  (DB.maintenanceRecords||[]).forEach(r=>{
+    const dEl=document.getElementById(r.type+'-last-date');
+    const cEl=document.getElementById(r.type+'-last-cost');
+    const cyEl=document.getElementById(r.type+'-cycle');
+    if(dEl) dEl.value=r.lastDate||'';
+    if(cEl) cEl.value=r.cost||'';
+    if(cyEl) cyEl.value=r.cycle||24;
+    calcMaintenance(r.type);
+  });
+};
+window.renderMaintenanceHistory = function(){
+  const el=document.getElementById('maintenance-history');
+  if(!el)return;
+  const list=DB.maintenanceRecords||[];
+  if(!list.length){el.innerHTML='<div class="txt-m">尚無維護記錄，請在上方填寫後儲存。</div>';return;}
+  const now=new Date();
+  el.innerHTML=list.map(r=>{
+    const next=new Date(r.lastDate);
+    next.setMonth(next.getMonth()+(+r.cycle||24));
+    const days=Math.round((next-now)/86400000);
+    const icon=MAINTENANCE_ITEMS[r.type]?.icon||'🔧';
+    const badge=days<0?`<span style="color:#e00;font-weight:900;">🚨 逾期${Math.abs(days)}天</span>`:
+                days<=30?`<span style="color:#e8a000;font-weight:900;">⚠️ 剩${days}天</span>`:
+                `<span style="color:var(--success);">✅ 剩${days}天</span>`;
+    const monthly=r.cost?`每月預存：${Math.ceil(r.cost/r.cycle)}元`:'';
+    return `<div class="hist-item">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.3rem;">
+        <div>
+          <div style="font-weight:900;">${icon} ${r.label}</div>
+          <div class="txt-m">上次：${r.lastDate}　費用：$${(r.cost||0).toLocaleString()}　週期：${r.cycle}個月　${monthly}</div>
+          <div class="txt-m">下次：${next.toLocaleDateString('zh-TW')} ${badge}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 };
 
 window.renderOwnerHistory = function(){
