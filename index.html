@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06101613</span>
+    <span class="version-tag">v06121812</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -4385,9 +4385,13 @@ window.loadDraftState = function(){
     sv('draft-water-month',d.waterMonth); sv('draft-water',d.water); sc('draft-water-paid',d.waterPaid);
     sv('draft-elec-month',d.elecMonth);   sv('draft-elec',d.elec);   sv('draft-elec-kwh',d.elecKwh); sc('draft-elec-paid',d.elecPaid);
     sv('draft-gas-month',d.gasMonth);     sv('draft-gas',d.gas);     sc('draft-gas-paid',d.gasPaid);
-    sv('draft-net-month',d.netMonth);
+    // 網路費：月份自動帶入當月，已繳清依每月25日信用卡自動扣款日自動判斷
+    const _today = new Date();
+    const _autoMonth = String(_today.getMonth()+1).padStart(2,'0'); // 當月月份
+    const _autoPaid  = _today.getDate() >= 25; // 25日(含)後自動打勾已繳清
+    sv('draft-net-month', d.netMonth || _autoMonth);
     sv('draft-net', d.net || String(DB.defaultNetFee||1409));
-    sc('draft-net-paid',d.netPaid);
+    sc('draft-net-paid', d.netPaid !== undefined ? d.netPaid : _autoPaid);
     const _dfDisp=document.getElementById('default-net-fee-display');
     if(_dfDisp) _dfDisp.textContent=(DB.defaultNetFee||1409).toLocaleString();
     sv('draft-note',d.note);
@@ -4770,7 +4774,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v03310939'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06121812'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
