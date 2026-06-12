@@ -406,6 +406,11 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;margin-top:.2rem;">
           <input type="checkbox" id="draft-elec-paid" onchange="saveDraft()"> ✅ 已繳清
         </label>
+        <div style="margin-top:.35rem;">
+          <label style="font-size:.8rem;color:var(--muted);">📅 預計到期日（B選項：自動預估帳單月21日，可修改）</label>
+          <input type="date" id="draft-elec-due" onchange="saveDraft()" style="font-size:.82rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;">
+          <div style="font-size:.73rem;color:var(--muted);margin-top:.15rem;">到期前一天未打勾 → 自動 Gmail 提醒</div>
+        </div>
       </div>
     </div>
 
@@ -2433,7 +2438,7 @@ window.ST = function(n){
   document.querySelectorAll('.tab-nav button').forEach(b=>{
     if(b.getAttribute('onclick')===`ST('${n}')`)b.classList.add('active');
   });
-  if(n==='utility'){initU(); renderUtilHistory(); if(window.refreshCalendars)window.refreshCalendars(); loadDraftState(); loadLandlordDraftState();}
+  if(n==='utility'){initU(); renderUtilHistory(); if(window.refreshCalendars)window.refreshCalendars(); loadDraftState(); loadLandlordDraftState(); checkBillReminders();}
   if(n==='rent')initRent();
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
@@ -4347,6 +4352,44 @@ window.saveDefaultNetFee = async function(){
   toast('✅ 網路費預設金額已更新為 $' + val.toLocaleString() + ' 元');
 };
 
+// ── 帳單到期提醒（水費/電費/瓦斯費）────────────────────────
+// 每次開啟水電頁面時自動執行：到期前一天未打勾 → Toast + Gmail
+window.checkBillReminders = async function(){
+  try{
+    const d = JSON.parse(localStorage.getItem('utilDraft')||'{}');
+    const now = new Date();
+    const todayM = now.getMonth()+1;
+    const todayD = now.getDate();
+    const isEven = todayM%2===0;
+    const alerts = [];
+    // 💧 水費：偶數月，到期日21日，提醒日20日
+    if(isEven && d.water && !d.waterPaid && todayD===20)
+      alerts.push({icon:'💧', name:'水費', due:`${todayM}月21日`, amount:d.water});
+    // 🔥 瓦斯費：偶數月，到期日20日，提醒日19日
+    if(isEven && d.gas && !d.gasPaid && todayD===19)
+      alerts.push({icon:'🔥', name:'瓦斯費', due:`${todayM}月20日`, amount:d.gas});
+    // ⚡ 電費：到期日由使用者填入，前一天提醒
+    if(d.elec && !d.elecPaid && d.elecDue){
+      const due = new Date(d.elecDue);
+      const tmr = new Date(now); tmr.setDate(tmr.getDate()+1);
+      if(due.toDateString()===tmr.toDateString())
+        alerts.push({icon:'⚡', name:'電費', due:`${due.getMonth()+1}月${due.getDate()}日`, amount:d.elec});
+    }
+    if(!alerts.length) return;
+    initEJS();
+    const nowStr = now.toLocaleString('zh-TW',{timeZone:'Asia/Taipei'});
+    for(const a of alerts){
+      toast(`${a.icon} 明天是${a.name}繳費截止日（${a.due}），系統未標記已繳清，請確認！`, 8000);
+      try{
+        await emailjs.send(EJS_SVC, EJS_TPL, {
+          to_email: LANDLORD_EMAIL,
+          otp:`${a.icon}【嘉義房租系統帳單提醒 ${nowStr}】\n明天（${a.due}）是${a.name}繳費截止日。\n本期金額：$${Number(a.amount).toLocaleString()}元\n\n❓ 請確認：\n①已繳費但忘了在系統打勾？\n②還是真的尚未繳費？\n\n請登入系統確認並更新繳費狀態。`
+        });
+      }catch(e){}
+    }
+  }catch(e){}
+};
+
 window.saveDraft = function(){
   const g=id=>document.getElementById(id);
   const d={
@@ -4357,6 +4400,7 @@ window.saveDraft = function(){
     elec:g('draft-elec')?.value||'',
     elecKwh:g('draft-elec-kwh')?.value||'',
     elecPaid:g('draft-elec-paid')?.checked||false,
+    elecDue:g('draft-elec-due')?.value||'',
     gasMonth:g('draft-gas-month')?.value||'',
     gas:g('draft-gas')?.value||'',
     gasPaid:g('draft-gas-paid')?.checked||false,
@@ -4382,9 +4426,26 @@ window.loadDraftState = function(){
     const d=JSON.parse(localStorage.getItem('utilDraft')||'{}');
     const sv=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
     const sc=(id,v)=>{const el=document.getElementById(id);if(el)el.checked=v||false;};
-    sv('draft-water-month',d.waterMonth); sv('draft-water',d.water); sc('draft-water-paid',d.waterPaid);
-    sv('draft-elec-month',d.elecMonth);   sv('draft-elec',d.elec);   sv('draft-elec-kwh',d.elecKwh); sc('draft-elec-paid',d.elecPaid);
-    sv('draft-gas-month',d.gasMonth);     sv('draft-gas',d.gas);     sc('draft-gas-paid',d.gasPaid);
+    // 水費/瓦斯費：偶數月自動帶入月份，手動繳費不自動打勾
+    const _td = new Date();
+    const _cm = _td.getMonth()+1; // 當前月份 1-12
+    const _bm = String(_cm%2===0 ? _cm : _cm-1).padStart(2,'0'); // 當前或上一個偶數月
+    sv('draft-water-month', d.waterMonth || _bm);
+    sv('draft-water',d.water);
+    sc('draft-water-paid', d.waterPaid);
+    // 電費：載入 elecDue；若無則自動預估 = 帳單月份的21日
+    sv('draft-elec-month',d.elecMonth);
+    sv('draft-elec',d.elec);
+    sv('draft-elec-kwh',d.elecKwh);
+    sc('draft-elec-paid',d.elecPaid);
+    if(d.elecDue){
+      sv('draft-elec-due', d.elecDue);
+    } else if(d.elecMonth){
+      sv('draft-elec-due', `${_td.getFullYear()}-${d.elecMonth}-21`);
+    }
+    sv('draft-gas-month', d.gasMonth || _bm);
+    sv('draft-gas',d.gas);
+    sc('draft-gas-paid', d.gasPaid);
     // 網路費：月份自動帶入當月，已繳清依每月25日信用卡自動扣款日自動判斷
     const _today = new Date();
     const _autoMonth = String(_today.getMonth()+1).padStart(2,'0'); // 當月月份
@@ -4420,7 +4481,7 @@ window.loadDraftToMain = function(){
 window.clearDraft = function(){
   if(!confirm('確定清除帳單暫存？'))return;
   localStorage.removeItem('utilDraft');
-  ['draft-water-month','draft-water','draft-elec-month','draft-elec','draft-elec-kwh',
+  ['draft-water-month','draft-water','draft-elec-month','draft-elec','draft-elec-kwh','draft-elec-due',
    'draft-gas-month','draft-gas','draft-net-month','draft-net','draft-note'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.value='';
   });
