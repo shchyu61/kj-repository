@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06131722</span>
+    <span class="version-tag">v06140425</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -375,11 +375,17 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
       <div><label>💧 水費金額（元）</label>
         <input type="number" id="draft-water" placeholder="如：310" oninput="saveDraft()">
+        <input type="text" id="draft-water-range" placeholder="計費起迄 如115/02/27~04/30" oninput="saveDraft()" style="font-size:.74rem;margin-top:.25rem;padding:2px 5px;border:1px solid var(--border);border-radius:.3rem;width:100%;box-sizing:border-box;">
       </div>
-      <div><label>繳費狀態</label>
-        <div style="margin-top:.6rem;">
+      <div><label>繳費方式 / 期限 / 狀態</label>
+        <div style="margin-top:.3rem;display:flex;flex-direction:column;gap:.25rem;">
+          <select id="draft-water-pay" onchange="saveDraft()" style="font-size:.82rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;">
+            <option value="card">💳 信用卡繳費</option>
+            <option value="cash">💵 現金繳費</option>
+          </select>
+          <input type="date" id="draft-water-due" onchange="saveDraft()" title="繳費期限（預設帳單月21日）" style="font-size:.8rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;box-sizing:border-box;">
           <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;">
-            <input type="checkbox" id="draft-water-paid" onchange="saveDraft()"> ✅ 已繳清（信用卡/轉帳）
+            <input type="checkbox" id="draft-water-paid" onchange="saveDraft()"> ✅ 已繳清
           </label>
         </div>
       </div>
@@ -400,16 +406,21 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
       <div><label>⚡ 電費金額（元）</label>
         <input type="number" id="draft-elec" placeholder="如：2000" oninput="saveDraft()">
+        <input type="text" id="draft-elec-range" placeholder="計費起迄 如115/04/07~06/04" oninput="saveDraft()" style="font-size:.74rem;margin-top:.25rem;padding:2px 5px;border:1px solid var(--border);border-radius:.3rem;width:100%;box-sizing:border-box;">
       </div>
       <div><label>用電度數（度，選填）</label>
         <input type="number" id="draft-elec-kwh" placeholder="如：878" oninput="saveDraft()">
+        <select id="draft-elec-pay" onchange="saveDraft()" style="font-size:.82rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;margin-top:.25rem;width:100%;box-sizing:border-box;">
+          <option value="card">💳 信用卡繳費</option>
+          <option value="cash">💵 現金繳費</option>
+        </select>
         <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;margin-top:.2rem;">
           <input type="checkbox" id="draft-elec-paid" onchange="saveDraft()"> ✅ 已繳清
         </label>
         <div style="margin-top:.35rem;">
-          <label style="font-size:.8rem;color:var(--muted);">📅 預計到期日（B選項：自動預估帳單月21日，可修改）</label>
-          <input type="date" id="draft-elec-due" onchange="saveDraft()" style="font-size:.82rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;">
-          <div style="font-size:.73rem;color:var(--muted);margin-top:.15rem;">到期前一天未打勾 → 自動 Gmail 提醒</div>
+          <label style="font-size:.8rem;color:var(--muted);">📅 繳費期限（預設帳單月28日，可修改）</label>
+          <input type="date" id="draft-elec-due" onchange="saveDraft()" style="font-size:.82rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;box-sizing:border-box;">
+          <div style="font-size:.73rem;color:var(--muted);margin-top:.15rem;">繳費期限前一天未打勾 → 自動 Gmail 提醒</div>
         </div>
       </div>
     </div>
@@ -429,9 +440,15 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
       <div><label>🔥 瓦斯費金額（元）</label>
         <input type="number" id="draft-gas" placeholder="如：1000" oninput="saveDraft()">
+        <input type="text" id="draft-gas-range" placeholder="計費起迄 如115/01/16~03/17" oninput="saveDraft()" style="font-size:.74rem;margin-top:.25rem;padding:2px 5px;border:1px solid var(--border);border-radius:.3rem;width:100%;box-sizing:border-box;">
       </div>
-      <div><label>繳費狀態</label>
-        <div style="margin-top:.6rem;">
+      <div><label>繳費方式 / 期限 / 狀態</label>
+        <div style="margin-top:.3rem;display:flex;flex-direction:column;gap:.25rem;">
+          <select id="draft-gas-pay" onchange="saveDraft()" style="font-size:.82rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;">
+            <option value="cash">💵 現金繳費</option>
+            <option value="card">💳 信用卡繳費</option>
+          </select>
+          <input type="date" id="draft-gas-due" onchange="saveDraft()" title="繳費期限（預設帳單月20日）" style="font-size:.8rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;box-sizing:border-box;">
           <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;">
             <input type="checkbox" id="draft-gas-paid" onchange="saveDraft()"> ✅ 已繳清
           </label>
@@ -463,10 +480,8 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         </div>
       </div>
       <div><label>繳費狀態</label>
-        <div style="margin-top:.6rem;">
-          <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;">
-            <input type="checkbox" id="draft-net-paid" onchange="saveDraft()"> ✅ 已繳清
-          </label>
+        <div style="margin-top:.4rem;font-size:.8rem;color:var(--muted);line-height:1.5;">
+          🔒 每月 25 日信用卡<strong>自動扣款</strong><br>系統自動視為已繳，無需提醒。
         </div>
       </div>
     </div>
@@ -480,6 +495,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div id="draft-saved-at" style="font-size:.75rem;color:var(--muted);"></div>
       <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
         <button class="btn ba sm" onclick="loadDraftToMain()">⬆ 帶入正式帳單計算</button>
+        <button class="btn bp sm" onclick="sendDraftToOwnerCalc()">📤 傳送到房東課</button>
         <button class="btn bd sm" onclick="clearDraft()">🗑️ 清除暫存</button>
       </div>
     </div>
@@ -1627,7 +1643,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       房屋稅 4292÷2÷12＝<strong>179元</strong>／月　地價稅 500÷2÷12≈<strong>21元</strong>／月　共約 <strong>200元</strong>／月
     </div>
     <div class="gap mt">
-      <button class="btn bp sm" onclick="autoFillOwnerBills()">⚡ 自動帶入最近水電帳單</button>
+      <div style="font-size:.78rem;color:var(--muted);">💡 各項費用請至「💡 水電帳單」頁的暫存區，點「📤 傳送到房東課」帶入（不再自動抓舊帳單）。</div>
     </div>
     <div id="oc-bill-source" style="font-size:.78rem;color:var(--success);margin-top:.3rem;"></div>
     <div class="gap mt">
@@ -4202,42 +4218,31 @@ window.saveOwnerCalc = async function(sendEmail=true){
 };
 
 // ── 房東課：自動讀取最近水電帳單 ──────────────────────────
-window.autoFillOwnerBills = function(){
-  // 依結算月份套奇偶月規則決定要抓哪一期帳單
-  const period = (document.getElementById('oc-period')?.value||'').trim();
-  let targetPeriod = '';
-  if(/^\d{6}$/.test(period)){
-    const y=+period.slice(0,4), m=+period.slice(4,6);
-    if(m%2===0){ targetPeriod=period; }                 // 偶數月：用當期
-    else { let pm=m-1, py=y; if(pm<1){pm=12;py=y-1;} targetPeriod=py+String(pm).padStart(2,'0'); } // 奇數月：用上一個偶數月
-  }
-  // 從已儲存帳單找對應期別；找不到才退回最新一期
-  let bill=null;
-  if(targetPeriod && DB.utilBills) bill=DB.utilBills.find(b=>b.period===targetPeriod)||null;
-  if(!bill && DB.utilBills && DB.utilBills.length) bill=DB.utilBills[0];
-  if(!bill){ toast('尚無已儲存的水電帳單，請先完成水電計算並儲存'); return; }
-  // 勾選「本月收到新帳單」並展開輸入區（呼叫既有 toggleNewBill）
-  const ckEl=document.getElementById('oc-new-bill');
-  if(ckEl){ ckEl.checked=true; toggleNewBill(); }
-  // 帶入各項金額（修正：使用正確 id oc-water / oc-elec / oc-gas）
-  const wEl=document.getElementById('oc-water');
-  const eEl=document.getElementById('oc-elec');
-  const gEl=document.getElementById('oc-gas');
-  if(wEl) wEl.value=bill.waterTotal||0;
-  if(eEl) eEl.value=bill.elecTotal||0;
-  if(gEl) gEl.value=bill.gasTotal||0;
-  // 網路費若為空，帶入預設值
-  const nEl=document.getElementById('oc-net');
-  if(nEl && !nEl.value) nEl.value=DB.defaultNetFee||1409;
-  // 來源提示
-  const infoEl=document.getElementById('oc-bill-source');
-  let note='';
-  if(targetPeriod && bill.period===targetPeriod){
-    note=(+period.slice(4,6))%2===0 ? '（結算'+period+'，偶數月用當期）' : '（結算'+period+'，奇數月用上期）';
-  } else { note='（無對應期別，改用最新一期 '+bill.period+'）'; }
-  if(infoEl) infoEl.textContent='✅ 已帶入 '+bill.period+' 期：水$'+(bill.waterTotal||0)+'、電$'+(bill.elecTotal||0)+'、瓦斯$'+(bill.gasTotal||0)+' '+note;
-  calcOwner();
-  toast('✅ 已自動帶入 '+bill.period+' 期水電帳單');
+window.sendDraftToOwnerCalc = function(){
+  // 推送式：把水電帳單暫存區的各項費用送到房東課（取代舊的拉取式）
+  let d={};
+  try{ d=JSON.parse(localStorage.getItem('utilDraft')||'{}'); }catch(e){}
+  if(!(d.water||d.elec||d.gas||d.net)){ toast('暫存區沒有可傳送的金額，請先在水電帳單頁輸入'); return; }
+  if(window.ST) ST('owner-calc'); else if(window.switchPage) switchPage('owner-calc');
+  setTimeout(function(){
+    const ck=document.getElementById('oc-new-bill');
+    if(ck){ ck.checked=true; if(window.toggleNewBill) toggleNewBill(); }
+    const sv=(id,v)=>{const el=document.getElementById(id); if(el && v!=='' && v!=null && v!==undefined) el.value=v;};
+    sv('oc-water', d.water);
+    sv('oc-elec',  d.elec);
+    sv('oc-gas',   d.gas);
+    const on=document.getElementById('oc-net');
+    if(on) on.value = d.net || (DB.defaultNetFee||1409);
+    const ocp=document.getElementById('oc-period');
+    if(ocp && !ocp.value){
+      const mm = d.waterMonth||d.elecMonth||d.gasMonth||'';
+      if(mm) ocp.value = new Date().getFullYear()+mm;
+    }
+    const info=document.getElementById('oc-bill-source');
+    if(info) info.textContent='✅ 已從暫存區傳送：水$'+(d.water||0)+'、電$'+(d.elec||0)+'、瓦斯$'+(d.gas||0)+'、網路$'+(d.net||DB.defaultNetFee||1409);
+    if(window.calcOwner) calcOwner();
+    toast('✅ 已將暫存區各項費用傳送到房東課');
+  }, 120);
 };
 
 // ── 定期維護提醒 ──────────────────────────────────────────
@@ -4376,23 +4381,16 @@ window.checkBillReminders = async function(){
   try{
     const d = JSON.parse(localStorage.getItem('utilDraft')||'{}');
     const now = new Date();
-    const todayM = now.getMonth()+1;
-    const todayD = now.getDate();
-    const isEven = todayM%2===0;
+    const _vd = x=>{ if(!x) return null; const z=new Date(x); return isNaN(z)?null:z; };
+    const isTomorrow = due=>{ const dd=_vd(due); if(!dd) return false; const tmr=new Date(now); tmr.setDate(tmr.getDate()+1); return dd.toDateString()===tmr.toDateString(); };
     const alerts = [];
-    // 💧 水費：偶數月，到期日21日，提醒日20日
-    if(isEven && d.water && !d.waterPaid && todayD===20)
-      alerts.push({icon:'💧', name:'水費', due:`${todayM}月21日`, amount:d.water});
-    // 🔥 瓦斯費：偶數月，到期日20日，提醒日19日
-    if(isEven && d.gas && !d.gasPaid && todayD===19)
-      alerts.push({icon:'🔥', name:'瓦斯費', due:`${todayM}月20日`, amount:d.gas});
-    // ⚡ 電費：到期日由使用者填入，前一天提醒
-    if(d.elec && !d.elecPaid && d.elecDue){
-      const due = new Date(d.elecDue);
-      const tmr = new Date(now); tmr.setDate(tmr.getDate()+1);
-      if(due.toDateString()===tmr.toDateString())
-        alerts.push({icon:'⚡', name:'電費', due:`${due.getMonth()+1}月${due.getDate()}日`, amount:d.elec});
-    }
+    // 💧 水費：繳費期限前一天（預設帳單月21日 → 提醒20日）
+    if(d.water && !d.waterPaid && isTomorrow(d.waterDue)){ const dd=_vd(d.waterDue); alerts.push({icon:'💧', name:'水費', due:`${dd.getMonth()+1}月${dd.getDate()}日`, amount:d.water}); }
+    // ⚡ 電費：繳費期限前一天（預設帳單月28日 → 提醒27日）
+    if(d.elec && !d.elecPaid && isTomorrow(d.elecDue)){ const dd=_vd(d.elecDue); alerts.push({icon:'⚡', name:'電費', due:`${dd.getMonth()+1}月${dd.getDate()}日`, amount:d.elec}); }
+    // 🔥 瓦斯費：繳費期限前一天（預設帳單月20日 → 提醒19日）
+    if(d.gas && !d.gasPaid && isTomorrow(d.gasDue)){ const dd=_vd(d.gasDue); alerts.push({icon:'🔥', name:'瓦斯費', due:`${dd.getMonth()+1}月${dd.getDate()}日`, amount:d.gas}); }
+    // 🌐 網路費：每月25日信用卡自動扣款，不提醒
     if(!alerts.length) return;
     initEJS();
     const nowStr = now.toLocaleString('zh-TW',{timeZone:'Asia/Taipei'});
@@ -4414,17 +4412,25 @@ window.saveDraft = function(){
     waterMonth:g('draft-water-month')?.value||'',
     water:g('draft-water')?.value||'',
     waterPaid:g('draft-water-paid')?.checked||false,
+    waterPay:g('draft-water-pay')?.value||'card',
+    waterDue:g('draft-water-due')?.value||'',
+    waterRange:g('draft-water-range')?.value||'',
     elecMonth:g('draft-elec-month')?.value||'',
     elec:g('draft-elec')?.value||'',
     elecKwh:g('draft-elec-kwh')?.value||'',
     elecPaid:g('draft-elec-paid')?.checked||false,
+    elecPay:g('draft-elec-pay')?.value||'card',
     elecDue:g('draft-elec-due')?.value||'',
+    elecRange:g('draft-elec-range')?.value||'',
     gasMonth:g('draft-gas-month')?.value||'',
     gas:g('draft-gas')?.value||'',
     gasPaid:g('draft-gas-paid')?.checked||false,
+    gasPay:g('draft-gas-pay')?.value||'cash',
+    gasDue:g('draft-gas-due')?.value||'',
+    gasRange:g('draft-gas-range')?.value||'',
     netMonth:g('draft-net-month')?.value||'',
     net:g('draft-net')?.value||'',
-    netPaid:g('draft-net-paid')?.checked||false,
+    netPaid:true,
     note:g('draft-note')?.value||'',
     savedAt:new Date().toLocaleString('zh-TW'),
   };
@@ -4444,33 +4450,39 @@ window.loadDraftState = function(){
     const d=JSON.parse(localStorage.getItem('utilDraft')||'{}');
     const sv=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
     const sc=(id,v)=>{const el=document.getElementById(id);if(el)el.checked=v||false;};
-    // 水費/瓦斯費：偶數月自動帶入月份，手動繳費不自動打勾
     const _td = new Date();
-    const _cm = _td.getMonth()+1; // 當前月份 1-12
-    const _bm = String(_cm%2===0 ? _cm : _cm-1).padStart(2,'0'); // 當前或上一個偶數月
-    sv('draft-water-month', d.waterMonth || _bm);
+    const _cm = _td.getMonth()+1;
+    const _bm = String(_cm%2===0 ? _cm : _cm-1).padStart(2,'0');
+    // 繳費期限預設：帳單月份的指定日（水21/瓦斯20/電28）
+    const dueDefault=(mm,day)=> mm ? `${_td.getFullYear()}-${mm}-${String(day).padStart(2,'0')}` : '';
+    // 💧 水費
+    const _wm = d.waterMonth || _bm;
+    sv('draft-water-month', _wm);
     sv('draft-water',d.water);
+    sv('draft-water-range', d.waterRange);
+    sv('draft-water-pay', d.waterPay || 'card');
+    sv('draft-water-due', d.waterDue || dueDefault(_wm,21));
     sc('draft-water-paid', d.waterPaid);
-    // 電費：載入 elecDue；若無則自動預估 = 帳單月份的21日
+    // ⚡ 電費（繳費期限預設帳單月28日）
     sv('draft-elec-month',d.elecMonth);
     sv('draft-elec',d.elec);
     sv('draft-elec-kwh',d.elecKwh);
+    sv('draft-elec-range', d.elecRange);
+    sv('draft-elec-pay', d.elecPay || 'card');
     sc('draft-elec-paid',d.elecPaid);
-    if(d.elecDue){
-      sv('draft-elec-due', d.elecDue);
-    } else if(d.elecMonth){
-      sv('draft-elec-due', `${_td.getFullYear()}-${d.elecMonth}-21`);
-    }
-    sv('draft-gas-month', d.gasMonth || _bm);
+    sv('draft-elec-due', d.elecDue || dueDefault(d.elecMonth,28));
+    // 🔥 瓦斯費（繳費期限預設帳單月20日，預設現金）
+    const _gm = d.gasMonth || _bm;
+    sv('draft-gas-month', _gm);
     sv('draft-gas',d.gas);
+    sv('draft-gas-range', d.gasRange);
+    sv('draft-gas-pay', d.gasPay || 'cash');
+    sv('draft-gas-due', d.gasDue || dueDefault(_gm,20));
     sc('draft-gas-paid', d.gasPaid);
-    // 網路費：月份自動帶入當月，已繳清依每月25日信用卡自動扣款日自動判斷
-    const _today = new Date();
-    const _autoMonth = String(_today.getMonth()+1).padStart(2,'0'); // 當月月份
-    const _autoPaid  = _today.getDate() >= 25; // 25日(含)後自動打勾已繳清
+    // 🌐 網路費：月份自動帶當月；25日信用卡自動扣款、自動視為已繳、無手動勾
+    const _autoMonth = String(_td.getMonth()+1).padStart(2,'0');
     sv('draft-net-month', d.netMonth || _autoMonth);
     sv('draft-net', d.net || String(DB.defaultNetFee||1409));
-    sc('draft-net-paid', d.netPaid !== undefined ? d.netPaid : _autoPaid);
     const _dfDisp=document.getElementById('default-net-fee-display');
     if(_dfDisp) _dfDisp.textContent=(DB.defaultNetFee||1409).toLocaleString();
     sv('draft-note',d.note);
@@ -4499,13 +4511,18 @@ window.loadDraftToMain = function(){
 window.clearDraft = function(){
   if(!confirm('確定清除帳單暫存？'))return;
   localStorage.removeItem('utilDraft');
-  ['draft-water-month','draft-water','draft-elec-month','draft-elec','draft-elec-kwh','draft-elec-due',
-   'draft-gas-month','draft-gas','draft-net-month','draft-net','draft-note'].forEach(id=>{
+  ['draft-water-month','draft-water','draft-water-range','draft-water-due',
+   'draft-elec-month','draft-elec','draft-elec-kwh','draft-elec-range','draft-elec-due',
+   'draft-gas-month','draft-gas','draft-gas-range','draft-gas-due',
+   'draft-net-month','draft-net','draft-note'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.value='';
   });
-  ['draft-water-paid','draft-elec-paid','draft-gas-paid','draft-net-paid'].forEach(id=>{
+  ['draft-water-paid','draft-elec-paid','draft-gas-paid'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.checked=false;
   });
+  const _wp=document.getElementById('draft-water-pay'); if(_wp)_wp.value='card';
+  const _ep=document.getElementById('draft-elec-pay'); if(_ep)_ep.value='card';
+  const _gp=document.getElementById('draft-gas-pay'); if(_gp)_gp.value='cash';
   const el=document.getElementById('draft-saved-at');
   if(el)el.textContent='';
   toast('已清除帳單暫存');
@@ -4853,7 +4870,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06131722'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06140425'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
