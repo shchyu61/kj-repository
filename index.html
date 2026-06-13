@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06131713</span>
+    <span class="version-tag">v06131722</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -4127,8 +4127,8 @@ window.calcOwner = function(){
   const halfGas   = Math.round(gas/2);
   const totalDed  = halfWater + halfElec + halfGas + netFee;
   const net       = totalRent - totalDed;
-  // 奇數金額拆半規則：弟弟取floor，哥哥取ceil（多1元）
-  const brotherShare = Math.floor(net/2);
+  // 奇數金額拆半規則：弟弟取ceil（多拿1元），哥哥取floor（少拿1元，差1元由哥哥承擔）
+  const brotherShare = Math.ceil(net/2);
   const myShare      = net - brotherShare;
 
   // 顯示結果
@@ -4853,7 +4853,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06131713'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06131722'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
