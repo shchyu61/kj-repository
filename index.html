@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06140425</span>
+    <span class="version-tag">v06140521</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -363,7 +363,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <!-- 水費 (偶數月) -->
     <div class="form-row c3" style="background:#f8f8ff;border-radius:.7rem;padding:.5rem .6rem;margin-bottom:.4rem;">
       <div><label>💧 水費帳單月份</label>
-        <select id="draft-water-month">
+        <select id="draft-water-month" onchange="onBillMonthChange('water')">
           <option value="">-- 選擇月份 --</option>
           <option value="02">02月帳單</option>
           <option value="04">04月帳單</option>
@@ -375,7 +375,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
       <div><label>💧 水費金額（元）</label>
         <input type="number" id="draft-water" placeholder="如：310" oninput="saveDraft()">
-        <input type="text" id="draft-water-range" placeholder="計費起迄 如115/02/27~04/30" oninput="saveDraft()" style="font-size:.74rem;margin-top:.25rem;padding:2px 5px;border:1px solid var(--border);border-radius:.3rem;width:100%;box-sizing:border-box;">
+        <button class="btn bp sm" onclick="sendOneToOwner('water')" style="font-size:.72rem;padding:2px 8px;margin-top:.25rem;">📤 傳房東課</button>
+        <label style="font-size:.74rem;color:var(--muted);margin-top:.25rem;display:block;">計費起迄（自動預估，可改）</label>
+        <div style="display:flex;gap:.25rem;">
+          <input type="date" id="draft-water-start" onchange="saveDraft()" title="計費起日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
+          <input type="date" id="draft-water-end" onchange="saveDraft()" title="計費迄日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
+        </div>
       </div>
       <div><label>繳費方式 / 期限 / 狀態</label>
         <div style="margin-top:.3rem;display:flex;flex-direction:column;gap:.25rem;">
@@ -383,6 +388,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
             <option value="card">💳 信用卡繳費</option>
             <option value="cash">💵 現金繳費</option>
           </select>
+          <label style="font-size:.78rem;color:var(--muted);">📅 繳費期限（預設帳單月21日，可改）</label>
           <input type="date" id="draft-water-due" onchange="saveDraft()" title="繳費期限（預設帳單月21日）" style="font-size:.8rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;box-sizing:border-box;">
           <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;">
             <input type="checkbox" id="draft-water-paid" onchange="saveDraft()"> ✅ 已繳清
@@ -394,7 +400,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <!-- 電費 (偶數月) -->
     <div class="form-row c3" style="background:#fffdf0;border-radius:.7rem;padding:.5rem .6rem;margin-bottom:.4rem;">
       <div><label>⚡ 電費帳單月份</label>
-        <select id="draft-elec-month">
+        <select id="draft-elec-month" onchange="onBillMonthChange('elec')">
           <option value="">-- 選擇月份 --</option>
           <option value="02">02月帳單</option>
           <option value="04">04月帳單</option>
@@ -406,7 +412,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
       <div><label>⚡ 電費金額（元）</label>
         <input type="number" id="draft-elec" placeholder="如：2000" oninput="saveDraft()">
-        <input type="text" id="draft-elec-range" placeholder="計費起迄 如115/04/07~06/04" oninput="saveDraft()" style="font-size:.74rem;margin-top:.25rem;padding:2px 5px;border:1px solid var(--border);border-radius:.3rem;width:100%;box-sizing:border-box;">
+        <button class="btn bp sm" onclick="sendOneToOwner('elec')" style="font-size:.72rem;padding:2px 8px;margin-top:.25rem;">📤 傳房東課</button>
+        <label style="font-size:.74rem;color:var(--muted);margin-top:.25rem;display:block;">計費起迄（自動預估，可改）</label>
+        <div style="display:flex;gap:.25rem;">
+          <input type="date" id="draft-elec-start" onchange="saveDraft()" title="計費起日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
+          <input type="date" id="draft-elec-end" onchange="saveDraft()" title="計費迄日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
+        </div>
       </div>
       <div><label>用電度數（度，選填）</label>
         <input type="number" id="draft-elec-kwh" placeholder="如：878" oninput="saveDraft()">
@@ -414,21 +425,21 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           <option value="card">💳 信用卡繳費</option>
           <option value="cash">💵 現金繳費</option>
         </select>
-        <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;margin-top:.2rem;">
-          <input type="checkbox" id="draft-elec-paid" onchange="saveDraft()"> ✅ 已繳清
-        </label>
         <div style="margin-top:.35rem;">
-          <label style="font-size:.8rem;color:var(--muted);">📅 繳費期限（預設帳單月28日，可修改）</label>
+          <label style="font-size:.8rem;color:var(--muted);">📅 繳費期限（預設帳單月28日，可改）</label>
           <input type="date" id="draft-elec-due" onchange="saveDraft()" style="font-size:.82rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;box-sizing:border-box;">
           <div style="font-size:.73rem;color:var(--muted);margin-top:.15rem;">繳費期限前一天未打勾 → 自動 Gmail 提醒</div>
         </div>
+        <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;margin-top:.2rem;">
+          <input type="checkbox" id="draft-elec-paid" onchange="saveDraft()"> ✅ 已繳清
+        </label>
       </div>
     </div>
 
     <!-- 瓦斯費 (偶數月) -->
     <div class="form-row c3" style="background:#fff5f0;border-radius:.7rem;padding:.5rem .6rem;margin-bottom:.4rem;">
       <div><label>🔥 瓦斯費帳單月份</label>
-        <select id="draft-gas-month">
+        <select id="draft-gas-month" onchange="onBillMonthChange('gas')">
           <option value="">-- 選擇月份 --</option>
           <option value="02">02月帳單</option>
           <option value="04">04月帳單</option>
@@ -440,7 +451,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
       <div><label>🔥 瓦斯費金額（元）</label>
         <input type="number" id="draft-gas" placeholder="如：1000" oninput="saveDraft()">
-        <input type="text" id="draft-gas-range" placeholder="計費起迄 如115/01/16~03/17" oninput="saveDraft()" style="font-size:.74rem;margin-top:.25rem;padding:2px 5px;border:1px solid var(--border);border-radius:.3rem;width:100%;box-sizing:border-box;">
+        <button class="btn bp sm" onclick="sendOneToOwner('gas')" style="font-size:.72rem;padding:2px 8px;margin-top:.25rem;">📤 傳房東課</button>
+        <label style="font-size:.74rem;color:var(--muted);margin-top:.25rem;display:block;">計費起迄（自動預估，可改）</label>
+        <div style="display:flex;gap:.25rem;">
+          <input type="date" id="draft-gas-start" onchange="saveDraft()" title="計費起日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
+          <input type="date" id="draft-gas-end" onchange="saveDraft()" title="計費迄日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
+        </div>
       </div>
       <div><label>繳費方式 / 期限 / 狀態</label>
         <div style="margin-top:.3rem;display:flex;flex-direction:column;gap:.25rem;">
@@ -448,6 +464,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
             <option value="cash">💵 現金繳費</option>
             <option value="card">💳 信用卡繳費</option>
           </select>
+          <label style="font-size:.78rem;color:var(--muted);">📅 繳費期限（預設帳單月20日，可改）</label>
           <input type="date" id="draft-gas-due" onchange="saveDraft()" title="繳費期限（預設帳單月20日）" style="font-size:.8rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;box-sizing:border-box;">
           <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;">
             <input type="checkbox" id="draft-gas-paid" onchange="saveDraft()"> ✅ 已繳清
@@ -471,6 +488,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
       <div><label>🌐 網路費金額（元）</label>
         <input type="number" id="draft-net" placeholder="1409" oninput="saveDraft()">
+        <button class="btn bp sm" onclick="sendOneToOwner('net')" style="font-size:.72rem;padding:2px 8px;margin-top:.25rem;">📤 傳房東課</button>
         <div style="font-size:.78rem;color:var(--muted);margin-top:.3rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;">
           📌 預設 <strong id="default-net-fee-display">1,409</strong>元（每月13日帳單，25日到期，兄弟各半）
           <span style="display:inline-flex;align-items:center;gap:.3rem;margin-top:.15rem;">
@@ -495,7 +513,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div id="draft-saved-at" style="font-size:.75rem;color:var(--muted);"></div>
       <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
         <button class="btn ba sm" onclick="loadDraftToMain()">⬆ 帶入正式帳單計算</button>
-        <button class="btn bp sm" onclick="sendDraftToOwnerCalc()">📤 傳送到房東課</button>
+        <button class="btn bp sm" onclick="if(window.ST)ST('owner-calc')">🏠 前往房東課</button>
         <button class="btn bd sm" onclick="clearDraft()">🗑️ 清除暫存</button>
       </div>
     </div>
@@ -1646,6 +1664,18 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div style="font-size:.78rem;color:var(--muted);">💡 各項費用請至「💡 水電帳單」頁的暫存區，點「📤 傳送到房東課」帶入（不再自動抓舊帳單）。</div>
     </div>
     <div id="oc-bill-source" style="font-size:.78rem;color:var(--success);margin-top:.3rem;"></div>
+    <!-- 弟弟 Gmail 通知設定（點1）-->
+    <div class="card mt" style="background:#f0f8ff;border:1px solid #90c0e8;">
+      <div style="font-size:.85rem;font-weight:700;margin-bottom:.4rem;">📧 弟弟 Gmail 通知設定</div>
+      <div class="form-row">
+        <div><label>弟弟的 Gmail（您自行填寫）</label>
+          <input type="email" id="oc-brother-email" placeholder="brother@gmail.com" onchange="saveBrotherNotify()"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.6rem;margin-top:.45rem;flex-wrap:wrap;">
+        <button id="oc-notify-toggle" class="btn bd sm" onclick="toggleBrotherNotify()" style="min-width:160px;">🔕 目前：不通知弟弟</button>
+        <span style="font-size:.76rem;color:var(--muted);">預設不通知；切到「通知」後固定保存，下次登入仍維持上次狀態。</span>
+      </div>
+    </div>
     <div class="gap mt">
       <button class="btn bs" onclick="saveOwnerCalc(true)">💾 儲存並寄 Gmail 通知</button>
       <button class="btn bo" onclick="saveOwnerCalc(false)">💾 只儲存（不寄信）</button>
@@ -2025,7 +2055,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], defaultNetFee:1409 };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], defaultNetFee:1409, brotherEmail:'', notifyBrother:false };
 let _ejsOk = false;
 
 // ============================================================
@@ -2398,6 +2428,8 @@ const loadLandlordData = async () => {
       if(d.inheritanceLog)DB.inheritanceLog=d.inheritanceLog;
       if(d.maintenanceRecords)DB.maintenanceRecords=d.maintenanceRecords;
       if(d.defaultNetFee!==undefined)DB.defaultNetFee=d.defaultNetFee;
+      if(d.brotherEmail!==undefined)DB.brotherEmail=d.brotherEmail;
+      if(d.notifyBrother!==undefined)DB.notifyBrother=d.notifyBrother;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',renewalIntent:'unknown',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -2430,6 +2462,8 @@ const saveLandlordData = async () => {
     inheritanceLog:DB.inheritanceLog||[],
     maintenanceRecords:DB.maintenanceRecords||[],
     defaultNetFee:DB.defaultNetFee||1409,
+    brotherEmail:DB.brotherEmail||'',
+    notifyBrother:DB.notifyBrother||false,
   });
 };
 
@@ -2458,7 +2492,7 @@ window.ST = function(n){
   if(n==='rent')initRent();
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
-  if(n==='owner-calc'){renderOwnerHistory(); const _on=document.getElementById('oc-net'); if(_on&&!_on.value){_on.value=DB.defaultNetFee||1409; calcOwner();}}
+  if(n==='owner-calc'){renderOwnerHistory(); if(window.updateBrotherToggleUI)updateBrotherToggleUI(); const _on=document.getElementById('oc-net'); if(_on&&!_on.value){_on.value=DB.defaultNetFee||1409; calcOwner();}}
   if(n==='maintenance'){renderMaintenanceHistory();loadMaintenanceState();}
   if(n==='announce')renderAnnounce();
   updateLandlordMenuActive(n);
@@ -4211,6 +4245,15 @@ window.saveOwnerCalc = async function(sendEmail=true){
       });
       toast(`✅ 已儲存並寄出通知！${r.period} 哥哥$${r.myShare.toLocaleString()}、弟弟$${r.brotherShare.toLocaleString()}`);
     }catch(e){toast('已儲存，但寄信失敗：'+e.message);}
+    if(DB.notifyBrother && (DB.brotherEmail||'').trim()){
+      try{
+        await emailjs.send(EJS_SVC,EJS_TPL,{
+          to_email: DB.brotherEmail,
+          otp:`💴【${r.period} 房東課月結算 ${now}】\n弟弟您好，本月結算：\n租金總收入：$${r.totalRent.toLocaleString()}\n扣除支出：$${r.totalDed.toLocaleString()}（水$${r.halfWater}+電$${r.halfElec}+瓦斯$${r.halfGas}+網路$${r.netFee}）\n淨收入：$${r.net.toLocaleString()}\n您（弟弟）應得：$${r.brotherShare.toLocaleString()}\n哥哥應得：$${r.myShare.toLocaleString()}\n\n👉 哥哥將轉帳 $${r.brotherShare.toLocaleString()} 元給您。`
+        });
+        toast('📧 已同時通知弟弟');
+      }catch(e){}
+    }
   } else {
     toast(`✅ 已儲存！${r.period} 哥哥$${r.myShare.toLocaleString()}、弟弟$${r.brotherShare.toLocaleString()}`);
   }
@@ -4218,31 +4261,62 @@ window.saveOwnerCalc = async function(sendEmail=true){
 };
 
 // ── 房東課：自動讀取最近水電帳單 ──────────────────────────
-window.sendDraftToOwnerCalc = function(){
-  // 推送式：把水電帳單暫存區的各項費用送到房東課（取代舊的拉取式）
-  let d={};
-  try{ d=JSON.parse(localStorage.getItem('utilDraft')||'{}'); }catch(e){}
-  if(!(d.water||d.elec||d.gas||d.net)){ toast('暫存區沒有可傳送的金額，請先在水電帳單頁輸入'); return; }
-  if(window.ST) ST('owner-calc'); else if(window.switchPage) switchPage('owner-calc');
-  setTimeout(function(){
-    const ck=document.getElementById('oc-new-bill');
-    if(ck){ ck.checked=true; if(window.toggleNewBill) toggleNewBill(); }
-    const sv=(id,v)=>{const el=document.getElementById(id); if(el && v!=='' && v!=null && v!==undefined) el.value=v;};
-    sv('oc-water', d.water);
-    sv('oc-elec',  d.elec);
-    sv('oc-gas',   d.gas);
-    const on=document.getElementById('oc-net');
-    if(on) on.value = d.net || (DB.defaultNetFee||1409);
-    const ocp=document.getElementById('oc-period');
-    if(ocp && !ocp.value){
-      const mm = d.waterMonth||d.elecMonth||d.gasMonth||'';
-      if(mm) ocp.value = new Date().getFullYear()+mm;
-    }
-    const info=document.getElementById('oc-bill-source');
-    if(info) info.textContent='✅ 已從暫存區傳送：水$'+(d.water||0)+'、電$'+(d.elec||0)+'、瓦斯$'+(d.gas||0)+'、網路$'+(d.net||DB.defaultNetFee||1409);
-    if(window.calcOwner) calcOwner();
-    toast('✅ 已將暫存區各項費用傳送到房東課');
-  }, 120);
+// 點4：各帳單獨立傳送到房東課（只送自己那一項、不影響其他項、不切頁）
+window.sendOneToOwner = function(kind){
+  const val = document.getElementById('draft-'+kind)?.value;
+  if(val===''||val==null){ toast('請先輸入金額再傳送'); return; }
+  const ck=document.getElementById('oc-new-bill'); if(ck){ ck.checked=true; if(window.toggleNewBill) toggleNewBill(); }
+  const oc=document.getElementById('oc-'+kind); if(oc) oc.value=val;
+  if(window.calcOwner) calcOwner();
+  const label={water:'水費',elec:'電費',gas:'瓦斯費',net:'網路費'}[kind]||kind;
+  toast('✅ 已將'+label+' $'+val+' 傳到房東課（其他項不受影響）');
+};
+// 點3：依帳單月份自動預估計費起迄與繳費期限（依真實帳單規律，可手動改）
+window.estimateBillDates = function(kind, mm){
+  if(!mm) return {start:'',end:'',due:''};
+  const yr = new Date().getFullYear();
+  const M = parseInt(mm,10);
+  const mk = (offset, day)=>{ let m=M+offset, y=yr; while(m<=0){m+=12;y--;} while(m>12){m-=12;y++;} return y+'-'+String(m).padStart(2,'0')+'-'+String(day).padStart(2,'0'); };
+  const cfg = ({
+    water:{ s:[-4,26], e:[-2,28], dueDay:21 },
+    elec :{ s:[-2,5],  e:[0,5],   dueDay:28 },
+    gas  :{ s:[-3,16], e:[-1,17], dueDay:20 },
+  })[kind] || {s:[-2,1],e:[0,1],dueDay:21};
+  return { start:mk(cfg.s[0],cfg.s[1]), end:mk(cfg.e[0],cfg.e[1]), due:mk(0,cfg.dueDay) };
+};
+// 帳單月份變更→重新預估起迄與繳費期限
+window.onBillMonthChange = function(kind){
+  const mm=document.getElementById('draft-'+kind+'-month')?.value||'';
+  const est=estimateBillDates(kind, mm);
+  const sv=(id,v)=>{const el=document.getElementById(id); if(el) el.value=v;};
+  sv('draft-'+kind+'-start', est.start);
+  sv('draft-'+kind+'-end',   est.end);
+  sv('draft-'+kind+'-due',   est.due);
+  saveDraft();
+};
+// 點1：弟弟 Gmail 通知設定（存 Firebase，狀態持久）
+window.saveBrotherNotify = async function(){
+  const em=document.getElementById('oc-brother-email');
+  DB.brotherEmail=(em?.value||'').trim();
+  await saveLandlordData();
+  toast('✅ 已儲存弟弟 Email');
+};
+window.toggleBrotherNotify = async function(){
+  if(!DB.notifyBrother && !(DB.brotherEmail||'').trim()){ toast('請先填寫弟弟的 Gmail 再開啟通知'); return; }
+  DB.notifyBrother = !DB.notifyBrother;
+  await saveLandlordData();
+  updateBrotherToggleUI();
+  toast(DB.notifyBrother?'🔔 已開啟：結算後會同時通知弟弟':'🔕 已關閉：不通知弟弟');
+};
+window.updateBrotherToggleUI = function(){
+  const em=document.getElementById('oc-brother-email');
+  if(em && !em.value) em.value=DB.brotherEmail||'';
+  const btn=document.getElementById('oc-notify-toggle');
+  if(btn){
+    if(DB.notifyBrother){ btn.textContent='🔔 目前：通知弟弟'; btn.className='btn bs sm'; }
+    else { btn.textContent='🔕 目前：不通知弟弟'; btn.className='btn bd sm'; }
+    btn.style.minWidth='160px';
+  }
 };
 
 // ── 定期維護提醒 ──────────────────────────────────────────
@@ -4414,20 +4488,23 @@ window.saveDraft = function(){
     waterPaid:g('draft-water-paid')?.checked||false,
     waterPay:g('draft-water-pay')?.value||'card',
     waterDue:g('draft-water-due')?.value||'',
-    waterRange:g('draft-water-range')?.value||'',
+    waterStart:g('draft-water-start')?.value||'',
+    waterEnd:g('draft-water-end')?.value||'',
     elecMonth:g('draft-elec-month')?.value||'',
     elec:g('draft-elec')?.value||'',
     elecKwh:g('draft-elec-kwh')?.value||'',
     elecPaid:g('draft-elec-paid')?.checked||false,
     elecPay:g('draft-elec-pay')?.value||'card',
     elecDue:g('draft-elec-due')?.value||'',
-    elecRange:g('draft-elec-range')?.value||'',
+    elecStart:g('draft-elec-start')?.value||'',
+    elecEnd:g('draft-elec-end')?.value||'',
     gasMonth:g('draft-gas-month')?.value||'',
     gas:g('draft-gas')?.value||'',
     gasPaid:g('draft-gas-paid')?.checked||false,
     gasPay:g('draft-gas-pay')?.value||'cash',
     gasDue:g('draft-gas-due')?.value||'',
-    gasRange:g('draft-gas-range')?.value||'',
+    gasStart:g('draft-gas-start')?.value||'',
+    gasEnd:g('draft-gas-end')?.value||'',
     netMonth:g('draft-net-month')?.value||'',
     net:g('draft-net')?.value||'',
     netPaid:true,
@@ -4459,25 +4536,31 @@ window.loadDraftState = function(){
     const _wm = d.waterMonth || _bm;
     sv('draft-water-month', _wm);
     sv('draft-water',d.water);
-    sv('draft-water-range', d.waterRange);
+    const _wEst=estimateBillDates('water', _wm);
+    sv('draft-water-start', d.waterStart || _wEst.start);
+    sv('draft-water-end', d.waterEnd || _wEst.end);
     sv('draft-water-pay', d.waterPay || 'card');
-    sv('draft-water-due', d.waterDue || dueDefault(_wm,21));
+    sv('draft-water-due', d.waterDue || _wEst.due);
     sc('draft-water-paid', d.waterPaid);
     // ⚡ 電費（繳費期限預設帳單月28日）
     sv('draft-elec-month',d.elecMonth);
     sv('draft-elec',d.elec);
     sv('draft-elec-kwh',d.elecKwh);
-    sv('draft-elec-range', d.elecRange);
+    const _eEst=estimateBillDates('elec', d.elecMonth);
+    sv('draft-elec-start', d.elecStart || _eEst.start);
+    sv('draft-elec-end', d.elecEnd || _eEst.end);
     sv('draft-elec-pay', d.elecPay || 'card');
     sc('draft-elec-paid',d.elecPaid);
-    sv('draft-elec-due', d.elecDue || dueDefault(d.elecMonth,28));
+    sv('draft-elec-due', d.elecDue || _eEst.due);
     // 🔥 瓦斯費（繳費期限預設帳單月20日，預設現金）
     const _gm = d.gasMonth || _bm;
     sv('draft-gas-month', _gm);
     sv('draft-gas',d.gas);
-    sv('draft-gas-range', d.gasRange);
+    const _gEst=estimateBillDates('gas', _gm);
+    sv('draft-gas-start', d.gasStart || _gEst.start);
+    sv('draft-gas-end', d.gasEnd || _gEst.end);
     sv('draft-gas-pay', d.gasPay || 'cash');
-    sv('draft-gas-due', d.gasDue || dueDefault(_gm,20));
+    sv('draft-gas-due', d.gasDue || _gEst.due);
     sc('draft-gas-paid', d.gasPaid);
     // 🌐 網路費：月份自動帶當月；25日信用卡自動扣款、自動視為已繳、無手動勾
     const _autoMonth = String(_td.getMonth()+1).padStart(2,'0');
@@ -4511,9 +4594,9 @@ window.loadDraftToMain = function(){
 window.clearDraft = function(){
   if(!confirm('確定清除帳單暫存？'))return;
   localStorage.removeItem('utilDraft');
-  ['draft-water-month','draft-water','draft-water-range','draft-water-due',
-   'draft-elec-month','draft-elec','draft-elec-kwh','draft-elec-range','draft-elec-due',
-   'draft-gas-month','draft-gas','draft-gas-range','draft-gas-due',
+  ['draft-water-month','draft-water','draft-water-start','draft-water-end','draft-water-due',
+   'draft-elec-month','draft-elec','draft-elec-kwh','draft-elec-start','draft-elec-end','draft-elec-due',
+   'draft-gas-month','draft-gas','draft-gas-start','draft-gas-end','draft-gas-due',
    'draft-net-month','draft-net','draft-note'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.value='';
   });
@@ -4870,7 +4953,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06140425'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06140521'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
