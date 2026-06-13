@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06122225</span>
+    <span class="version-tag">v06131713</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -4203,21 +4203,39 @@ window.saveOwnerCalc = async function(sendEmail=true){
 
 // ── 房東課：自動讀取最近水電帳單 ──────────────────────────
 window.autoFillOwnerBills = function(){
-  // 找最近一期水電帳單
-  const bill = DB.utilBills && DB.utilBills.length ? DB.utilBills[0] : null;
+  // 依結算月份套奇偶月規則決定要抓哪一期帳單
+  const period = (document.getElementById('oc-period')?.value||'').trim();
+  let targetPeriod = '';
+  if(/^\d{6}$/.test(period)){
+    const y=+period.slice(0,4), m=+period.slice(4,6);
+    if(m%2===0){ targetPeriod=period; }                 // 偶數月：用當期
+    else { let pm=m-1, py=y; if(pm<1){pm=12;py=y-1;} targetPeriod=py+String(pm).padStart(2,'0'); } // 奇數月：用上一個偶數月
+  }
+  // 從已儲存帳單找對應期別；找不到才退回最新一期
+  let bill=null;
+  if(targetPeriod && DB.utilBills) bill=DB.utilBills.find(b=>b.period===targetPeriod)||null;
+  if(!bill && DB.utilBills && DB.utilBills.length) bill=DB.utilBills[0];
   if(!bill){ toast('尚無已儲存的水電帳單，請先完成水電計算並儲存'); return; }
-  // 填入帳單資料
+  // 勾選「本月收到新帳單」並展開輸入區（呼叫既有 toggleNewBill）
   const ckEl=document.getElementById('oc-new-bill');
-  const wEl=document.getElementById('oc-water-input');
-  const eEl=document.getElementById('oc-elec-input');
-  const gEl=document.getElementById('oc-gas-input');
-  if(ckEl) ckEl.checked=true;
-  document.getElementById('oc-new-bill-section-owner')&&(document.getElementById('oc-new-bill-section-owner').style.display='block');
+  if(ckEl){ ckEl.checked=true; toggleNewBill(); }
+  // 帶入各項金額（修正：使用正確 id oc-water / oc-elec / oc-gas）
+  const wEl=document.getElementById('oc-water');
+  const eEl=document.getElementById('oc-elec');
+  const gEl=document.getElementById('oc-gas');
   if(wEl) wEl.value=bill.waterTotal||0;
   if(eEl) eEl.value=bill.elecTotal||0;
   if(gEl) gEl.value=bill.gasTotal||0;
+  // 網路費若為空，帶入預設值
+  const nEl=document.getElementById('oc-net');
+  if(nEl && !nEl.value) nEl.value=DB.defaultNetFee||1409;
+  // 來源提示
   const infoEl=document.getElementById('oc-bill-source');
-  if(infoEl) infoEl.textContent='✅ 已自動帶入：'+bill.period+'期帳單（水$'+(bill.waterTotal||0)+'、電$'+(bill.elecTotal||0)+'、瓦斯$'+(bill.gasTotal||0)+'）';
+  let note='';
+  if(targetPeriod && bill.period===targetPeriod){
+    note=(+period.slice(4,6))%2===0 ? '（結算'+period+'，偶數月用當期）' : '（結算'+period+'，奇數月用上期）';
+  } else { note='（無對應期別，改用最新一期 '+bill.period+'）'; }
+  if(infoEl) infoEl.textContent='✅ 已帶入 '+bill.period+' 期：水$'+(bill.waterTotal||0)+'、電$'+(bill.elecTotal||0)+'、瓦斯$'+(bill.gasTotal||0)+' '+note;
   calcOwner();
   toast('✅ 已自動帶入 '+bill.period+' 期水電帳單');
 };
@@ -4835,7 +4853,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06122225'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06131713'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
