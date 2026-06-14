@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06140922</span>
+    <span class="version-tag">v06140941</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -305,6 +305,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <button onclick="ST('monitor-cam');closeLandlordMenu()">📷 智慧監控</button>
       <button onclick="ST('owner-calc');closeLandlordMenu()">💴 房東課（月結算）</button>
       <button onclick="ST('prebill');closeLandlordMenu()">📦 各期帳單預建</button>
+      <button onclick="ST('taxreserve');closeLandlordMenu()">💰 稅務預存追蹤</button>
       <button onclick="ST('maintenance');closeLandlordMenu()">🔧 定期維護提醒</button>
       <button onclick="ST('backup');closeLandlordMenu()">💾 備份設定</button>
     </div>
@@ -794,6 +795,32 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div class="card mt">
     <div class="card-title">📋 已預建帳單清單</div>
     <div id="pb-list" style="font-size:.88rem;"></div>
+  </div>
+</div>
+
+<div id="page-taxreserve" class="page">
+  <div class="card mt">
+    <div class="card-title">💰 稅務每月預存追蹤</div>
+    <div class="alert-box a-info" style="font-size:.85rem;">
+      房屋稅（5月）、地價稅（11月）每年各繳一次；建議每月預存，到期不慌。
+      <div style="margin-top:.3rem;">每月應預存（哥哥半額）：<strong id="tr-target">—</strong></div>
+    </div>
+    <div class="form-row c3">
+      <div><label>預存月份</label>
+        <input type="month" id="tr-month"></div>
+      <div><label>預存金額（元）</label>
+        <input type="number" id="tr-amount" placeholder="200"></div>
+      <div><label>備註</label>
+        <input type="text" id="tr-note" placeholder="如：6月預存"></div>
+    </div>
+    <div class="gap mt">
+      <button class="btn bs" onclick="saveTaxReserve()">💾 記錄本月預存</button>
+    </div>
+    <div id="tr-summary" class="alert-box a-warn" style="font-size:.85rem;margin-top:.6rem;display:none;"></div>
+  </div>
+  <div class="card mt">
+    <div class="card-title">📋 預存紀錄</div>
+    <div id="tr-list" style="font-size:.88rem;"></div>
   </div>
 </div>
 
@@ -2095,7 +2122,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], defaultNetFee:1409, preBills:[], brotherEmail:'', notifyBrother:false };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], defaultNetFee:1409, preBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false };
 let _ejsOk = false;
 
 // ============================================================
@@ -2471,6 +2498,7 @@ const loadLandlordData = async () => {
       if(d.brotherEmail!==undefined)DB.brotherEmail=d.brotherEmail;
       if(d.notifyBrother!==undefined)DB.notifyBrother=d.notifyBrother;
       if(d.preBills)DB.preBills=d.preBills;
+      if(d.taxReserveLog)DB.taxReserveLog=d.taxReserveLog;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',renewalIntent:'unknown',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -2506,6 +2534,7 @@ const saveLandlordData = async () => {
     brotherEmail:DB.brotherEmail||'',
     notifyBrother:DB.notifyBrother||false,
     preBills:DB.preBills||[],
+    taxReserveLog:DB.taxReserveLog||[],
   });
 };
 
@@ -2593,6 +2622,58 @@ window.renderPreBills = function(){
     </div>`;
   }).join('');
 };
+// ── 稅務每月預存追蹤 ─────────────────────────────────────────
+window.taxMonthlyTarget = function(){
+  const t=DB.taxRecords||{};
+  const house=(t.houseTax&&+t.houseTax.amount)||0;
+  const land=(t.landTax&&+t.landTax.amount)||0;
+  const h=Math.round(house/2/12), l=Math.round(land/2/12);
+  return {house:h, land:l, total:h+l};
+};
+window.saveTaxReserve = async function(){
+  const month=(document.getElementById('tr-month')?.value||'').trim();
+  if(!month){ toast('請選擇預存月份'); return; }
+  const tgt=taxMonthlyTarget();
+  let amount=+(document.getElementById('tr-amount')?.value||0); if(!amount) amount=tgt.total;
+  const note=(document.getElementById('tr-note')?.value||'').trim();
+  if(!DB.taxReserveLog) DB.taxReserveLog=[];
+  const i=DB.taxReserveLog.findIndex(r=>r.month===month);
+  const rec={month, amount, note, savedAt:new Date().toLocaleString('zh-TW')};
+  if(i>=0) DB.taxReserveLog[i]=rec; else DB.taxReserveLog.push(rec);
+  await saveLandlordData();
+  const ne=document.getElementById('tr-note'); if(ne) ne.value='';
+  renderTaxReserve();
+  toast('✅ 已記錄 '+month+' 預存 $'+amount);
+};
+window.deleteTaxReserve = async function(month){
+  if(!confirm('刪除 '+month+' 的預存紀錄？')) return;
+  DB.taxReserveLog=(DB.taxReserveLog||[]).filter(r=>r.month!==month);
+  await saveLandlordData();
+  renderTaxReserve();
+  toast('已刪除 '+month);
+};
+window.renderTaxReserve = function(){
+  const tgt=taxMonthlyTarget();
+  const te=document.getElementById('tr-target');
+  if(te) te.textContent='房屋稅'+tgt.house+'＋地價稅'+tgt.land+'＝約 '+tgt.total+' 元/月';
+  const am=document.getElementById('tr-amount'); if(am) am.placeholder=String(tgt.total);
+  const list=(DB.taxReserveLog||[]).slice().sort((a,b)=>(b.month||'').localeCompare(a.month||''));
+  const el=document.getElementById('tr-list');
+  if(el){
+    if(!list.length){ el.innerHTML='<div style="color:var(--muted);">尚無預存紀錄。</div>'; }
+    else { el.innerHTML=list.map(r=>`<div style="border:1px solid var(--border);border-radius:.5rem;padding:.45rem .6rem;margin-bottom:.45rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;">
+        <div><strong>${r.month||'—'}</strong>　預存 $${(+r.amount||0).toLocaleString()}${r.note?`　<span style="color:var(--muted);font-size:.82rem;">（${r.note}）</span>`:''}</div>
+        <button class="btn bd sm" onclick="deleteTaxReserve('${r.month}')">🗑️</button>
+      </div>`).join(''); }
+  }
+  const sum=document.getElementById('tr-summary');
+  if(sum){
+    const total=(DB.taxReserveLog||[]).reduce((a,r)=>a+(+r.amount||0),0);
+    const months=(DB.taxReserveLog||[]).length;
+    sum.style.display='block';
+    sum.innerHTML='累計已預存：<strong>$'+total.toLocaleString()+'</strong>（'+months+' 筆）　／　每月目標約 $'+tgt.total;
+  }
+};
 window.ST = function(n){
   // ── 權限檢查：房客無法進入房東專屬頁面 ──
   if(LANDLORD_PAGES.includes(n) && !isLandlord){
@@ -2613,6 +2694,7 @@ window.ST = function(n){
   if(n==='owner-calc'){renderOwnerHistory(); if(window.updateBrotherToggleUI)updateBrotherToggleUI(); const _on=document.getElementById('oc-net'); if(_on&&!_on.value){_on.value=DB.defaultNetFee||1409; calcOwner();}}
   if(n==='maintenance'){renderMaintenanceHistory();loadMaintenanceState();}
   if(n==='prebill'){renderPreBillRooms(); renderPreBills();}
+  if(n==='taxreserve'){renderTaxReserve();}
   if(n==='announce')renderAnnounce();
   updateLandlordMenuActive(n);
   if(n==='repair')renderRepair();
@@ -5072,7 +5154,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06140922'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06140941'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
