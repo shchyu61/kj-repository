@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06140521</span>
+    <span class="version-tag">v06140922</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -304,6 +304,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <button onclick="ST('photos');closeLandlordMenu()">🖼️ 照片存檔</button>
       <button onclick="ST('monitor-cam');closeLandlordMenu()">📷 智慧監控</button>
       <button onclick="ST('owner-calc');closeLandlordMenu()">💴 房東課（月結算）</button>
+      <button onclick="ST('prebill');closeLandlordMenu()">📦 各期帳單預建</button>
       <button onclick="ST('maintenance');closeLandlordMenu()">🔧 定期維護提醒</button>
       <button onclick="ST('backup');closeLandlordMenu()">💾 備份設定</button>
     </div>
@@ -757,6 +758,45 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 </div>
 
 <!-- ══ 房東：收租紀錄 ══ -->
+<div id="page-prebill" class="page">
+  <div class="card mt">
+    <div class="card-title">📦 各期帳單預建區</div>
+    <div class="alert-box a-info" style="font-size:.85rem;">
+      暫停收租期間可<strong>事先建立各月份帳單（未收款也能存）</strong>，之後新約簽好補收時直接取用，不必拖到當月一次輸入。
+    </div>
+    <div class="form-row c3">
+      <div><label>帳單月份（YYYYMM）</label>
+        <input type="text" id="pb-period" placeholder="如 202603"></div>
+      <div><label>💧 水費（元）</label>
+        <input type="number" id="pb-water" placeholder="如 310"></div>
+      <div><label>🔥 瓦斯費（元）</label>
+        <input type="number" id="pb-gas" placeholder="如 347"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>⚡ 電費（元）</label>
+        <input type="number" id="pb-elec" placeholder="如 2196"></div>
+      <div><label>⚡ 總用電度數（度，選填）</label>
+        <input type="number" id="pb-total-kwh" placeholder="如 884"></div>
+    </div>
+    <div style="margin-top:.5rem;">
+      <label style="font-weight:700;">各房用電度數（選填，可事先輸入各期）</label>
+      <div id="pb-rooms" class="form-row c3" style="margin-top:.3rem;"></div>
+    </div>
+    <div class="form-row" style="margin-top:.5rem;">
+      <div><label>備註</label>
+        <input type="text" id="pb-note" placeholder="如：計費115/02/03~04/06"></div>
+    </div>
+    <div class="gap mt">
+      <button class="btn bs" onclick="savePreBill()">💾 儲存預建帳單</button>
+      <button class="btn bd sm" onclick="clearPreBillForm()">🆕 清空表單</button>
+    </div>
+  </div>
+  <div class="card mt">
+    <div class="card-title">📋 已預建帳單清單</div>
+    <div id="pb-list" style="font-size:.88rem;"></div>
+  </div>
+</div>
+
 <div id="page-rent" class="page">
   <!-- 暫停收租設定 -->
   <div class="card landlord-only" id="rent-pause-card">
@@ -2055,7 +2095,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], defaultNetFee:1409, brotherEmail:'', notifyBrother:false };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], defaultNetFee:1409, preBills:[], brotherEmail:'', notifyBrother:false };
 let _ejsOk = false;
 
 // ============================================================
@@ -2430,6 +2470,7 @@ const loadLandlordData = async () => {
       if(d.defaultNetFee!==undefined)DB.defaultNetFee=d.defaultNetFee;
       if(d.brotherEmail!==undefined)DB.brotherEmail=d.brotherEmail;
       if(d.notifyBrother!==undefined)DB.notifyBrother=d.notifyBrother;
+      if(d.preBills)DB.preBills=d.preBills;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',renewalIntent:'unknown',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -2464,6 +2505,7 @@ const saveLandlordData = async () => {
     defaultNetFee:DB.defaultNetFee||1409,
     brotherEmail:DB.brotherEmail||'',
     notifyBrother:DB.notifyBrother||false,
+    preBills:DB.preBills||[],
   });
 };
 
@@ -2475,6 +2517,82 @@ const saveLandlordData = async () => {
 // 房東專屬頁面清單（房客呼叫 ST 會被擋掉）
 const LANDLORD_PAGES = ['tenants','utility','rent','checkout','former','photos','monitor-cam','backup','owner-calc','maintenance'];
 
+// ── 點5：各期帳單預建區 ─────────────────────────────────────
+window.renderPreBillRooms = function(){
+  const c=document.getElementById('pb-rooms'); if(!c) return;
+  if(c.dataset.built) return;
+  c.innerHTML = ROOMS.map(r=>`<div><label>${RL[r]||r}${r==='3F後'?'（房東自住）':''}</label><input type="number" id="pb-kwh-${r}" placeholder="度數"></div>`).join('');
+  c.dataset.built='1';
+};
+window.clearPreBillForm = function(){
+  ['pb-period','pb-water','pb-elec','pb-gas','pb-total-kwh','pb-note'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ROOMS.forEach(r=>{const e=document.getElementById('pb-kwh-'+r);if(e)e.value='';});
+};
+window.savePreBill = async function(){
+  const period=(document.getElementById('pb-period')?.value||'').trim();
+  if(!/^\d{6}$/.test(period)){ toast('請輸入正確的帳單月份（YYYYMM，如 202603）'); return; }
+  const num=id=>+(document.getElementById(id)?.value||0);
+  const rooms={}; ROOMS.forEach(r=>{ const v=document.getElementById('pb-kwh-'+r)?.value; if(v!=null && v!=='') rooms[r]=+v; });
+  const rec={ period, water:num('pb-water'), elec:num('pb-elec'), gas:num('pb-gas'),
+    totalKwh:num('pb-total-kwh'), rooms, note:(document.getElementById('pb-note')?.value||'').trim(),
+    preBuilt:true, savedAt:new Date().toLocaleString('zh-TW') };
+  if(!DB.preBills) DB.preBills=[];
+  const i=DB.preBills.findIndex(b=>b.period===period);
+  if(i>=0) DB.preBills[i]=rec; else DB.preBills.push(rec);
+  DB.preBills.sort((a,b)=>a.period.localeCompare(b.period));
+  await saveLandlordData();
+  renderPreBills();
+  toast('✅ 已儲存預建帳單 '+period+'（未收款也已存）');
+};
+window.editPreBill = function(period){
+  const b=(DB.preBills||[]).find(x=>x.period===period); if(!b) return;
+  renderPreBillRooms();
+  const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=(v==null?'':v);};
+  sv('pb-period',b.period); sv('pb-water',b.water||''); sv('pb-elec',b.elec||'');
+  sv('pb-gas',b.gas||''); sv('pb-total-kwh',b.totalKwh||''); sv('pb-note',b.note||'');
+  ROOMS.forEach(r=>{ const e=document.getElementById('pb-kwh-'+r); if(e) e.value=(b.rooms&&b.rooms[r]!=null)?b.rooms[r]:''; });
+  window.scrollTo({top:0,behavior:'smooth'});
+  toast('已載入 '+period+' 到表單，修改後再儲存');
+};
+window.deletePreBill = async function(period){
+  if(!confirm('確定刪除預建帳單 '+period+'？')) return;
+  DB.preBills=(DB.preBills||[]).filter(x=>x.period!==period);
+  await saveLandlordData();
+  renderPreBills();
+  toast('已刪除 '+period);
+};
+window.sendPreBillToOwner = function(period){
+  const b=(DB.preBills||[]).find(x=>x.period===period); if(!b) return;
+  if(window.ST) ST('owner-calc');
+  setTimeout(function(){
+    const ck=document.getElementById('oc-new-bill'); if(ck){ck.checked=true; if(window.toggleNewBill)toggleNewBill();}
+    const sv=(id,v)=>{const e=document.getElementById(id); if(e&&v!=null&&v!=='') e.value=v;};
+    sv('oc-water',b.water); sv('oc-elec',b.elec); sv('oc-gas',b.gas);
+    const on=document.getElementById('oc-net'); if(on&&!on.value) on.value=DB.defaultNetFee||1409;
+    const ocp=document.getElementById('oc-period'); if(ocp) ocp.value=b.period;
+    if(window.calcOwner) calcOwner();
+    toast('✅ 已將預建帳單 '+b.period+' 傳到房東課');
+  },120);
+};
+window.renderPreBills = function(){
+  const el=document.getElementById('pb-list'); if(!el) return;
+  const list=(DB.preBills||[]).slice().sort((a,b)=>a.period.localeCompare(b.period));
+  if(!list.length){ el.innerHTML='<div style="color:var(--muted);">目前尚無預建帳單。</div>'; return; }
+  el.innerHTML=list.map(b=>{
+    const rk=Object.keys(b.rooms||{}).map(r=>`${RL[r]||r}:${b.rooms[r]}度`).join('、');
+    return `<div style="border:1px solid var(--border);border-radius:.5rem;padding:.5rem .6rem;margin-bottom:.5rem;">
+      <div style="font-weight:700;">📅 ${b.period}　💧$${(b.water||0).toLocaleString()}　⚡$${(b.elec||0).toLocaleString()}　🔥$${(b.gas||0).toLocaleString()}</div>
+      ${b.totalKwh?`<div style="font-size:.82rem;color:var(--muted);">總度數：${b.totalKwh} 度</div>`:''}
+      ${rk?`<div style="font-size:.82rem;color:var(--muted);">各房：${rk}</div>`:''}
+      ${b.note?`<div style="font-size:.82rem;color:var(--muted);">備註：${b.note}</div>`:''}
+      <div class="gap" style="margin-top:.4rem;">
+        <button class="btn bp sm" onclick="sendPreBillToOwner('${b.period}')">📤 傳房東課</button>
+        <button class="btn ba sm" onclick="editPreBill('${b.period}')">✏️ 編輯</button>
+        <button class="btn bd sm" onclick="deletePreBill('${b.period}')">🗑️ 刪除</button>
+      </div>
+    </div>`;
+  }).join('');
+};
 window.ST = function(n){
   // ── 權限檢查：房客無法進入房東專屬頁面 ──
   if(LANDLORD_PAGES.includes(n) && !isLandlord){
@@ -2494,6 +2612,7 @@ window.ST = function(n){
   if(n==='backup')renderBK();
   if(n==='owner-calc'){renderOwnerHistory(); if(window.updateBrotherToggleUI)updateBrotherToggleUI(); const _on=document.getElementById('oc-net'); if(_on&&!_on.value){_on.value=DB.defaultNetFee||1409; calcOwner();}}
   if(n==='maintenance'){renderMaintenanceHistory();loadMaintenanceState();}
+  if(n==='prebill'){renderPreBillRooms(); renderPreBills();}
   if(n==='announce')renderAnnounce();
   updateLandlordMenuActive(n);
   if(n==='repair')renderRepair();
@@ -4953,7 +5072,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06140521'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06140922'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
