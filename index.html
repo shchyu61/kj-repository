@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06150759</span>
+    <span class="version-tag">v06150827</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -5043,7 +5043,7 @@ window.renderUtilHistory = function(){
           <div style="margin-top:.3rem;flex-wrap:wrap;display:flex;gap:.2rem;">${roomSummary}</div>
         </div>
         <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:flex-start;">
-          <label style="font-size:.78rem;display:flex;align-items:center;gap:.2rem;color:var(--muted);"><input type="checkbox" class="bill-pick" value="${b.period}">合併選</label>
+          <label style="font-size:.82rem;display:flex;align-items:center;gap:.25rem;color:var(--primary);font-weight:700;cursor:pointer;"><input type="checkbox" class="bill-pick" value="${b.period}" style="width:1rem;height:1rem;">勾選</label>
           <button class="btn bp sm" onclick="showBillText(['${b.period}'])">📋 帳單文字</button>
           <button class="btn bo sm" onclick="toggleUtilDetail('${detailId}')">📋 明細</button>
           <button class="btn ba sm" onclick="loadUtilBillToEdit(${i})">✏️ 載入編輯</button>
@@ -5068,7 +5068,7 @@ window.renderUtilHistory = function(){
   el.innerHTML = `<div id="bill-text-output"></div>
   <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;margin-bottom:.6rem;padding:.5rem;background:var(--bg2);border-radius:.6rem;">
     <span style="font-size:.82rem;color:var(--muted);">勾選期別後 →</span>
-    <button class="btn bp sm" onclick="showBillTextFromChecks()">📋 產出帳單文字（單期勾1／多期勾多合併）</button>
+    <button class="btn bp sm" onclick="showBillTextFromChecks()">📋 產出帳單文字（勾選1筆＝單期；勾多筆＝多期合併）</button>
   </div>` + listHTML;
 };
 
@@ -5090,7 +5090,7 @@ window.genSingleBillText = function(b){
   let t=`${yr}年${mo}月水、電、瓦斯、冷氣帳單\n\n`;
   ROOMS.forEach(r=>{ t+=`　　${RL[r]||r}　$${f(((R[r]||{}).total)||0)}\n`; });
   t+=`　　房東贊助房客零頭　$${f(N9)}\n`;
-  t+=`　　房東未常住贊助水電瓦斯　$${f(tcWEG)}\n`;
+  if(tcWEG>0) t+=`　　房東未常住贊助水電瓦斯　$${f(tcWEG)}\n`;
   t+=`　　我本期水電瓦斯　$${f(ltWEG)}\n`;
   t+=`　　我本期冷氣　$${f(ltAC)}\n`;
   t+=`　　以上本期水電瓦斯共　$${f(N14)}\n`;
@@ -5335,7 +5335,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06150759'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06150827'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
