@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06151348</span>
+    <span class="version-tag">v06151840</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -791,7 +791,9 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="gap mt">
       <button class="btn bs sm" onclick="saveReserveProfile()">💾 儲存此人設定</button>
       <button class="btn bd sm" onclick="resetReserveProfile()">↺ 還原 AI 建議</button>
+      <button class="btn bp sm" onclick="sendReserveReport(true)">📧 立即寄本月月報＋登記預存</button>
     </div>
+    <div id="rp-report-status" style="font-size:.78rem;color:var(--muted);margin-top:.35rem;"></div>
   </div>
   <div class="card mt">
     <div class="card-title">💰 稅務每月預存追蹤</div>
@@ -1844,18 +1846,8 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div id="maintenance-history"><div class="txt-m">讀取中...</div></div>
   </div>
 
-  <!-- B+C：每月維護預存 -->
-  <div class="card" style="border:2px solid #16a085;background:#effaf6;">
-    <div class="card-title">💰 每月維護預存（合計＋追蹤）</div>
-    <div id="mr-target" class="alert-box a-info" style="font-size:.85rem;">—</div>
-    <div class="form-row c3">
-      <div><label>預存月份</label><input type="month" id="mr-month"></div>
-      <div><label>預存金額（元）</label><input type="number" id="mr-amount" placeholder="合計"></div>
-      <div><label>備註</label><input type="text" id="mr-note" placeholder="如：6月維護金"></div>
-    </div>
-    <button class="btn bs sm mt" onclick="saveMaintenanceReserve()">💾 記錄本月維護預存</button>
-    <div id="mr-summary" style="font-size:.85rem;margin-top:.5rem;"></div>
-    <div id="mr-list" style="font-size:.86rem;margin-top:.4rem;"></div>
+  <div class="alert-box a-info" style="font-size:.82rem;">
+    💡 每月維護預存已整合到「💰 稅務預存追蹤 → 月度預存建議」一處統一試算（避免重複）。本頁專責「到期提醒」與「歷年維護紀錄」。
   </div>
 
   <!-- A：歷年維護紀錄 -->
@@ -2136,7 +2128,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, reserveProfile:{} };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, reserveProfile:{}, maintenanceDueSent:{}, reserveReportSent:{}, reserveAutoLog:[] };
 let _ejsOk = false;
 
 // ============================================================
@@ -2517,6 +2509,9 @@ const loadLandlordData = async () => {
       if(d.draftBills)DB.draftBills=d.draftBills;
       if(d.taxReserveLog)DB.taxReserveLog=d.taxReserveLog;
       if(d.reserveProfile)DB.reserveProfile=d.reserveProfile;
+      if(d.maintenanceDueSent)DB.maintenanceDueSent=d.maintenanceDueSent;
+      if(d.reserveReportSent)DB.reserveReportSent=d.reserveReportSent;
+      if(d.reserveAutoLog)DB.reserveAutoLog=d.reserveAutoLog;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',renewalIntent:'unknown',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -2557,6 +2552,9 @@ const saveLandlordData = async () => {
     draftBills:DB.draftBills||[],
     taxReserveLog:DB.taxReserveLog||[],
     reserveProfile:DB.reserveProfile||{},
+    maintenanceDueSent:DB.maintenanceDueSent||{},
+    reserveReportSent:DB.reserveReportSent||{},
+    reserveAutoLog:DB.reserveAutoLog||[],
   });
 };
 
@@ -2676,12 +2674,20 @@ const RESERVE_ITEMS=[
 let _reserveWho='me';
 window.reserveMonthly=function(){
   const t=DB.taxRecords||{};
-  const taxCost={'tax-house':(t.houseTax&&+t.houseTax.amount)||0,'tax-land':(t.landTax&&+t.landTax.amount)||0};
-  return RESERVE_ITEMS.map(it=>{
-    const cost=(it.cost!=null)?it.cost:(taxCost[it.src]||0);
-    const full=it.months?cost/it.months:0;
-    return {key:it.key,name:it.name,cycle:it.cycle,cost,months:it.months,full,half:Math.round(full/2)};
+  const recBy={}; (DB.maintenanceRecords||[]).forEach(r=>{recBy[r.type]=r;});
+  const cyl=m=>(m%12===0)?('每'+(m/12)+'年'):('每'+m+'月');
+  const out=[
+    {key:'house',name:'房屋稅',cycle:'每1年',cost:(t.houseTax&&+t.houseTax.amount)||0,months:12,src:'稅務'},
+    {key:'land', name:'地價稅',cycle:'每1年',cost:(t.landTax&&+t.landTax.amount)||0,months:12,src:'稅務'},
+  ];
+  ['ac','tank','washer','filter'].forEach(k=>{
+    const mi=MAINTENANCE_ITEMS[k]||{}; const rec=recBy[k];
+    const useRec=(rec&&+rec.cost>0);
+    const cost=useRec?+rec.cost:(mi.defCost||0);
+    const months=(rec&&+rec.cycle>0)?+rec.cycle:(mi.defCycle||12);
+    out.push({key:k,name:mi.label||k,cycle:cyl(months),cost,months,src:useRec?'維護頁':'預設'});
   });
+  return out.map(it=>{ const full=it.months?it.cost/it.months:0; return Object.assign({},it,{full,half:Math.round(full/2)}); });
 };
 window.switchReserveWho=function(w){ _reserveWho=w; renderReserveProfile(); };
 window.renderReserveProfile=function(){
@@ -2720,6 +2726,8 @@ window.renderReserveProfile=function(){
     else { inc.value=''; if(incHint) incHint.textContent='（目前無房東課結算；暫停收租期間無分潤，恢復收租後一存即自動帶入，可先手動填）'; }
   }
   updateReserveTotals();
+  const rs=document.getElementById('rp-report-status');
+  if(rs){ const _k=new Date().getFullYear()+String(new Date().getMonth()+1).padStart(2,'0'); rs.textContent=(DB.reserveReportSent&&DB.reserveReportSent[_k])?('✅ 本月('+_k+') 已寄月報並自動登記預存'):'（本月月報尚未寄出；開啟此頁會自動寄一次，或按上方按鈕立即寄）'; }
 };
 window.updateReserveTotals=function(){
   let total=0;
@@ -2744,6 +2752,59 @@ window.resetReserveProfile=async function(){
   renderReserveProfile();
   toast('已還原 AI 建議（'+(who==='me'?'哥':'弟')+'）');
 };
+
+window.reserveReportText=function(who){
+  const items=reserveMonthly();
+  const ov=(DB.reserveProfile&&DB.reserveProfile[who])||{};
+  const valOf=it=>((ov[it.key]!=null)?+ov[it.key]:it.half)||0;
+  const lines=items.map(it=>it.name+' '+valOf(it));
+  const total=items.reduce((sm,it)=>sm+valOf(it),0);
+  const sx=(DB.landlordSettlements||[])[0];
+  const inc=sx?(who==='me'?(+sx.myShare||0):(+sx.brotherShare||0)):0;
+  const d=new Date(); const ymStr=d.getFullYear()+'年'+(d.getMonth()+1)+'月';
+  const title=(who==='me')?'【我（哥）】':'【弟弟（AI 建議）】';
+  return title+ymStr+' 月度預存：'+lines.join('、')+' ＝ 每月預留 '+total+' 元。'+(inc?('本月分潤 '+inc+' − 預留 '+total+' = 本月實得 '+(inc-total)+' 元'):'（目前暫停收租、暫無分潤資料）');
+};
+window.sendReserveReport=async function(manual){
+  const d=new Date(); const key=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0');
+  if(!manual){ if(DB.reserveReportSent&&DB.reserveReportSent[key]) return; }
+  if(typeof initEJS==='function') initEJS();
+  try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:LANDLORD_EMAIL,otp:'📅 '+reserveReportText('me')}); }catch(e){}
+  if(DB.notifyBrother){ const bro=(DB.brotherEmail||LANDLORD_EMAILS[1]||''); if(bro){ try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:bro,otp:'📅 '+reserveReportText('brother')}); }catch(e){} } }
+  const items=reserveMonthly();
+  const totOf=who=>{ const ov=(DB.reserveProfile&&DB.reserveProfile[who])||{}; return items.reduce((sm,it)=>sm+(((ov[it.key]!=null)?+ov[it.key]:it.half)||0),0); };
+  if(!DB.reserveAutoLog) DB.reserveAutoLog=[];
+  const exist=DB.reserveAutoLog.findIndex(r=>r.month===key);
+  const rec={month:key, meTotal:totOf('me'), brotherTotal:totOf('brother'), savedAt:new Date().toLocaleString('zh-TW')};
+  if(exist>=0) DB.reserveAutoLog[exist]=rec; else DB.reserveAutoLog.unshift(rec);
+  if(!DB.reserveReportSent) DB.reserveReportSent={}; DB.reserveReportSent[key]=true;
+  await saveLandlordData();
+  if(typeof renderReserveProfile==='function') renderReserveProfile();
+  if(manual) toast('✅ 已寄本月（'+key+'）月報並登記預存');
+};
+window.checkMaintenanceDue=async function(){
+  const recs=DB.maintenanceRecords||[]; if(!recs.length) return;
+  if(!DB.maintenanceDueSent) DB.maintenanceDueSent={};
+  const toSend=[];
+  recs.forEach(r=>{
+    if(!r.lastDate) return;
+    const next=new Date(r.lastDate); next.setMonth(next.getMonth()+(+r.cycle||24));
+    const daysLeft=Math.round((next-new Date())/86400000);
+    if(daysLeft<=30){ const k=r.type+'@'+next.toISOString().slice(0,10); if(!DB.maintenanceDueSent[k]) toSend.push({r,next,daysLeft,k}); }
+  });
+  if(!toSend.length) return;
+  if(typeof initEJS==='function') initEJS();
+  let changed=false;
+  for(const x of toSend){
+    const lbl=(MAINTENANCE_ITEMS[x.r.type]||{}).label||x.r.type;
+    const when=x.next.toLocaleDateString('zh-TW');
+    const msg='🔧 維護到期提醒：「'+lbl+'」預計 '+when+' 到期（'+(x.daysLeft<0?('已逾期 '+Math.abs(x.daysLeft)+' 天'):('還有 '+x.daysLeft+' 天'))+'）。請提前安排（提醒於到期前約1個月發出）。';
+    try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:LANDLORD_EMAIL,otp:msg}); }catch(e){}
+    DB.maintenanceDueSent[x.k]=true; changed=true;
+  }
+  if(changed) await saveLandlordData();
+};
+
 
 // ── 稅務每月預存追蹤 ─────────────────────────────────────────
 window.taxMonthlyTarget = function(){
@@ -2815,8 +2876,8 @@ window.ST = function(n){
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
   if(n==='owner-calc'){renderOwnerHistory(); if(window.updateBrotherToggleUI)updateBrotherToggleUI(); const _on=document.getElementById('oc-net'); if(_on&&!_on.value){_on.value=DB.defaultNetFee||1409; calcOwner();}}
-  if(n==='maintenance'){renderMaintenanceHistory();loadMaintenanceState();renderMaintenanceLog();renderMaintenanceReserve();}
-  if(n==='taxreserve'){renderTaxReserve(); renderReserveProfile();}
+  if(n==='maintenance'){renderMaintenanceHistory();loadMaintenanceState();renderMaintenanceLog(); checkMaintenanceDue();}
+  if(n==='taxreserve'){renderTaxReserve(); renderReserveProfile(); sendReserveReport(false); checkMaintenanceDue();}
   if(n==='announce')renderAnnounce();
   updateLandlordMenuActive(n);
   if(n==='repair')renderRepair();
@@ -4644,10 +4705,10 @@ window.updateBrotherToggleUI = function(){
 
 // ── 定期維護提醒 ──────────────────────────────────────────
 const MAINTENANCE_ITEMS = {
-  filter: {label:'廚房濾心', icon:'💧'},
-  ac:     {label:'冷氣清洗', icon:'❄️'},
-  washer: {label:'洗衣機清洗', icon:'🫧'},
-  tank:   {label:'水塔清洗', icon:'🏗️'},
+  filter: {label:'廚房濾心', icon:'💧', defCost:7000, defCycle:12},
+  ac:     {label:'冷氣清洗(3台)', icon:'❄️', defCost:12000, defCycle:36},
+  washer: {label:'洗衣機清洗', icon:'🫧', defCost:2000, defCycle:24},
+  tank:   {label:'水塔清洗+水管', icon:'🏗️', defCost:10000, defCycle:36},
 };
 window.calcMaintenance = function(type){
   const lastDate=document.getElementById(type+'-last-date')?.value;
@@ -5441,7 +5502,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06151348'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06151840'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
