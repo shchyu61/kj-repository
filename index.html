@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06150827</span>
+    <span class="version-tag">v06151340</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -770,6 +770,24 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 <!-- ══ 房東：收租紀錄 ══ -->
 
 <div id="page-taxreserve" class="page">
+  <div class="card mt">
+    <div class="card-title">💡 月度預存建議（自動試算，哥／弟雙視圖）</div>
+    <div style="display:flex;gap:.4rem;margin-bottom:.6rem;flex-wrap:wrap;">
+      <button id="rp-tab-me" class="btn bp sm" onclick="switchReserveWho('me')">我（哥）</button>
+      <button id="rp-tab-brother" class="btn bo sm" onclick="switchReserveWho('brother')">弟弟（AI 建議）</button>
+    </div>
+    <div id="rp-hint" class="alert-box a-info" style="font-size:.82rem;"></div>
+    <div id="rp-table" style="overflow-x:auto;"></div>
+    <div style="margin-top:.6rem;">
+      <label>本月分潤（自動帶最新房東課，可改）</label>
+      <input type="number" id="rp-income" placeholder="如 1750" oninput="updateReserveTotals()">
+    </div>
+    <div id="rp-result" class="alert-box a-warn" style="margin-top:.6rem;font-size:.92rem;"></div>
+    <div class="gap mt">
+      <button class="btn bs sm" onclick="saveReserveProfile()">💾 儲存此人設定</button>
+      <button class="btn bd sm" onclick="resetReserveProfile()">↺ 還原 AI 建議</button>
+    </div>
+  </div>
   <div class="card mt">
     <div class="card-title">💰 稅務每月預存追蹤</div>
     <div class="alert-box a-info" style="font-size:.85rem;">
@@ -2113,7 +2131,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, reserveProfile:{} };
 let _ejsOk = false;
 
 // ============================================================
@@ -2493,6 +2511,7 @@ const loadLandlordData = async () => {
       if(d.preBills)DB.preBills=d.preBills;
       if(d.draftBills)DB.draftBills=d.draftBills;
       if(d.taxReserveLog)DB.taxReserveLog=d.taxReserveLog;
+      if(d.reserveProfile)DB.reserveProfile=d.reserveProfile;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',renewalIntent:'unknown',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -2532,6 +2551,7 @@ const saveLandlordData = async () => {
     preBills:DB.preBills||[],
     draftBills:DB.draftBills||[],
     taxReserveLog:DB.taxReserveLog||[],
+    reserveProfile:DB.reserveProfile||{},
   });
 };
 
@@ -2639,6 +2659,87 @@ window.sendDraftBillToCurrent = function(id){
   toast('✅ 已將 '+(DRAFTBILL_META[b.kind]?.label||b.kind)+' 帶入本期帳單資訊');
 };
 
+// ── 月度預存建議（自動試算，哥/弟雙視圖）──────────────────────
+const RESERVE_ITEMS=[
+  {key:'house', name:'房屋稅', cycle:'每1年', months:12, src:'tax-house'},
+  {key:'land', name:'地價稅', cycle:'每1年', months:12, src:'tax-land'},
+  {key:'ac', name:'洗冷氣(3台)', cycle:'每3年', months:36, cost:12000},
+  {key:'tank', name:'洗水塔+全棟水管檸檬酸', cycle:'每3年', months:36, cost:10000},
+  {key:'washer', name:'洗衣機', cycle:'每2年', months:24, cost:2000},
+  {key:'filter', name:'換廚房濾心', cycle:'每1年', months:12, cost:7000},
+];
+let _reserveWho='me';
+window.reserveMonthly=function(){
+  const t=DB.taxRecords||{};
+  const taxCost={'tax-house':(t.houseTax&&+t.houseTax.amount)||0,'tax-land':(t.landTax&&+t.landTax.amount)||0};
+  return RESERVE_ITEMS.map(it=>{
+    const cost=(it.cost!=null)?it.cost:(taxCost[it.src]||0);
+    const full=it.months?cost/it.months:0;
+    return {key:it.key,name:it.name,cycle:it.cycle,cost,months:it.months,full,half:Math.round(full/2)};
+  });
+};
+window.switchReserveWho=function(w){ _reserveWho=w; renderReserveProfile(); };
+window.renderReserveProfile=function(){
+  const who=_reserveWho;
+  const prof=(DB.reserveProfile&&DB.reserveProfile[who])||{};
+  ['me','brother'].forEach(w=>{ const b=document.getElementById('rp-tab-'+w); if(b) b.className='btn '+(w===who?'bp':'bo')+' sm'; });
+  const hint=document.getElementById('rp-hint');
+  if(hint) hint.innerHTML = (who==='brother')
+    ? '以下是 <strong>AI 給弟弟的建議預留</strong>。弟弟也是房東，金額可自行調整。各項皆為「弟弟應負擔的一半」。'
+    : '以下為 <strong>我（哥）的每月建議預留</strong>，已自動算好、可手動微調。各項皆為「我應負擔的一半」。';
+  const items=reserveMonthly();
+  let total=0;
+  const rows=items.map(it=>{
+    const val=(prof[it.key]!=null)?prof[it.key]:it.half; total+=(+val||0);
+    return `<tr>
+      <td style="padding:.3rem .4rem;">${it.name}</td>
+      <td style="padding:.3rem .4rem;color:var(--muted);white-space:nowrap;">${it.cycle}</td>
+      <td style="padding:.3rem .4rem;text-align:right;color:var(--muted);">$${Math.round(it.full).toLocaleString()}</td>
+      <td style="padding:.3rem .4rem;text-align:right;"><input type="number" value="${val}" data-rkey="${it.key}" style="width:5.2rem;text-align:right;" oninput="updateReserveTotals()"></td>
+    </tr>`;
+  }).join('');
+  const tEl=document.getElementById('rp-table');
+  if(tEl) tEl.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:.85rem;min-width:340px;">
+    <thead><tr style="border-bottom:1px solid var(--border);color:var(--muted);">
+      <th style="text-align:left;padding:.3rem .4rem;">項目</th><th style="text-align:left;padding:.3rem .4rem;">週期</th>
+      <th style="text-align:right;padding:.3rem .4rem;">全額/月</th><th style="text-align:right;padding:.3rem .4rem;">應留/月(可改)</th>
+    </tr></thead><tbody>${rows}</tbody>
+    <tfoot><tr style="border-top:2px solid var(--border);font-weight:700;">
+      <td colspan="3" style="padding:.4rem;">每月必須預留</td><td style="text-align:right;padding:.4rem;" id="rp-total">$${total.toLocaleString()}</td>
+    </tr></tfoot></table>`;
+  const inc=document.getElementById('rp-income');
+  if(inc){
+    let v=(DB.reserveProfile&&DB.reserveProfile['income_'+who]);
+    if(v==null||v===''){ const sx=(DB.landlordSettlements||[])[0]; v=sx?(who==='me'?(+sx.myShare||0):(+sx.brotherShare||0)):''; }
+    inc.value=v;
+  }
+  updateReserveTotals();
+};
+window.updateReserveTotals=function(){
+  let total=0;
+  document.querySelectorAll('#rp-table input[data-rkey]').forEach(i=>total+=(+i.value||0));
+  const te=document.getElementById('rp-total'); if(te) te.textContent='$'+total.toLocaleString();
+  const inc=+(document.getElementById('rp-income')?.value||0);
+  const re=document.getElementById('rp-result');
+  if(re) re.innerHTML=`本月分潤 $${inc.toLocaleString()} − 每月預留 $${total.toLocaleString()} = <strong>本月實得 $${(inc-total).toLocaleString()}</strong>`;
+};
+window.saveReserveProfile=async function(){
+  const who=_reserveWho;
+  if(!DB.reserveProfile) DB.reserveProfile={};
+  if(!DB.reserveProfile[who]) DB.reserveProfile[who]={};
+  document.querySelectorAll('#rp-table input[data-rkey]').forEach(i=>{ DB.reserveProfile[who][i.getAttribute('data-rkey')]=+(i.value||0); });
+  DB.reserveProfile['income_'+who]=+(document.getElementById('rp-income')?.value||0);
+  await saveLandlordData();
+  toast('✅ 已儲存'+(who==='me'?'我（哥）':'弟弟')+'的預留設定');
+};
+window.resetReserveProfile=async function(){
+  const who=_reserveWho;
+  if(DB.reserveProfile){ delete DB.reserveProfile[who]; delete DB.reserveProfile['income_'+who]; }
+  await saveLandlordData();
+  renderReserveProfile();
+  toast('已還原 AI 建議（'+(who==='me'?'哥':'弟')+'）');
+};
+
 // ── 稅務每月預存追蹤 ─────────────────────────────────────────
 window.taxMonthlyTarget = function(){
   const t=DB.taxRecords||{};
@@ -2710,7 +2811,7 @@ window.ST = function(n){
   if(n==='backup')renderBK();
   if(n==='owner-calc'){renderOwnerHistory(); if(window.updateBrotherToggleUI)updateBrotherToggleUI(); const _on=document.getElementById('oc-net'); if(_on&&!_on.value){_on.value=DB.defaultNetFee||1409; calcOwner();}}
   if(n==='maintenance'){renderMaintenanceHistory();loadMaintenanceState();renderMaintenanceLog();renderMaintenanceReserve();}
-  if(n==='taxreserve'){renderTaxReserve();}
+  if(n==='taxreserve'){renderTaxReserve(); renderReserveProfile();}
   if(n==='announce')renderAnnounce();
   updateLandlordMenuActive(n);
   if(n==='repair')renderRepair();
@@ -5335,7 +5436,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06150827'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06151340'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
