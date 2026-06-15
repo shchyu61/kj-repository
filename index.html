@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06151340</span>
+    <span class="version-tag">v06151348</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -781,6 +781,11 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div style="margin-top:.6rem;">
       <label>本月分潤（自動帶最新房東課，可改）</label>
       <input type="number" id="rp-income" placeholder="如 1750" oninput="updateReserveTotals()">
+      <div id="rp-income-hint" style="font-size:.76rem;color:var(--muted);margin-top:.25rem;"></div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:.35rem;line-height:1.55;background:#f7f3ea;border-radius:.5rem;padding:.4rem .55rem;">
+        💡 <strong>什麼是本月分潤？</strong>＝（本月房租總收入 − 本月水電瓦斯網路費）÷ 2，哥、弟對分。<br>
+        例：房租 8,000 − 水電網路 4,500 ＝ 3,500，÷2 ＝ 每人 <strong>1,750</strong>。此處自動帶入最新一筆「房東課」結算中你的那一份。
+      </div>
     </div>
     <div id="rp-result" class="alert-box a-warn" style="margin-top:.6rem;font-size:.92rem;"></div>
     <div class="gap mt">
@@ -2708,10 +2713,11 @@ window.renderReserveProfile=function(){
       <td colspan="3" style="padding:.4rem;">每月必須預留</td><td style="text-align:right;padding:.4rem;" id="rp-total">$${total.toLocaleString()}</td>
     </tr></tfoot></table>`;
   const inc=document.getElementById('rp-income');
+  const incHint=document.getElementById('rp-income-hint');
   if(inc){
-    let v=(DB.reserveProfile&&DB.reserveProfile['income_'+who]);
-    if(v==null||v===''){ const sx=(DB.landlordSettlements||[])[0]; v=sx?(who==='me'?(+sx.myShare||0):(+sx.brotherShare||0)):''; }
-    inc.value=v;
+    const sx=(DB.landlordSettlements||[])[0];
+    if(sx){ inc.value=(who==='me'?(+sx.myShare||0):(+sx.brotherShare||0)); if(incHint) incHint.textContent='（已自動帶入最新房東課 '+(sx.period||'')+' 結算的你那一份）'; }
+    else { inc.value=''; if(incHint) incHint.textContent='（目前無房東課結算；暫停收租期間無分潤，恢復收租後一存即自動帶入，可先手動填）'; }
   }
   updateReserveTotals();
 };
@@ -2728,13 +2734,12 @@ window.saveReserveProfile=async function(){
   if(!DB.reserveProfile) DB.reserveProfile={};
   if(!DB.reserveProfile[who]) DB.reserveProfile[who]={};
   document.querySelectorAll('#rp-table input[data-rkey]').forEach(i=>{ DB.reserveProfile[who][i.getAttribute('data-rkey')]=+(i.value||0); });
-  DB.reserveProfile['income_'+who]=+(document.getElementById('rp-income')?.value||0);
   await saveLandlordData();
   toast('✅ 已儲存'+(who==='me'?'我（哥）':'弟弟')+'的預留設定');
 };
 window.resetReserveProfile=async function(){
   const who=_reserveWho;
-  if(DB.reserveProfile){ delete DB.reserveProfile[who]; delete DB.reserveProfile['income_'+who]; }
+  if(DB.reserveProfile){ delete DB.reserveProfile[who]; }
   await saveLandlordData();
   renderReserveProfile();
   toast('已還原 AI 建議（'+(who==='me'?'哥':'弟')+'）');
@@ -5436,7 +5441,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06151340'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06151348'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
