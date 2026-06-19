@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06200314</span>
+    <span class="version-tag">v06200415</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -613,6 +613,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <!-- ── 各房冷氣電表 ── 問題4、5：標題補足 + 本期抄表日期 -->
   <div class="card">
     <div class="card-title">🔌 各房冷氣電表抄錶</div>
+    <div id="mp-carry-note" style="font-size:.78rem;color:var(--accent);margin-bottom:.3rem;"></div>
     <div style="display:grid;grid-template-columns:68px minmax(95px,1fr) minmax(120px,1fr) minmax(100px,1fr) minmax(85px,1fr) minmax(85px,1fr) minmax(85px,1fr);gap:.4rem;align-items:start;margin-bottom:.3rem;font-size:.76rem;font-weight:700;color:var(--muted);padding:0 .1rem;line-height:1.3;">
       <div>房間</div>
       <div>上期<br>度數</div>
@@ -633,6 +634,20 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div>房間</div><div>各房人數<br>(0=空房)</div><div>共計費天數<br>(自動)</div><div>備注/房客姓名</div>
     </div>
     <div id="person-rows"></div>
+  </div>
+
+  <!-- ── 抄錶後就近存檔列（白工修正）── -->
+  <div class="card landlord-only" style="border:2px solid #2980b9;background:#eef6fc;">
+    <div style="font-size:.86rem;font-weight:700;margin-bottom:.4rem;">💾 抄完錶就在這裡存檔（免再往下找）</div>
+    <div class="alert-box a-info" style="font-size:.8rem;">
+      ✅ 您輸入的抄錶與本期資料<strong>會自動暫存</strong>，關頁也不會消失。<br>
+      期別在上方「📋 本期帳單資訊」設定（目前：<strong id="ws-period-echo">—</strong>）。確認後按下方儲存即寫入正式帳單。
+    </div>
+    <div class="gap" style="margin-top:.4rem;">
+      <button class="btn bs sm" onclick="saveUtilBill(false)">💾 儲存此期帳單（不寄信）</button>
+      <button class="btn bp sm" onclick="saveUtilBill(true)">💾 儲存並推送給房客</button>
+      <button class="btn bd sm" onclick="clearWorkingState()">🧹 清空重填</button>
+    </div>
   </div>
 
   <!-- ── 房東家人入住日（問題9） ── -->
@@ -2133,7 +2148,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, reserveProfile:{}, maintenanceDueSent:{}, reserveReportSent:{}, reserveAutoLog:[] };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, reserveProfile:{}, maintenanceDueSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
 
 // ============================================================
@@ -2517,6 +2532,7 @@ const loadLandlordData = async () => {
       if(d.maintenanceDueSent)DB.maintenanceDueSent=d.maintenanceDueSent;
       if(d.reserveReportSent)DB.reserveReportSent=d.reserveReportSent;
       if(d.reserveAutoLog)DB.reserveAutoLog=d.reserveAutoLog;
+      if(d.billWorkingState!==undefined)DB.billWorkingState=d.billWorkingState;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',renewalIntent:'unknown',id:'',note:'',status:'vacant'};});
   }catch(e){ console.error('loadLandlordData:',e); }
@@ -2560,6 +2576,7 @@ const saveLandlordData = async () => {
     maintenanceDueSent:DB.maintenanceDueSent||{},
     reserveReportSent:DB.reserveReportSent||{},
     reserveAutoLog:DB.reserveAutoLog||[],
+    billWorkingState:DB.billWorkingState||null,
   });
 };
 
@@ -3259,6 +3276,52 @@ window.calcLandlordDays = function(){
   calcU();
 };
 
+let _restoringWS=false, _wsTimer=null;
+window.saveWorkingState=function(){
+  if(_restoringWS) return;
+  const g=id=>document.getElementById(id);
+  const ws={ period:g('u-period')?.value||'', start:g('u-start')?.value||'', end:g('u-end')?.value||'',
+    water:g('u-water')?.value||'', elec:g('u-elec')?.value||'', gas:g('u-gas')?.value||'',
+    kwh:g('u-total-kwh')?.value||'', kprice:g('u-kwh-price')?.value||'', note:g('u-note')?.value||'',
+    meters:{}, persons:{} };
+  ROOMS.forEach(r=>{ ws.meters[r]={prev:g('mp-'+r)?.value||'',curr:g('mc-'+r)?.value||'',date:g('md-'+r)?.value||''};
+    ws.persons[r]={n:g('pn-'+r)?.value||'',note:g('pnote-'+r)?.value||''}; });
+  DB.billWorkingState=ws;
+  if(_wsTimer)clearTimeout(_wsTimer);
+  _wsTimer=setTimeout(function(){ if(window.saveLandlordData) saveLandlordData(); }, 1200);
+};
+window.restoreWorkingState=function(){
+  const ws=DB.billWorkingState; if(!ws) return;
+  _restoringWS=true;
+  const s=(id,v)=>{const e=document.getElementById(id); if(e&&v!=null&&v!=='') e.value=v;};
+  s('u-period',ws.period); s('u-start',ws.start); s('u-end',ws.end);
+  s('u-water',ws.water); s('u-elec',ws.elec); s('u-gas',ws.gas);
+  s('u-total-kwh',ws.kwh); s('u-kwh-price',ws.kprice); s('u-note',ws.note);
+  ROOMS.forEach(r=>{ const mm=ws.meters&&ws.meters[r]; if(mm){ s('mp-'+r,mm.prev); s('mc-'+r,mm.curr); s('md-'+r,mm.date);} const pp=ws.persons&&ws.persons[r]; if(pp){ s('pn-'+r,pp.n); s('pnote-'+r,pp.note);} });
+  _restoringWS=false;
+  if(window.calcU) calcU();
+};
+window.clearWorkingState=async function(){
+  if(!confirm('清空目前輸入的本期帳單（含抄錶、人數）重新開始？已寫入正式帳單的不受影響。')) return;
+  DB.billWorkingState=null;
+  if(window.saveLandlordData) await saveLandlordData();
+  if(window.ST) ST('utility');
+  toast('已清空，可重新輸入');
+};
+window._carryPrevMeters=function(){
+  const bills=(DB.utilBills||[]).filter(b=>b.meterData && Object.values(b.meterData).some(m=>+m.curr>0));
+  const note=document.getElementById('mp-carry-note');
+  if(!bills.length){ if(note) note.textContent=''; return; }
+  const lb=bills.slice().sort((a,b)=>(''+(b.period||'')).localeCompare(''+(a.period||'')))[0];
+  if(!lb||!lb.meterData){ if(note) note.textContent=''; return; }
+  let filled=0;
+  ROOMS.forEach(r=>{
+    const el=document.getElementById('mp-'+r); const m=lb.meterData[r];
+    if(el && (el.value===''||el.value==null) && m && +m.curr>0){ el.value=m.curr; filled++; }
+  });
+  if(note) note.textContent = filled?('🔄 上期度數已自動沿用 '+(lb.period||'')+' 的本期度數（共'+filled+'房，可手動修改）'):'';
+  if(filled && window.calcU) calcU();
+};
 window.initU = function(){
   const mr=document.getElementById('meter-rows');
   const pr=document.getElementById('person-rows');
@@ -3287,6 +3350,8 @@ window.initU = function(){
       <input type="text" id="pnote-${r}" placeholder="${t.name||RL[r]}">
     </div>`;
   });
+  _carryPrevMeters();
+  restoreWorkingState();
   // 初始化日期（若還沒填）
   if(!document.getElementById('u-period').value){
     const n=new Date();
@@ -3321,6 +3386,8 @@ window.onPersonChange = function(r){
 };
 
 window.calcU = function(){
+  if(window.saveWorkingState) saveWorkingState();
+  { const _wpe=document.getElementById('ws-period-echo'); if(_wpe){ const _p=document.getElementById('u-period')?.value||''; _wpe.textContent=_p||'（未設定，請到上方「本期帳單資訊」填）'; } }
   const E=+document.getElementById('u-elec')?.value||0;
   const W=+document.getElementById('u-water')?.value||0;
   const G=+document.getElementById('u-gas')?.value||0;
@@ -3556,6 +3623,7 @@ window.saveUtilBill = async function(sendEmail=true){
   };
   const idx=DB.utilBills.findIndex(b=>b.period===period);
   if(idx>=0)DB.utilBills[idx]=bill; else DB.utilBills.unshift(bill);
+  DB.billWorkingState=null;
   await saveLandlordData();
   renderUtilHistory();
   toast(sendEmail?'帳單已儲存並推送 ✓ 期別：'+period:'帳單已儲存（未通知房客）✓ 期別：'+period);
@@ -5533,7 +5601,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06200314'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06200415'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
