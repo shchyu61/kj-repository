@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06151840</span>
+    <span class="version-tag">v06200314</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -525,7 +525,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div class="card" style="border:1.5px solid #2980b9;background:#f0f7fc;">
     <div class="card-title">📋 已暫存帳單清單（多期、可個別編輯）</div>
     <div class="alert-box a-info" style="font-size:.82rem;">
-      填好各類帳單後按「💾 存入暫存清單」，即可分「類別×月份」永久保存（存雲端）。每筆可個別 ✏️編輯、🗑️刪除、📤傳房東課、📤傳本期帳單。
+      填好各類帳單後按「💾 存入暫存清單」，即可分「類別×月份」永久保存（存雲端）。每筆可個別 ✏️編輯、🗑️刪除、📤傳房東課、📤傳本期帳單。<br>💡 要正式向房客收取：用下方「📥 整期帶入正式帳單」選好期別帶入 → 確認各房電表度數與分攤 → 按計算器的「💾 儲存」即<strong>寫入正式帳單歷史</strong>。
+    </div>
+    <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;margin-bottom:.5rem;">
+      <span style="font-size:.82rem;font-weight:700;">📥 整期寫入正式帳單：</span>
+      <select id="draft-period-pick" style="padding:.25rem .4rem;border-radius:.4rem;border:1px solid var(--border);"></select>
+      <button class="btn bp sm" onclick="loadPeriodToCurrentBill()">帶入正式帳單計算</button>
     </div>
     <div id="draftbills-list" style="font-size:.86rem;margin-top:.4rem;">讀取中...</div>
   </div>
@@ -2617,6 +2622,7 @@ window.renderDraftBills = function(){
       </div>
     </div>`;
   }).join('');
+  _fillDraftPeriodPick();
 };
 window.editDraftBill = function(id){
   const b=(DB.draftBills||[]).find(x=>x.id===id); if(!b) return;
@@ -2661,6 +2667,31 @@ window.sendDraftBillToCurrent = function(id){
   const tgt=document.getElementById(tid); if(tgt) tgt.scrollIntoView({behavior:'smooth',block:'center'});
   toast('✅ 已將 '+(DRAFTBILL_META[b.kind]?.label||b.kind)+' 帶入本期帳單資訊');
 };
+window.loadPeriodToCurrentBill=function(){
+  const sel=document.getElementById('draft-period-pick'); const period=sel?sel.value:'';
+  if(!period){ toast('請先選擇期別'); return; }
+  const ds=(DB.draftBills||[]).filter(b=>b.period===period && b.kind!=='net');
+  if(!ds.length){ toast('此期沒有水電瓦斯暫存帳單'); return; }
+  const by={}; ds.forEach(b=>{by[b.kind]=b;});
+  const sv=(id,v)=>{const e=document.getElementById(id); if(e&&v!=null&&v!=='') e.value=v;};
+  if(by.water) sv('u-water', by.water.amount);
+  if(by.elec){ sv('u-elec', by.elec.amount); if(by.elec.kwh) sv('u-total-kwh', by.elec.kwh); }
+  if(by.gas) sv('u-gas', by.gas.amount);
+  sv('u-period', period);
+  const ref=by.elec||by.water||by.gas;
+  if(ref){ sv('u-start', ref.start); sv('u-end', ref.end); }
+  if(window.calcU) calcU();
+  const el=document.getElementById('u-period'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+  toast('✅ 已帶入 '+period+' 水電瓦斯總額與計費起訖；請確認各房電表度數→計算→按「💾 儲存」即寫入正式帳單');
+};
+window._fillDraftPeriodPick=function(){
+  const sel=document.getElementById('draft-period-pick'); if(!sel) return;
+  const cur=sel.value;
+  const periods=[...new Set((DB.draftBills||[]).filter(b=>b.kind!=='net').map(b=>b.period).filter(Boolean))].sort().reverse();
+  sel.innerHTML=periods.length?periods.map(p=>'<option value="'+p+'">'+p+'</option>').join(''):'<option value="">（無可帶入期別）</option>';
+  if(cur && periods.includes(cur)) sel.value=cur;
+};
+
 
 // ── 月度預存建議（自動試算，哥/弟雙視圖）──────────────────────
 const RESERVE_ITEMS=[
@@ -5502,7 +5533,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06151840'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06200314'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
