@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06202022</span>
+    <span class="version-tag">v06202043</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -3818,7 +3818,6 @@ window.confirmSettleRent=async function(){
 function getRentPauseForRoom(room, period){
   for(const [key,p] of Object.entries(DB.rentPause||{})){
     const target=(p.room===room||p.room==='all');
-    if(target && +p.from<=+period && +period<=+to){return p;}
     if(target && +p.from<=+period && +period<=+p.to){return p;}
   }
   return null;
@@ -3891,8 +3890,19 @@ window.saveRent = async function(sendEmail=true){
 };
 function renderRentHistory(){
   const el=document.getElementById('rent-history');
-  if(!DB.rentRecords.length){el.innerHTML='<div class="txt-m">尚無紀錄</div>';return;}
-  el.innerHTML='';
+  const _settled=Object.entries(DB.rentPause||{}).filter(([k,p])=>p.settledTo);
+  let _settleHtml='';
+  if(_settled.length){
+    _settleHtml='<div style="font-weight:900;font-size:.85rem;color:var(--success);margin:.2rem 0 .4rem;">💰 併收結清紀錄</div>'
+      +_settled.map(([k,p])=>{
+        const ms=_monthRange(p.from,p.settledTo);
+        const tn=(DB.tenants[p.room]||{}).name||'';
+        return `<div class="hist-item" style="background:#eef9f0;border-color:#bfe6c8;"><div style="font-weight:900;">✅ ${RL[p.room]||p.room}${tn?'・'+tn:''}　併收 ${ms.length} 期（${p.from}～${p.settledTo}）</div><div style="font-size:.82rem;">共 NT$${(p.settledAmount||0).toLocaleString()}　收款日 ${p.settledAt||''}${p.settledNote?'　📝'+p.settledNote:''}</div></div>`;
+      }).join('')
+      +(DB.rentRecords.length?'<div style="font-weight:900;font-size:.85rem;color:var(--muted);margin:.6rem 0 .3rem;">📅 各期收租明細</div>':'');
+  }
+  if(!DB.rentRecords.length){el.innerHTML=_settleHtml||'<div class="txt-m">尚無紀錄</div>';return;}
+  el.innerHTML=_settleHtml;
   DB.rentRecords.slice(0,24).forEach((rec,i)=>{
     const total=ROOMS.reduce((s,r)=>s+(rec.payments[r]?.paid||0),0);
     const due=ROOMS.reduce((s,r)=>s+(rec.payments[r]?.amount||0),0);
@@ -5681,7 +5691,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06202022'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06202043'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
