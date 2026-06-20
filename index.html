@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06201437</span>
+    <span class="version-tag">v06201948</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -5435,7 +5435,7 @@ window.loadUtilBillToEdit = function(i){
   if(!b){toast('找不到帳單資料');return;}
   if(!confirm(`確定載入「${b.period}」期帳單到計算表單？\n目前表單內容將被覆蓋。`))return;
   // 填入基本資訊
-  const setVal=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
+  const setVal=(id,v)=>{const el=document.getElementById(id);if(el)el.value=(v==null?'':v);};
   setVal('u-period', b.period);
   setVal('u-start',  b.dateStart);
   setVal('u-end',    b.dateEnd);
@@ -5458,13 +5458,18 @@ window.loadUtilBillToEdit = function(i){
     });
   }
   // 切換到水電帳單頁面上方
-  // 重算天數（必須在設定日期後呼叫）
   if(window.recalcDays) window.recalcDays();
+  document.getElementById('page-utility').scrollIntoView({behavior:'smooth'});
+  // 延後：等任何非同步重繪後，再把度數重設到位並計算，確保 mk/mf 顯示
   setTimeout(()=>{
     if(window.refreshCalendars) window.refreshCalendars();
-  },100);
-  document.getElementById('page-utility').scrollIntoView({behavior:'smooth'});
-  calcU();
+    if(b.meterData){
+      Object.entries(b.meterData).forEach(([r,m])=>{
+        setVal('mp-'+r, m.prev); setVal('mc-'+r, m.curr); if(m.date) setVal('md-'+r, m.date);
+      });
+    }
+    calcU();
+  },150);
   toast(`✅ 已載入 ${b.period} 期帳單，可修改後重新儲存。`);
 };
 window.deleteUtilBill = async function(i){
@@ -5613,7 +5618,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06201437'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06201948'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
