@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06200917</span>
+    <span class="version-tag">v06200930</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -653,7 +653,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <!-- ── 房東家人入住日（問題9） ── -->
   <div class="card landlord-only">
     <div class="card-title">🏠 房東家人入住日（計費用）</div>
-    <div class="alert-box a-info" style="font-size:.85rem;">點選方格即標記居住日（可按住滑鼠左鍵拖曳匡選多天）。或直接貼入日期文字（支援逗號/全形空格/空白分隔）。兩種方式可同時使用。</div>
+    <div class="alert-box a-info" style="font-size:.85rem;">★這裡填<strong>實際回嘉義居住</strong>的日期（不是帳單月份）；系統<strong>只計入落在本期計費期間（起訖）內</strong>的天數，期間外的日子自動歸到對應的那一期。點方格標記，或貼入文字（逗號/空格分隔，<strong>也支援區間如 20~25、4/20~4/25</strong>）。</div>
 
     <!-- 龍潭房東 -->
     <div style="margin-bottom:.75rem;">
@@ -3207,6 +3207,23 @@ window.syncMeterDate = function(val){
 };
 
 // ── 計算房東入住天數（修正版：正確ID、Tab分隔、文字+月曆合併去重）
+window._countStayInPeriod=function(set){
+  const period=document.getElementById('u-period')?.value.trim()||'';
+  let y=new Date().getFullYear(), m=new Date().getMonth()+1;
+  if(period.length>=6){ y=+period.slice(0,4); m=+period.slice(4,6); }
+  const slotYM=(n)=>{ let mm=m-(3-n), yy=y; while(mm<=0){mm+=12;yy--;} return [yy,mm]; };
+  const sv=document.getElementById('u-start')?.value, ev=document.getElementById('u-end')?.value;
+  const start=sv?new Date(sv+'T00:00:00'):null, end=ev?new Date(ev+'T23:59:59'):null;
+  let cnt=0;
+  set.forEach(key=>{
+    const mt=(''+key).match(/m(\d)-(\d+)$/); if(!mt) return;
+    const ym=slotYM(+mt[1]); const d=new Date(ym[0], ym[1]-1, +mt[2]);
+    if(start && d<start) return;
+    if(end && d>end) return;
+    cnt++;
+  });
+  return cnt;
+};
 window.calcLandlordDays = function(){
   // 從文字輸入取出唯一天數集合（支援逗號/空格/Tab/全形/換行）
   function getTextDaySet(text, monthPrefix){
@@ -3216,6 +3233,9 @@ window.calcLandlordDays = function(){
     const tokens = normalized.split(/\s+/).map(s=>s.trim()).filter(s=>s.length>0);
     const days = new Set();
     tokens.forEach(t=>{
+      // 區間：20~25 / 4/20~4/25 / 20-25
+      const rng = t.match(/^(?:\d+\/)?0*(\d+)\s*[~～\-]\s*(?:\d+\/)?0*(\d+)$/);
+      if(rng){ let a=+rng[1], b=+rng[2]; if(a<=b){ for(let d=a;d<=b;d++) days.add(monthPrefix+'-'+d); } return; }
       // 格式：12/1、12/01、1、01
       const m = t.match(/^(?:\d+\/)?0*(\d+)$/);
       if(m) days.add(monthPrefix+'-'+m[1]);
@@ -3247,7 +3267,7 @@ window.calcLandlordDays = function(){
     ...combineDays('tc-m2','tc-cal-m2','tc-m2'),
     ...combineDays('tc-m3','tc-cal-m3','tc-m3'),
   ]);
-  const ltDays = ltSet.size;
+  const ltDays = _countStayInPeriod(ltSet);
   // 原房東石房東：勾選時天數=計費天數，不需填填樂
   const tcInclude = document.getElementById('tc-include')?.checked||false;
   const tcDays = tcInclude ? (window._utilDays||0) : 0;
@@ -5601,7 +5621,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06200917'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06200930'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
