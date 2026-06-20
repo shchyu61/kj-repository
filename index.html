@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06201427</span>
+    <span class="version-tag">v06201437</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -3583,7 +3583,7 @@ window.calcU = function(){
     summary.innerHTML=`
     <div style="background:#fffdf0;border:2px solid var(--gold);border-radius:1rem;padding:1rem 1.1rem;margin-top:.5rem;">
       <div style="font-family:'Noto Serif TC',serif;font-weight:900;font-size:.95rem;color:var(--primary);text-align:center;margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:2px solid var(--border2);">
-        📋 應收總計（本期2個月）
+        📋 本期應收明細（水電瓦斯冷氣）
       </div>
       ${lines.map(l=>`
       <div style="display:flex;justify-content:space-between;align-items:baseline;padding:.28rem .5rem;border-bottom:1px solid var(--border2);">
@@ -3610,13 +3610,14 @@ window.calcU = function(){
 };
 
 // 複製帳單文字給房客
+window._buildCurrentBill=function(){
+  const g=id=>+(document.getElementById(id)?.value||0);
+  const E=g('u-elec'), kwh=g('u-total-kwh');
+  return { rooms: window._UR||{}, elecTotal:E, waterTotal:g('u-water'), gasTotal:g('u-gas'), period:(document.getElementById('u-period')?.value||'').trim(), pricePerKwh: kwh>0 ? E/kwh : (+document.getElementById('u-kwh-price')?.value||0) };
+};
 window.copyUtilSummary = function(){
-  const s=window._N_summary; if(!s)return;
-  let txt='應收總計（本期2個月）\n';
-  s.lines.forEach(l=>{ txt+=`　${l.label}　$${l.val.toLocaleString()}\n`; });
-  txt+=`以上本期水電瓦斯共　$${s.N14.toLocaleString()}\n`;
-  txt+=`本期平均每度電約${s.displayP.toFixed(2)}元\n`;
-  txt+='（轉帳請用郵局，帳號請見公告）';
+  if(!window._UR){toast('請先完成計算');return;}
+  const txt=genSingleBillText(_buildCurrentBill());
   navigator.clipboard.writeText(txt).then(()=>toast('✅ 帳單文字已複製！可直接貼給房客'))
     .catch(()=>{
       const ta=document.createElement('textarea');
@@ -3662,31 +3663,11 @@ window.saveUtilBill = async function(sendEmail=true){
 
 window.showAllBills = function(){
   if(!window._UR){toast('請先完成計算');return;}
-  const period=document.getElementById('u-period').value||'—';
-  const ds=document.getElementById('u-start').value, de=document.getElementById('u-end').value;
-  const E=+document.getElementById('u-elec').value||0;
-  const W=+document.getElementById('u-water').value||0;
-  const G=+document.getElementById('u-gas').value||0;
+  const txt=genSingleBillText(_buildCurrentBill());
   const area=document.getElementById('bills-area');
-  area.innerHTML='<div style="font-weight:900;font-size:.9rem;margin:.75rem 0 .4rem;color:var(--accent);">📄 帳單通知單</div>';
-  ROOMS.forEach(r=>{
-    const ur=window._UR[r]; if(!ur||ur.total===0)return;
-    const t=DB.tenants[r]||{};
-    const rent=+t.rent||0, grand=rent+ur.total;
-    area.innerHTML+=`<div class="bill-box"><h2>科蓁房租智能AI系統 水電費通知單</h2>
-      <div class="bill-sub">計費期間：${ds} ～ ${de}（期別：${period}）</div>
-      <div class="bill-row"><span style="font-weight:700;">${RL[r]}・${t.name||'—'}</span></div>
-      <hr style="border:none;border-top:1px solid var(--border2);margin:.5rem 0;">
-      <div class="bill-row"><span>冷氣電費</span><span>NT$${ur.acFee.toLocaleString()}</span></div>
-      <div class="bill-row"><span>均分電費（共用）</span><span>NT$${ur.sharedElec.toLocaleString()}</span></div>
-      <div class="bill-row"><span>均分水費</span><span>NT$${ur.water.toLocaleString()}</span></div>
-      <div class="bill-row"><span>均分天然氣費</span><span>NT$${ur.gas.toLocaleString()}</span></div>
-      <div class="bill-row tot"><span>水電瓦斯合計</span><span>NT$${ur.total.toLocaleString()}</span></div>
-      ${rent>0?`<div class="bill-row" style="margin-top:.3rem;"><span>本月房租</span><span>NT$${rent.toLocaleString()}</span></div>
-      <div class="bill-row tot"><span>本期應繳總計</span><span>NT$${grand.toLocaleString()}</span></div>`:''}
-      <div class="bill-note">請於3日內將費用交給房東。謝謝配合！<br>電費（總）NT$${E.toLocaleString()}｜水費（總）NT$${W.toLocaleString()}｜天然氣（總）NT$${G.toLocaleString()}</div>
-    </div>`;
-  });
+  area.innerHTML='<div style="font-weight:900;font-size:.9rem;margin:.75rem 0 .4rem;color:var(--accent);">📄 帳單通知單（LINE 格式，僅水電瓦斯冷氣）</div>'
+    +'<pre style="background:var(--bg2);border:1px solid var(--border2);border-radius:.6rem;padding:.8rem;white-space:pre-wrap;font-family:inherit;font-size:.88rem;line-height:1.55;margin:0 0 .5rem;">'+txt.replace(/</g,'&lt;')+'</pre>'
+    +'<button class="btn ba sm" style="width:100%;" onclick="copyUtilSummary()">📋 複製此帳單文字（傳給房客）</button>';
 };
 
 // ============================================================
@@ -5632,7 +5613,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06201427'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06201437'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
