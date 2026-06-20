@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06202043</span>
+    <span class="version-tag">v06210048</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1179,146 +1179,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div style="font-size:.76rem;color:var(--muted);margin-top:.4rem;">🔑 電子鎖 HG200-B（Tuya）：可查剩餘電力、龍潭遠端開嘉義大門；不需監視器。</div>
   </div>
   <div class="card mt">
-    <div class="card-title">📷 TAPO 智慧監控系統</div>
-    <div class="alert-box a-warn">⚙️ 此功能需要 TP-Link TAPO Cloud API 金鑰設定後才能啟用。</div>
-
-    <!-- 攝影機 A：5樓洗衣機 -->
-    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:1rem;padding:1rem;margin-bottom:.75rem;">
-      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;">
-        <span style="background:#3a1f04;color:var(--gold);font-size:.72rem;font-weight:900;border-radius:.4rem;padding:.15rem .45rem;flex-shrink:0;">A</span>
-        <span style="font-size:1.2rem;">🫧</span>
-        <div>
-          <div style="font-weight:900;font-size:.92rem;">5樓洗衣機監控</div>
-          <div style="font-size:.72rem;color:var(--muted);">TAPO C320WS · 使用中偵測 + 洗完自動通知</div>
-        </div>
-        <span id="cam1-status" style="margin-left:auto;font-size:.72rem;font-weight:900;background:#f0e8d5;color:var(--muted);border-radius:99px;padding:.15rem .6rem;">未連線</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;">
-        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
-          <div class="txt-m">目前狀態</div>
-          <div id="washer-status" style="font-weight:900;font-size:.95rem;color:var(--muted);">— 未連線 —</div>
-        </div>
-        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
-          <div class="txt-m">最後偵測</div>
-          <div id="washer-last" style="font-weight:700;font-size:.82rem;color:var(--muted);">—</div>
-        </div>
-      </div>
-      <div class="gap mt" style="margin-top:.6rem;">
-        <button class="btn bo sm" onclick="checkWasher()" style="font-size:.75rem;">🔍 立即查詢</button>
-        <button class="btn bs sm" onclick="notifyWasherDone()" style="font-size:.75rem;">📧 手動通知：衣服洗好了</button>
-        <button class="btn ba sm" onclick="notifyWasherInUse()" style="font-size:.75rem;">📧 通知：洗衣機使用中</button>
-      </div>
-    </div>
-
-    <!-- 攝影機 B：5樓監視器 (TAPO C320WS) -->
-    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:1rem;padding:1rem;margin-bottom:.75rem;">
-      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;">
-        <span style="background:#3a1f04;color:var(--gold);font-size:.72rem;font-weight:900;border-radius:.4rem;padding:.15rem .45rem;flex-shrink:0;">B</span>
-        <span style="font-size:1.2rem;">📷</span>
-        <div>
-          <div style="font-weight:900;font-size:.92rem;">5樓監視器</div>
-          <div style="font-size:.72rem;color:var(--muted);">TAPO C320WS · 戶外排水孔積水偵測 + 洗衣機輔助通知</div>
-        </div>
-        <span id="cam2-status" style="margin-left:auto;font-size:.72rem;font-weight:900;background:#f0e8d5;color:var(--muted);border-radius:99px;padding:.15rem .6rem;">未連線</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem;">
-        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
-          <div class="txt-m">目前狀態</div>
-          <div id="cam2-current" style="font-weight:900;font-size:.95rem;color:var(--muted);">— 未連線 —</div>
-        </div>
-        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
-          <div class="txt-m">最後偵測</div>
-          <div id="cam2-last" style="font-weight:700;font-size:.82rem;color:var(--muted);">—</div>
-        </div>
-      </div>
-      <div class="gap">
-        <button class="btn bo sm" onclick="checkWasher()" style="font-size:.75rem;">🔍 立即查詢</button>
-        <button class="btn bs sm" onclick="notifyWasherInUse()" style="font-size:.75rem;">📧 通知：洗衣機使用中</button>
-        <button class="btn ba sm" onclick="notifyFloodAlert()" style="font-size:.75rem;">🌧️ 通知：地面排水孔積水警告</button>
-      </div>
-    </div>
-
-    <!-- 攝影機 C：1樓大廳電子鎖 (TAPO C220) -->
-    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:1rem;padding:1rem;margin-bottom:.75rem;">
-      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;">
-        <span style="background:#3a1f04;color:var(--gold);font-size:.72rem;font-weight:900;border-radius:.4rem;padding:.15rem .45rem;flex-shrink:0;">C</span>
-        <span style="font-size:1.2rem;">🔒</span>
-        <div>
-          <div style="font-weight:900;font-size:.92rem;">1樓大廳電子鎖監控</div>
-          <div style="font-size:.72rem;color:var(--muted);">TAPO C220 · 電池低電量警示音偵測 + 通知房東換電池</div>
-        </div>
-        <span id="cam3-status" style="margin-left:auto;font-size:.72rem;font-weight:900;background:#f0e8d5;color:var(--muted);border-radius:99px;padding:.15rem .6rem;">未連線</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;">
-        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
-          <div class="txt-m">電池狀態</div>
-          <div id="lock-battery" style="font-weight:900;font-size:.95rem;color:var(--muted);">— 未連線 —</div>
-        </div>
-        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
-          <div class="txt-m">最後警報</div>
-          <div id="lock-last-alert" style="font-weight:700;font-size:.82rem;color:var(--muted);">無異常</div>
-        </div>
-      </div>
-      <div class="gap mt" style="margin-top:.6rem;">
-        <button class="btn bo sm" onclick="checkLockBattery()" style="font-size:.75rem;">🔍 立即查詢</button>
-        <button class="btn bd sm" onclick="notifyBatteryLow()" style="font-size:.75rem;">📧 手動通知：電池快沒電</button>
-      </div>
-    </div>
-
-    <!-- 攝影機 D：4樓樓梯間冰箱監視器（有看頭 App）-->
-    <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:1rem;padding:1rem;margin-bottom:.75rem;">
-      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;">
-        <span style="background:#3a1f04;color:var(--gold);font-size:.72rem;font-weight:900;border-radius:.4rem;padding:.15rem .45rem;flex-shrink:0;">D</span>
-        <span style="font-size:1.2rem;">📹</span>
-        <div>
-          <div style="font-weight:900;font-size:.92rem;">4樓樓梯間冰箱監視器</div>
-          <div style="font-size:.72rem;color:var(--muted);">有看頭 App · 燈光照亮/轉向功能 · RTSP 串接預留</div>
-        </div>
-        <span id="cam4-status" style="margin-left:auto;font-size:.72rem;font-weight:900;background:#f0e8d5;color:var(--muted);border-radius:99px;padding:.15rem .6rem;">未連線</span>
-      </div>
-      <div class="alert-box a-info" style="font-size:.75rem;margin-bottom:.5rem;">
-        📱 有看頭 App 監控中。若需串接自動化功能，請在下方設定 RTSP 串流位址。<br>
-        裝置資訊：攝像機 ID、MAC 位址、固件版本（請從 App 查詢後填入下方設定）。
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem;">
-        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
-          <div class="txt-m">目前狀態</div>
-          <div id="cam4-current" style="font-weight:900;font-size:.95rem;color:var(--muted);">— 待設定 —</div>
-        </div>
-        <div style="background:var(--card);border:1px solid var(--border2);border-radius:.7rem;padding:.6rem .75rem;text-align:center;">
-          <div class="txt-m">最後動態</div>
-          <div id="cam4-last" style="font-weight:700;font-size:.82rem;color:var(--muted);">—</div>
-        </div>
-      </div>
-      <div class="gap">
-        <button class="btn bo sm" onclick="toast('⚙️ 有看頭 App 監控，RTSP 串接設定中...')" style="font-size:.75rem;">🔍 查詢狀態</button>
-      </div>
-    </div>
-
-    <!-- API 設定區 -->
-    <div style="border-top:1.5px solid var(--border2);padding-top:.85rem;margin-top:.25rem;">
-      <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.5rem;">⚙️ TAPO Cloud API 設定（需要 TP-Link 帳號）</div>
-      <div class="form-row c2">
-        <div><label>TP-Link 帳號（email）</label><input type="text" id="tapo-email" placeholder="your@email.com"></div>
-        <div><label>TP-Link 密碼</label><input type="password" id="tapo-pw" placeholder="TP-Link 登入密碼"></div>
-      </div>
-      <div class="form-row c2">
-        <div><label>攝影機 A（5樓洗衣機 C320WS）Device ID</label><input type="text" id="tapo-cam1-id" placeholder="TAPO App 取得"></div>
-        <div><label>攝影機 B（5樓監視器 C320WS）Device ID</label><input type="text" id="tapo-cam2-id" placeholder="TAPO App 取得"></div>
-      </div>
-      <div class="form-row c2">
-        <div><label>攝影機 C（1樓電子鎖 C220）Device ID</label><input type="text" id="tapo-cam3-id" placeholder="TAPO App 取得"></div>
-        <div><label>攝影機 D（有看頭）MAC 位址</label><input type="text" id="tapo-cam4-id" placeholder="如：AA:BB:CC:DD:EE:FF"></div>
-      </div>
-      <div class="form-row">
-        <div><label>攝影機 D RTSP 串流位址（選填，目前未啟用）</label>
-          <input type="text" id="tapo-cam3-rtsp" placeholder="如：rtsp://帳號:密碼@IP位址:554/stream1"></div>
-      </div>
-      <div class="alert-box a-info" style="font-size:.75rem;">
-        📱 Device ID 取得方式：開啟 TAPO App → 點選攝影機 → 右上角設定 → 設備資訊 → 複製 MAC 位址 (格式如 AA:BB:CC...) 作為 Device ID
-      </div>
-      <button class="btn ba sm" onclick="saveTapoSettings()">💾 儲存 TAPO 設定</button>
-    </div>
+    <div class="alert-box a-warn" style="font-size:.82rem;line-height:1.6;">📷 <strong>即時影像與 AI 偵測（玻璃破裂聲／五樓淹水）目前無法在網頁版實現</strong>：台灣 TAPO 無公開 API、攝影機也無網頁介面，GitHub Pages 靜態網頁無法串流或接收偵測。<br>請改用各自 App 觀看：<strong>TAPO／有看頭／CamHipro</strong>；電子鎖查電力與遠端開門用 <strong>Tuya</strong>。上方「設備清冊」供管理、報修、轉移備援。</div>
   </div>
 </div>
 
@@ -3677,6 +3538,9 @@ window.showAllBills = function(){
 // ══ 房東：收租紀錄 ══════════════════════════
 // ── 暫停收租功能 ──────────────────────────────────────────
 window.openRentPauseModal = function(){
+  window._editRentPauseKey=null;
+  const _t=document.getElementById('rp-modal-title'); if(_t) _t.textContent='⏸️ 新增暫停收租';
+  const _rs=document.getElementById('rp-reason'); if(_rs) _rs.value='';
   // 預填當前期別
   const period=document.getElementById('r-period')?.value||'';
   if(period){ document.getElementById('rp-from').value=period; document.getElementById('rp-to').value=period; }
@@ -3699,6 +3563,7 @@ window.editRentPause = function(key){
   if(reasonEl) reasonEl.value=p.reason;
   // 先刪除舊的再儲存新的
   window._editRentPauseKey=key;
+  const _t=document.getElementById('rp-modal-title'); if(_t) _t.textContent='✏️ 編輯暫停收租（起始/截止/原因皆可改）';
   document.getElementById('rent-pause-modal').style.display='flex';
 };
 window.saveRentPause = async function(){
@@ -3751,7 +3616,7 @@ window.renderRentPauseList = function(){
           <div style="font-size:.72rem;color:var(--muted);">設定時間：${p.createdAt}</div>
         </div>
         ${settleBtn}
-        <button class="btn bo sm" onclick="editRentPause('${key}')">✏️ 延期</button>
+        <button class="btn bo sm" onclick="editRentPause('${key}')">✏️ 編輯</button>
         <button class="btn bd sm" onclick="deleteRentPause('${key}')">刪除</button>
       </div>
     </div>`;
@@ -5691,7 +5556,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06202043'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06210048'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
@@ -6274,7 +6139,7 @@ checkSession();
 <!-- MODAL: 新增暫停收租 -->
 <div id="rent-pause-modal" class="modal-overlay" style="display:none;align-items:center;justify-content:center;">
   <div class="modal-box" style="max-width:460px;width:100%;">
-    <h3>⏸️ 新增暫停收租</h3>
+    <h3 id="rp-modal-title">⏸️ 新增暫停收租</h3>
     <div class="form-row">
       <div><label>房間</label>
         <select id="rp-room">
