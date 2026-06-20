@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06210146</span>
+    <span class="version-tag">v06210715</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -358,7 +358,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div class="card mt" style="background:#f0f8ff;border:1.5px solid #90c0e8;">
     <div class="card-title">📥 帳單暫存區（帳單未收齊時先暫存）</div>
     <div class="alert-box a-info" style="font-size:.82rem;">
-      帳單未全部收到時，可先暫存已知帳單。每種帳單可各自選擇是哪個月份的帳單。等全部收到後再點「帶入正式計算」。
+      <strong>用途：某些帳單「類型」還沒收到時</strong>（例：水費單到了、電費單還沒到），先暫存已知的，等收齊再「帶入正式計算」。<br>⚠️ 這<strong>不是</strong>放「緩收／房客未繳」月份的地方——緩收月仍照常在下方「本期帳單資訊」算好、存成正式帳單即可。
     </div>
 
     <!-- 水費 (偶數月) -->
@@ -506,7 +506,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
 
     <div class="form-row">
-      <div><label>📝 暫存備注</label>
+      <div><label>📝 暫存備註</label>
         <input type="text" id="draft-note" placeholder="如：06月水費310元已繳清，電費/瓦斯費尚未收到帳單" oninput="saveDraft()">
       </div>
     </div>
@@ -584,6 +584,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <!-- ── 本期帳單資訊 ── -->
   <div class="card mt">
     <div class="card-title">📋 本期帳單資訊</div>
+    <div class="alert-box a-info" style="font-size:.8rem;">用途：已收到<strong>完整「水＋電＋瓦斯」金額</strong>、要算各房應付並存成<strong>正式帳單</strong>的月份（不論房客是否已繳）。算好按下方儲存 → 寫入「已儲存帳單歷史」。例：2025/12、2026/02、04、06 只要金額齊全都在這裡算。</div>
     <!-- 期別自動算年月，但起迄日可手動修改 -->
     <div class="form-row c3">
       <div><label>📅 帳單期別（如 202512）<span style="font-size:.7rem;color:var(--gold);font-weight:400;"> ← 先填這個</span></label>
@@ -606,7 +607,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="form-row c3">
       <div><label>💧 水費總金額（元）</label><input type="number" id="u-water" placeholder="0" oninput="calcU()"></div>
       <div><label>🔥 天然氣總金額（元）</label><input type="number" id="u-gas" placeholder="0" oninput="calcU()"></div>
-      <div><label>備註</label><input type="text" id="u-note" placeholder="備注"></div>
+      <div><label>備註</label><input type="text" id="u-note" placeholder="備註"></div>
     </div>
   </div>
 
@@ -631,7 +632,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="card-title">👥 各房計費人數與天數</div>
     <div style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem;">💡 計費天數自動由「計費期間（迄-起）」計算，人數為0則天數自動為0。</div>
     <div style="display:grid;grid-template-columns:72px 90px 80px 1fr;gap:.4rem;align-items:center;margin-bottom:.3rem;font-size:.78rem;font-weight:700;color:var(--muted);">
-      <div>房間</div><div>各房人數<br>(0=空房)</div><div>共計費天數<br>(自動)</div><div>備注/房客姓名</div>
+      <div>房間</div><div>各房人數<br>(0=空房)</div><div>共計費天數<br>(自動)</div><div>備註/房客姓名</div>
     </div>
     <div id="person-rows"></div>
   </div>
@@ -845,7 +846,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div class="card landlord-only" id="rent-pause-card">
     <div class="card-title">⏸️ 暫停收租設定（沿用至指定期別）</div>
     <div class="alert-box a-warn" style="font-size:.85rem;">
-      設定後，指定期別內該房間自動帶入「應收0、實收0」，備注自動沿用暫停原因。<br>
+      設定後，指定期別內該房間自動帶入「應收0、實收0」，備註自動沿用暫停原因。<br>
       到期後自動恢復正常收租。
     </div>
     <div id="rent-pause-list"><div class="txt-m">讀取中...</div></div>
@@ -858,7 +859,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="form-row">
       <div><label>年月期別（如 202503）</label><input type="text" id="r-period" placeholder="202503"></div>
     </div>
-    <div class="txt-m mb">💡 每間房間各自有備注欄，可記錄特殊情況（如：因故暫不收租、分期補繳等）</div>
+    <div class="txt-m mb">💡 每間房間各自有備註欄，可記錄特殊情況（如：因故暫不收租、分期補繳等）</div>
     <div id="rent-rows"></div>
     <div class="gap mt">
       <button class="btn bs" style="flex:1;" onclick="saveRent(true)">💾 儲存收租紀錄</button>
@@ -1253,7 +1254,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 <div id="page-photos" class="page">
   <div class="card mt">
     <div class="card-title">🖼️ 重要照片存檔（房東專用）</div>
-    <div class="alert-box a-warn">⚠️ 此功能儲存說明備注，實際照片請存放在下方建議的安全雲端空間。純HTML網頁無法直接存放照片檔案。</div>
+    <div class="alert-box a-warn">⚠️ 此功能儲存說明備註，實際照片請存放在下方建議的安全雲端空間。純HTML網頁無法直接存放照片檔案。</div>
 
     <div style="display:grid;gap:.6rem;margin-bottom:1rem;">
       <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.9rem 1rem;">
@@ -1267,19 +1268,19 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
     </div>
 
-    <div class="card-title" style="margin-top:.5rem;">📝 照片索引備注（房東自由編輯）</div>
+    <div class="card-title" style="margin-top:.5rem;">📝 照片索引備註（房東自由編輯）</div>
     <div id="photo-notes-list"></div>
     <div class="gap mt">
-      <button class="btn ba sm" onclick="openAddPhotoNote()">＋ 新增照片備注</button>
+      <button class="btn ba sm" onclick="openAddPhotoNote()">＋ 新增照片備註</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: 照片備注 -->
+<!-- MODAL: 照片備註 -->
 <div id="modal-photo" class="modal-overlay">
   <div class="modal">
     <div class="mhdr">
-      <h3 id="mp2-title">照片備注</h3>
+      <h3 id="mp2-title">照片備註</h3>
       <button class="mclose" onclick="CM('modal-photo')">✕</button>
     </div>
     <div class="form-row c2">
@@ -1302,7 +1303,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
     <div class="mftr">
       <button class="btn bo sm" onclick="CM('modal-photo')">取消</button>
-      <button class="btn bp sm" onclick="savePhotoNote()">💾 儲存備注</button>
+      <button class="btn bp sm" onclick="savePhotoNote()">💾 儲存備註</button>
     </div>
   </div>
 </div>
@@ -1503,7 +1504,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
 
     <div class="form-row">
-      <div><label>備注</label>
+      <div><label>備註</label>
         <input type="text" id="mail-note" placeholder="如：健保卡、已放一樓..."></div>
     </div>
     <div id="mail-btns-landlord" class="gap" style="display:none;">
@@ -1534,8 +1535,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div>🪛 <strong>磁性十字起子</strong>（防掉螺絲）：面對神明桌 <strong style="color:var(--accent);">左邊</strong>的桌子上</div>
       <div>📋 <strong>換電池步驟</strong>：鬆開電子鎖背蓋螺絲 → 取出舊電池 → 裝入充好電的電池 → 鎖回螺絲</div>
     </div>
+    <div style="background:var(--bg2);border:1.5px solid var(--accent);border-radius:.9rem;padding:.9rem 1rem;margin-bottom:.75rem;font-size:.88rem;line-height:1.9;">
+      <div>🔑 <strong>電子鎖型號 HG200-B</strong>（以 <strong>Tuya</strong> App 控制，目前版本 7.8.3 international）</div>
+      <div class="landlord-only">📲 <strong>房東功能</strong>：用 Tuya App 可<strong>查剩餘電力</strong>、從龍潭<strong>遠端開啟</strong>嘉義大門（給郵差／貨運／忘帶磁卡的房客進門）；不需監視器。</div>
+    </div>
     <div class="form-row">
-      <div><label>備注（如：已換電池、電量狀況）</label>
+      <div><label>備註（如：已換電池、電量狀況）</label>
         <input type="text" id="lock-battery-note" placeholder="如：電量偏低，請盡快更換"></div>
     </div>
     <div class="gap">
@@ -3734,7 +3739,7 @@ window.initRent = function(){
          <div><label style="margin-bottom:.15rem;">收款日<span style="font-size:.65rem;color:var(--gold);">（契約：${occ&&t.rentDay?'每月'+t.rentDay+'日':'未設定'}）</span></label><input type="date" id="rdate-${r}" value="${occ&&!isPaused?getRentDayStr(t.rentDay):''}" ${!occ||isPaused?'disabled':''}></div>
        </div>
        <div>
-         <label style="margin-bottom:.15rem;">本期備注 <span style="font-size:.72rem;color:var(--muted);font-weight:400;">（特殊情況才填，如：因故暫不收、補繳說明）</span></label>
+         <label style="margin-bottom:.15rem;">本期備註 <span style="font-size:.72rem;color:var(--muted);font-weight:400;">（特殊情況才填，如：因故暫不收、補繳說明）</span></label>
          <input type="text" id="rnote-${r}" value="${isPaused?pauseReason:''}" placeholder="${occ?'留空=正常收租':'空房，無需填寫'}" ${!occ?'disabled':''}>
        </div>
      </div>`;
@@ -3784,7 +3789,7 @@ function renderRentHistory(){
     const _stillDeferred=ROOMS.some(r=>{ if(!(DB.tenants[r]&&DB.tenants[r].name))return false; const pp=getRentPauseForRoom(r, rec.period); return pp && (!pp.settledTo || +rec.period> +pp.settledTo); });
     const isOverdue=total<due && Date.now()>dueDate.getTime() && _hasUnpaidActive;
     const isPausedPeriod=!isOverdue && _stillDeferred;
-    // 各房備注
+    // 各房備註
     const roomNotes=ROOMS.filter(r=>rec.payments[r]?.note).map(r=>`${RL[r]}：${rec.payments[r].note}`).join('　');
     // 各房明細
     const roomDetails=ROOMS.map(r=>{
@@ -4395,7 +4400,7 @@ window.notifyLockBattery = async function(sendEmail=true){
     // 也通知房東
     try{
       await emailjs.send(EJS_SVC, EJS_TPL, {to_email:LANDLORD_EMAIL,
-        otp:`🔋【電子鎖沒電通知 ${now}】已通知房客更換電子鎖電池。備注：${note}`});
+        otp:`🔋【電子鎖沒電通知 ${now}】已通知房客更換電子鎖電池。備註：${note}`});
     }catch(e){}
     toast(`✅ 已通知房東 + ${sent} 位房客`);
   } else {
@@ -4449,7 +4454,7 @@ window.sendMailNotice = async function(sendEmail=true){
       try{
         await emailjs.send(EJS_SVC,'template_oqm4kw9',{
           to_email:t.tenantEmail,
-          otp:`📬【信件通知】您有一件「${type}」在一樓信箱，請盡快取件。${note?'備注：'+note:''}`
+          otp:`📬【信件通知】您有一件「${type}」在一樓信箱，請盡快取件。${note?'備註：'+note:''}`
         });
         sent++;
       }catch(e){}
@@ -4480,7 +4485,7 @@ window.sendLockBatteryNotice = async function(sendEmail=true){
   await saveLandlordData();
   if(sendEmail){
     initEJS();
-    const msg=`🔋【電子鎖沒電通知】1樓大廳電子鎖電池電量偏低，房東人在北部授權房客自行更換。充電電池和充電器放在面對神明桌右邊置物櫃最上方時鐘下面；磁性十字起子放在面對神明桌左邊的桌子上。更換完畢請回報房東，謝謝！${note?'備注：'+note:''}`;
+    const msg=`🔋【電子鎖沒電通知】1樓大廳電子鎖電池電量偏低，房東人在北部授權房客自行更換。充電電池和充電器放在面對神明桌右邊置物櫃最上方時鐘下面；磁性十字起子放在面對神明桌左邊的桌子上。更換完畢請回報房東，謝謝！${note?'備註：'+note:''}`;
     const tenants=Object.values(DB.tenants).filter(t=>t.tenantEmail&&t.status==='occupied');
     let sent=0;
     for(const t of tenants){
@@ -5265,7 +5270,7 @@ window.renderUtilHistory = function(){
         <div style="flex:1;min-width:0;">
           <div style="font-weight:900;">📅 ${b.period} 期水電帳單</div>
           <div class="txt-m">${b.dateStart||''}～${b.dateEnd||''} · 電費$${b.elecTotal||0}｜水費$${b.waterTotal||0}｜瓦斯$${b.gasTotal||0}｜度數${b.totalKwh||'—'}度</div>
-          ${b.note?`<div class="txt-m">備注：${b.note}</div>`:''}
+          ${b.note?`<div class="txt-m">備註：${b.note}</div>`:''}
           <div style="margin-top:.3rem;flex-wrap:wrap;display:flex;gap:.2rem;">${roomSummary}</div>
         </div>
         <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:flex-start;">
@@ -5474,14 +5479,14 @@ window.notifyMail = async function(mode='save'){
     initEJS();
     try{
       await emailjs.send(EJS_SVC,EJS_TPL,{to_email:LANDLORD_EMAIL,
-        otp:`📬【待取信件提醒 ${now}】嘉義老家一樓信箱有「${type}」待取${note?'，備注：'+note:''}。`});
+        otp:`📬【待取信件提醒 ${now}】嘉義老家一樓信箱有「${type}」待取${note?'，備註：'+note:''}。`});
       toast('✅ 已發送提醒給自己');
     }catch(e){toast('儲存成功，寄信失敗');}
   } else if(mode==='landlord'){
     initEJS();
     try{
       await emailjs.send(EJS_SVC,EJS_TPL,{to_email:LANDLORD_EMAIL,
-        otp:`📬【房客通知 ${now}】${sender}：${type}${note?'，備注：'+note:''}`});
+        otp:`📬【房客通知 ${now}】${sender}：${type}${note?'，備註：'+note:''}`});
       toast('✅ 已通知房東');
     }catch(e){toast('儲存成功，寄信失敗');}
   } else {
@@ -5516,7 +5521,7 @@ window.notifyLockBattery = async function(mode='save'){
     initEJS();
     try{
       await emailjs.send(EJS_SVC,EJS_TPL,{to_email:LANDLORD_EMAIL,
-        otp:`🔋【電子鎖沒電通知 ${now}】${sender} 回報：一樓大廳電子鎖電池電量不足，請注意。備注：${note}`});
+        otp:`🔋【電子鎖沒電通知 ${now}】${sender} 回報：一樓大廳電子鎖電池電量不足，請注意。備註：${note}`});
       toast('✅ 已通知房東');
     }catch(e){toast('儲存成功，寄信失敗');}
   } else if(mode==='replaced'){
@@ -5524,7 +5529,7 @@ window.notifyLockBattery = async function(mode='save'){
     initEJS();
     try{
       await emailjs.send(EJS_SVC,EJS_TPL,{to_email:LANDLORD_EMAIL,
-        otp:`✅【電子鎖換電池完成 ${now}】${sender} 回報：一樓電子鎖新電池已換好，目前可正常使用。${note?'備注：'+note:''}`});
+        otp:`✅【電子鎖換電池完成 ${now}】${sender} 回報：一樓電子鎖新電池已換好，目前可正常使用。${note?'備註：'+note:''}`});
       toast('✅ 已通知房東：電池已換好');
     }catch(e){toast('儲存成功，寄信失敗');}
   } else {
@@ -5566,7 +5571,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06210146'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06210715'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
@@ -5957,12 +5962,12 @@ function renderFormer(){
 }
 
 // ============================================================
-// 【16. 照片備注功能】
+// 【16. 照片備註功能】
 // ============================================================
 
-// ══ 照片備注 ═════════════════════════════════
+// ══ 照片備註 ═════════════════════════════════
 window.openAddPhotoNote = function(){
-  document.getElementById('mp2-title').textContent='新增照片備注';
+  document.getElementById('mp2-title').textContent='新增照片備註';
   ['mp2-name','mp2-desc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('modal-photo')._editIdx=-1;
   OM('modal-photo');
@@ -5978,7 +5983,7 @@ window.savePhotoNote = async function(){
   if(!DB.photoNotes)DB.photoNotes=[];
   const idx=document.getElementById('modal-photo')._editIdx;
   if(idx>=0)DB.photoNotes[idx]=note; else DB.photoNotes.unshift(note);
-  await saveLandlordData(); CM('modal-photo'); renderPhotos(); toast('照片備注已儲存 ✓');
+  await saveLandlordData(); CM('modal-photo'); renderPhotos(); toast('照片備註已儲存 ✓');
 };
 window.deletePhotoNote = async function(i){
   if(!confirm('確定刪除？'))return;
@@ -5988,7 +5993,7 @@ window.deletePhotoNote = async function(i){
 function renderPhotos(){
   const list=document.getElementById('photo-notes-list');
   if(!DB.photoNotes||!DB.photoNotes.length){
-    list.innerHTML='<div class="txt-m">尚無照片備注。</div>'; return;
+    list.innerHTML='<div class="txt-m">尚無照片備註。</div>'; return;
   }
   list.innerHTML='';
   DB.photoNotes.forEach((n,i)=>{
@@ -5997,7 +6002,7 @@ function renderPhotos(){
         <div style="flex:1;">
           <div style="font-weight:900;font-size:.9rem;">${n.name||'—'} <span style="font-size:.75rem;color:var(--muted);">${RL[n.room]||n.room||''}</span></div>
 
-          ${n.url ? `<div style="margin-top:.4rem;"><a href="${n.url}" target="_blank" style="font-size:.75rem;color:var(--info);text-decoration:none;">🔗 查看雲端照片網址</a></div>` : ''} <!-- ══ 此為【雲端照片網址】還不會出現欄位的前置作業。202603271156版項目1:修正照片備注渲染 (解決登入失效問題)。═ -->
+          ${n.url ? `<div style="margin-top:.4rem;"><a href="${n.url}" target="_blank" style="font-size:.75rem;color:var(--info);text-decoration:none;">🔗 查看雲端照片網址</a></div>` : ''} <!-- ══ 此為【雲端照片網址】還不會出現欄位的前置作業。202603271156版項目1:修正照片備註渲染 (解決登入失效問題)。═ -->
 
           <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;">儲存於：${new Date(n.savedAt).toLocaleDateString('zh-TW')}</div>
         </div>
@@ -6167,7 +6172,7 @@ checkSession();
       <div><label>暫停結束期別（含）</label><input type="text" id="rp-to" placeholder="如 202606"></div>
     </div>
     <div class="form-row">
-      <div><label>暫停原因（自動帶入備注）</label>
+      <div><label>暫停原因（自動帶入備註）</label>
         <input type="text" id="rp-reason" placeholder="如：因媽媽離世，房屋尚待計算遺產稅，暫不收租">
       </div>
     </div>
