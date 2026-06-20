@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06200415</span>
+    <span class="version-tag">v06200917</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1117,8 +1117,8 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
   <!-- 房客：提交報修單 -->
   <div class="card mt" id="repair-submit-card">
-    <div class="card-title">🔧 設備損壞報修</div>
-    <div class="alert-box a-info" style="margin-bottom:.75rem;">填寫後系統會立即寄 Gmail 通知房東。房東處理後會回覆您。</div>
+    <div class="card-title">🔧 設備損壞報修（房東、弟弟、房客皆可提報）</div>
+    <div class="alert-box a-info" style="margin-bottom:.75rem;">任何人都可在此提報。填寫後系統立即寄 Gmail 通知房東；房東處理後會更新狀態。</div>
     <div class="form-row c2">
       <div>
         <label>損壞地點</label>
@@ -5601,7 +5601,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06200415'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06200917'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
@@ -5698,8 +5698,8 @@ window.submitRepair = async function(){
   const time=document.getElementById('repair-time')?.value.trim()||'';
   const now=new Date();
   const datetime=now.toLocaleDateString('zh-TW')+' '+now.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
-  const room=myRoom?RL[myRoom]:'未知房間';
-  const tname=myRoom?DB.tenants[myRoom]?.name||'':currentEmail.split('@')[0];
+  const room=isLandlord?'房東回報':(myRoom?RL[myRoom]:'未知房間');
+  const tname=isLandlord?(currentEmail.split('@')[0]+'（房東）'):(myRoom?DB.tenants[myRoom]?.name||'':currentEmail.split('@')[0]);
   const repair={
     id:now.getTime(), datetime, room, tenantEmail:currentEmail, tenantName:tname,
     location, urgency, desc, time, status:'待處理', statusDate:''
@@ -5727,9 +5727,9 @@ window.submitRepair = async function(){
 };
 
 function renderRepair(){
-  // 房客送出區：只有非房東才顯示
+  // 報修表單：房東、弟弟、房客全部可提報
   const submitCard=document.getElementById('repair-submit-card');
-  if(submitCard) submitCard.style.display=isLandlord?'none':'block';
+  if(submitCard) submitCard.style.display='block';
 
   const list=document.getElementById('repair-list');
   const badge=document.getElementById('repair-pending-badge');
