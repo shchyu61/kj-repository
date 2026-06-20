@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06201948</span>
+    <span class="version-tag">v06202022</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -3738,18 +3738,81 @@ window.renderRentPauseList = function(){
   if(!pauses.length){el.innerHTML='<div class="txt-m">目前無暫停設定，點下方按鈕新增。</div>';return;}
   el.innerHTML=pauses.map(([key,p])=>{
     const roomLabel=p.room==='all'?'所有房間':RL[p.room]||p.room;
+    const out=_pauseOutstanding(p);
+    const outLine=out.length?`<div style="font-size:.78rem;color:var(--danger);font-weight:700;">💰 待收 ${out.length} 期：${out.join('、')}</div>`:'';
+    const settledLine=p.settledTo?`<div style="font-size:.78rem;color:var(--success);font-weight:700;">✅ 已結清至 ${p.settledTo}（共 $${(p.settledAmount||0).toLocaleString()}，${p.settledAt||''}）</div>`:'';
+    const settleBtn=(p.room!=='all'&&out.length)?`<button class="btn bp sm" onclick="openSettleRent('${key}')">💰 正式收取（併收${out.length}期）</button>`:'';
     return `<div class="hist-item" style="background:#fffbf0;border-color:#f0d0a0;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.4rem;">
         <div>
           <div style="font-weight:900;">⏸️ ${roomLabel} · ${p.from}～${p.to}</div>
           <div class="txt-m">原因：${p.reason}</div>
+          ${outLine}${settledLine}
           <div style="font-size:.72rem;color:var(--muted);">設定時間：${p.createdAt}</div>
         </div>
+        ${settleBtn}
         <button class="btn bo sm" onclick="editRentPause('${key}')">✏️ 延期</button>
         <button class="btn bd sm" onclick="deleteRentPause('${key}')">刪除</button>
       </div>
     </div>`;
   }).join('');
+};
+// ── ③ 正式收取／併收／提早結清 ─────────────────────────
+window._monthRange=function(from,to){
+  const out=[]; let y=+String(from).slice(0,4), m=+String(from).slice(4,6);
+  const ey=+String(to).slice(0,4), em=+String(to).slice(4,6);
+  let guard=0;
+  while((y<ey||(y===ey&&m<=em))&&guard<240){ out.push(`${y}${String(m).padStart(2,'0')}`); m++; if(m>12){m=1;y++;} guard++; }
+  return out;
+};
+window._pauseOutstanding=function(p){
+  if(!p||p.room==='all') return [];
+  const all=_monthRange(p.from,p.to);
+  if(!p.settledTo) return all;
+  return all.filter(mm=>+mm>+p.settledTo);
+};
+window._settleKey=null;
+window.openSettleRent=function(key){
+  const p=(DB.rentPause||{})[key]; if(!p) return;
+  if(p.room==='all'){toast('「所有房間」請先改為單一房間再結清');return;}
+  _settleKey=key;
+  const rent=+((DB.tenants[p.room]||{}).rent)||0;
+  document.getElementById('sr-rent').value=rent;
+  document.getElementById('sr-to').value=p.to;
+  document.getElementById('sr-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('sr-note').value='';
+  const tn=(DB.tenants[p.room]||{}).name||'';
+  document.getElementById('settle-rent-info').innerHTML=`房客：<b>${RL[p.room]||p.room}${tn?'・'+tn:''}</b>　緩收區間：${p.from}～${p.to}`;
+  _recalcSettle();
+  document.getElementById('settle-rent-modal').style.display='flex';
+};
+window.closeSettleRent=function(){ _settleKey=null; document.getElementById('settle-rent-modal').style.display='none'; };
+window._recalcSettle=function(){
+  const p=(DB.rentPause||{})[_settleKey]; if(!p) return;
+  const settleTo=document.getElementById('sr-to').value.trim()||p.to;
+  const months=_monthRange(p.from, settleTo).filter(mm=> !p.settledTo || +mm>+p.settledTo);
+  const rent=+document.getElementById('sr-rent').value||0;
+  document.getElementById('sr-count').value=`${months.length} 期（${months.join('、')}）`;
+  document.getElementById('sr-amount').value=months.length*rent;
+};
+window.confirmSettleRent=async function(){
+  const p=(DB.rentPause||{})[_settleKey]; if(!p){closeSettleRent();return;}
+  const settleTo=document.getElementById('sr-to').value.trim()||p.to;
+  const amount=+document.getElementById('sr-amount').value||0;
+  const date=document.getElementById('sr-date').value||new Date().toISOString().slice(0,10);
+  const note=document.getElementById('sr-note').value.trim();
+  const months=_monthRange(p.from, settleTo).filter(mm=> !p.settledTo || +mm>+p.settledTo);
+  if(!months.length){toast('無可結清期數');return;}
+  p.to=settleTo;
+  p.settledTo=settleTo;
+  p.settledAt=date;
+  p.settledAmount=(p.settledAmount||0)+amount;
+  p.settledNote=note;
+  await saveLandlordData();
+  closeSettleRent();
+  renderRentPauseList();
+  if(window.initRent)initRent();
+  toast(`✅ 已正式收取 ${months.length} 期，共 $${amount.toLocaleString()}（${RL[p.room]||p.room}）`);
 };
 // 取得某期別某房間的暫停設定（若有）
 function getRentPauseForRoom(room, period){
@@ -5618,7 +5681,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06201948'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06202022'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
@@ -6226,6 +6289,29 @@ checkSession();
     <div class="gap mt">
       <button class="btn bs" onclick="saveRentPause()">💾 儲存暫停設定</button>
       <button class="btn bo" onclick="closeRentPauseModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<div id="settle-rent-modal" class="modal-overlay" style="display:none;align-items:center;justify-content:center;">
+  <div class="modal-box" style="max-width:460px;width:100%;">
+    <h3>💰 正式收取（併收結清）</h3>
+    <div id="settle-rent-info" style="font-size:.85rem;color:var(--muted);margin-bottom:.6rem;"></div>
+    <div class="form-row c2">
+      <div><label>月租（自動帶入，可改）</label><input type="number" id="sr-rent" oninput="_recalcSettle()"></div>
+      <div><label>結清至期別（含）</label><input type="text" id="sr-to" placeholder="如 202606" oninput="_recalcSettle()"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>併收期數</label><input type="text" id="sr-count" readonly style="background:#f0e8d5;"></div>
+      <div><label>總額（自動，可微調）</label><input type="number" id="sr-amount"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>收款日</label><input type="date" id="sr-date"></div>
+      <div><label>備註</label><input type="text" id="sr-note" placeholder="如：提早結清"></div>
+    </div>
+    <div class="gap mt">
+      <button class="btn bp" onclick="confirmSettleRent()">✅ 確定收取</button>
+      <button class="btn bo" onclick="closeSettleRent()">取消</button>
     </div>
   </div>
 </div>
