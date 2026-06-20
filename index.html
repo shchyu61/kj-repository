@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06210112</span>
+    <span class="version-tag">v06210146</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -862,7 +862,6 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div id="rent-rows"></div>
     <div class="gap mt">
       <button class="btn bs" style="flex:1;" onclick="saveRent(true)">💾 儲存收租紀錄</button>
-      <button class="btn bo" onclick="saveRent(false)">💾 只儲存（不寄信）</button>
     </div>
   </div>
   <div class="card">
@@ -3589,11 +3588,17 @@ window.saveRentPause = async function(){
   toast(`✅ 已設定：${room==='all'?'所有房間':RL[room]||room} ${from}～${to} 暫停收租`);
 };
 window.deleteRentPause = async function(key){
-  if(!confirm('確定刪除此暫停設定？'))return;
+  const _p=(DB.rentPause||{})[key];
+  if(_p&&_p.settledTo){
+    if(!confirm('⚠️ 此筆已含「結清紀錄」：'+(RL[_p.room]||_p.room)+' '+_p.from+'～'+_p.settledTo+' 共 $'+(_p.settledAmount||0).toLocaleString()+'（'+(_p.settledAt||'')+'）。\n刪除會一併移除「收租歷史→併收結清紀錄」，且無法復原！\n\n確定仍要刪除嗎？'))return;
+  }else{
+    if(!confirm('確定刪除此暫停設定？'))return;
+  }
   delete DB.rentPause[key];
   await saveLandlordData();
   renderRentPauseList();
   initRent();
+  if(window.renderRentHistory)renderRentHistory();
   toast('已刪除暫停設定');
 };
 window.renderRentPauseList = function(){
@@ -3605,7 +3610,7 @@ window.renderRentPauseList = function(){
     const roomLabel=p.room==='all'?'所有房間':RL[p.room]||p.room;
     const out=_pauseOutstanding(p);
     const outLine=out.length?`<div style="font-size:.78rem;color:var(--danger);font-weight:700;">💰 待收 ${out.length} 期：${out.join('、')}</div>`:'';
-    const settledLine=p.settledTo?`<div style="font-size:.78rem;color:var(--success);font-weight:700;">✅ 已結清至 ${p.settledTo}（共 $${(p.settledAmount||0).toLocaleString()}，${p.settledAt||''}）</div>`:'';
+    const settledLine=p.settledTo?`<div style="font-size:.78rem;color:var(--success);font-weight:700;">✅ 已結清至 ${p.settledTo}（共 $${(p.settledAmount||0).toLocaleString()}，${p.settledAt||''}）</div><div style="font-size:.72rem;color:var(--danger);font-weight:700;">⚠️ 含結清紀錄，請勿刪除（刪除後收租歷史的結清紀錄會一併消失）</div>`:'';
     const settleBtn=(p.room!=='all'&&out.length)?`<button class="btn bp sm" onclick="openSettleRent('${key}')">💰 正式收取（併收${out.length}期）</button>`:'';
     return `<div class="hist-item" style="background:#fffbf0;border-color:#f0d0a0;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.4rem;">
@@ -3776,9 +3781,9 @@ function renderRentHistory(){
     const recY=+rec.period.slice(0,4), recM=+rec.period.slice(4,6);
     const dueDate=new Date(recY,recM,1); // 下個月1號=本月最後一天的隔天
     const _hasUnpaidActive=ROOMS.some(r=>{const p=rec.payments[r]||{};return p.amount>0 && (p.paid||0)<p.amount && !getRentPauseForRoom(r, rec.period);});
-    const _hasPaused=ROOMS.some(r=>{const p=rec.payments[r]||{};return p.amount>0 && (p.paid||0)<p.amount && getRentPauseForRoom(r, rec.period);});
+    const _stillDeferred=ROOMS.some(r=>{ if(!(DB.tenants[r]&&DB.tenants[r].name))return false; const pp=getRentPauseForRoom(r, rec.period); return pp && (!pp.settledTo || +rec.period> +pp.settledTo); });
     const isOverdue=total<due && Date.now()>dueDate.getTime() && _hasUnpaidActive;
-    const isPausedPeriod=!isOverdue && _hasPaused;
+    const isPausedPeriod=!isOverdue && _stillDeferred;
     // 各房備注
     const roomNotes=ROOMS.filter(r=>rec.payments[r]?.note).map(r=>`${RL[r]}：${rec.payments[r].note}`).join('　');
     // 各房明細
@@ -3808,7 +3813,7 @@ function renderRentHistory(){
           </div>
         </div>
         <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;">
-          <span class="${st}">${total>=due?'已收齊':total>0?'部分':'未收'}</span>
+          <span class="${isPausedPeriod?'pay-partial':st}">${isPausedPeriod?'⏸️ 暫緩收租':(total>=due?'已收齊':total>0?'部分':'未收')}</span>
           ${total<due?`<button class="btn bs sm" onclick="markRentPaid(${i})" style="font-size:.72rem;padding:.3rem .7rem;">✅ 待繳租後點此處</button>`:''}
           <button class="btn bo sm" style="font-size:.72rem;" onclick="document.getElementById('${detailId}').style.display=document.getElementById('${detailId}').style.display==='none'?'block':'none'">📋 明細</button>
           <button class="btn bo sm" onclick="deleteRent(${i})">刪除</button>
@@ -5561,7 +5566,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06210112'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06210146'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
