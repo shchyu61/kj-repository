@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06210048</span>
+    <span class="version-tag">v06210112</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -3775,7 +3775,10 @@ function renderRentHistory(){
     // 逾期判斷：期別YYYYMM，若今天已超過該月最後一天，且未收齊
     const recY=+rec.period.slice(0,4), recM=+rec.period.slice(4,6);
     const dueDate=new Date(recY,recM,1); // 下個月1號=本月最後一天的隔天
-    const isOverdue=total<due && Date.now()>dueDate.getTime();
+    const _hasUnpaidActive=ROOMS.some(r=>{const p=rec.payments[r]||{};return p.amount>0 && (p.paid||0)<p.amount && !getRentPauseForRoom(r, rec.period);});
+    const _hasPaused=ROOMS.some(r=>{const p=rec.payments[r]||{};return p.amount>0 && (p.paid||0)<p.amount && getRentPauseForRoom(r, rec.period);});
+    const isOverdue=total<due && Date.now()>dueDate.getTime() && _hasUnpaidActive;
+    const isPausedPeriod=!isOverdue && _hasPaused;
     // 各房備注
     const roomNotes=ROOMS.filter(r=>rec.payments[r]?.note).map(r=>`${RL[r]}：${rec.payments[r].note}`).join('　');
     // 各房明細
@@ -3798,6 +3801,7 @@ function renderRentHistory(){
         <div>
           <div style="font-weight:900;">📅 ${rec.period} 收租
             ${isOverdue?'<span style="color:var(--danger);font-size:.72rem;font-weight:900;margin-left:.4rem;">⚠️ 逾期未收齊</span>':''}
+            ${isPausedPeriod?'<span style="color:var(--accent);font-size:.72rem;font-weight:900;margin-left:.4rem;">⏸️ 本期暫緩收租</span>':''}
           </div>
           <div class="txt-m">應收 NT$${due.toLocaleString()} / 實收 NT$${total.toLocaleString()}
             ${roomNotes?'<span style="color:var(--accent);"> 📝'+roomNotes+'</span>':''}
@@ -3949,6 +3953,7 @@ async function checkRentOverdue(){
       // 找出未繳的房客
       const overdueTenants=ROOMS.filter(r=>{
         const p=rec.payments[r]||{};
+        if(getRentPauseForRoom(r, rec.period)) return false;
         return p.paid<p.amount && p.amount>0 && DB.tenants[r]?.tenantEmail;
       });
       let sent=0;
@@ -5556,7 +5561,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06210048'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06210112'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
