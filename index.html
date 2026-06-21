@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06211227</span>
+    <span class="version-tag">v06211254</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -655,7 +655,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <!-- ── 房東家人入住日（問題9） ── -->
   <div class="card landlord-only">
     <div class="card-title">🏠 房東家人入住日（計費用）</div>
-    <div class="alert-box a-info" style="font-size:.85rem;">★這裡填<strong>實際回嘉義居住</strong>的日期（不是帳單月份）；系統<strong>只計入落在本期計費期間（起訖）內</strong>的天數，期間外的日子自動歸到對應的那一期。點方格標記，或貼入文字（逗號/空格分隔，<strong>也支援區間如 20~25、4/20~4/25</strong>）。</div>
+    <div class="alert-box a-info" style="font-size:.85rem;">★這裡填<strong>實際回嘉義居住</strong>的日期（不是帳單月份）；系統<strong>只計入落在本期計費期間（起訖）內</strong>的天數，期間外的日子自動歸到對應的那一期。點方格標記，或貼入文字（逗號/空格分隔，<strong>也支援區間如 20~25、4/20~4/25</strong>）。<br>💡 輸入含月份的 <strong>M/D（如 2/12、4/20）</strong> 時，系統依<strong>實際月份</strong>自動歸到正確帳單期（如 2/12 自動歸到包含 2/12 的那一期）；只輸入<strong>日（如 12）</strong>時才依該欄標示的月份。</div>
 
     <!-- 龍潭房東 -->
     <div style="margin-bottom:.75rem;">
@@ -3093,8 +3093,21 @@ window._countStayInPeriod=function(set){
   const start=sv?new Date(sv+'T00:00:00'):null, end=ev?new Date(ev+'T23:59:59'):null;
   let cnt=0;
   set.forEach(key=>{
-    const mt=(''+key).match(/m(\d)-(\d+)$/); if(!mt) return;
-    const ym=slotYM(+mt[1]); const d=new Date(ym[0], ym[1]-1, +mt[2]);
+    let d=null;
+    const mtx=(''+key).match(/@(\d+)-(\d+)$/);
+    if(mtx){
+      const mm=+mtx[1], dd=+mtx[2];
+      if(start && end){
+        for(const yy of [start.getFullYear(), end.getFullYear()]){
+          const cand=new Date(yy, mm-1, dd);
+          if(cand>=start && cand<=end){ d=cand; break; }
+        }
+        if(!d) return;
+      } else { d=new Date(y, mm-1, dd); }
+    } else {
+      const mt=(''+key).match(/m(\d)-(\d+)$/); if(!mt) return;
+      const ym=slotYM(+mt[1]); d=new Date(ym[0], ym[1]-1, +mt[2]);
+    }
     if(start && d<start) return;
     if(end && d>end) return;
     cnt++;
@@ -3105,16 +3118,21 @@ window.calcLandlordDays = function(){
   // 從文字輸入取出唯一天數集合（支援逗號/空格/Tab/全形/換行）
   function getTextDaySet(text, monthPrefix){
     if(!text||!text.trim()) return new Set();
-    // 支援 Tab（Excel貼上）+ 全形逗號 + 全形空格 + 換行 + 半形空格 + 半形逗號
     const normalized = text.replace(/[，\u3000\t\n\r]+/g,' ').replace(/,/g,' ');
     const tokens = normalized.split(/\s+/).map(s=>s.trim()).filter(s=>s.length>0);
     const days = new Set();
     tokens.forEach(t=>{
-      // 區間：20~25 / 4/20~4/25 / 20-25
-      const rng = t.match(/^(?:\d+\/)?0*(\d+)\s*[~～\-]\s*(?:\d+\/)?0*(\d+)$/);
+      // 含月份區間：4/20~4/25 或 4/20~25 → 用實際月份（@月-日）
+      const rngM = t.match(/^(\d+)\/0*(\d+)\s*[~～\-]\s*(?:\d+\/)?0*(\d+)$/);
+      if(rngM){ const mo=+rngM[1]; let a=+rngM[2], b=+rngM[3]; if(a<=b){ for(let d=a;d<=b;d++) days.add(monthPrefix+'@'+mo+'-'+d); } return; }
+      // 純日區間：20~25 → 用該欄月份
+      const rng = t.match(/^0*(\d+)\s*[~～\-]\s*0*(\d+)$/);
       if(rng){ let a=+rng[1], b=+rng[2]; if(a<=b){ for(let d=a;d<=b;d++) days.add(monthPrefix+'-'+d); } return; }
-      // 格式：12/1、12/01、1、01
-      const m = t.match(/^(?:\d+\/)?0*(\d+)$/);
+      // 含月份單日：2/12 → 用實際月份（@月-日）
+      const mdM = t.match(/^(\d+)\/0*(\d+)$/);
+      if(mdM){ days.add(monthPrefix+'@'+(+mdM[1])+'-'+(+mdM[2])); return; }
+      // 純日：12 → 用該欄月份
+      const m = t.match(/^0*(\d+)$/);
       if(m) days.add(monthPrefix+'-'+m[1]);
     });
     return days;
@@ -5595,7 +5613,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06211227'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06211254'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
