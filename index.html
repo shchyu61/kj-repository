@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06210715</span>
+    <span class="version-tag">v06211227</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -644,6 +644,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       ✅ 您輸入的抄錶與本期資料<strong>會自動暫存</strong>，關頁也不會消失。<br>
       期別在上方「📋 本期帳單資訊」設定（目前：<strong id="ws-period-echo">—</strong>）。確認後按下方儲存即寫入正式帳單。
     </div>
+    <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;font-weight:700;color:var(--accent);margin:.5rem 0;cursor:pointer;"><input type="checkbox" id="u-deferred" style="width:1.1rem;height:1.1rem;">⏸️ 本期緩收（房客尚未繳費）— 勾選後此帳單在歷史標「緩收中」，待實際收款再按「標記已收」</label>
     <div class="gap" style="margin-top:.4rem;">
       <button class="btn bs sm" onclick="saveUtilBill(false)">💾 儲存此期帳單（不寄信）</button>
       <button class="btn bp sm" onclick="saveUtilBill(true)">💾 儲存並推送給房客</button>
@@ -1214,7 +1215,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           <option value="5F前">5樓前</option><option value="其他">其他</option>
         </select>
       </div>
-      <div><label>身份證字號</label><input type="text" id="mf-id" placeholder="A123456789"></div>
+      <div><label>身分證字號</label><input type="text" id="mf-id" placeholder="A123456789"></div>
     </div>
     <div class="form-row">
       <div><label>身分證反面【戶籍地】</label><input type="text" id="mf-address" placeholder="如：嘉義市東區○○路○號"></div>
@@ -1922,7 +1923,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
     </div>
     <div class="form-row c2">
-      <div><label>身份證字號</label><input type="text" id="mt-id" placeholder="A123456789"></div>
+      <div><label>身分證字號</label><input type="text" id="mt-id" placeholder="A123456789"></div>
       <div><label>身分證反面【戶籍地】</label><input type="text" id="mt-address" placeholder="如：嘉義市東區○○路○號"></div>
     </div>
     <div class="form-row c2">
@@ -3519,11 +3520,32 @@ window.saveUtilBill = async function(sendEmail=true){
     savedAt:new Date().toISOString(),
   };
   const idx=DB.utilBills.findIndex(b=>b.period===period);
+  const _exist=idx>=0?DB.utilBills[idx]:null;
+  bill.deferred=document.getElementById('u-deferred')?.checked||false;
+  bill.collectedDate=bill.deferred?'':((_exist&&_exist.collectedDate)?_exist.collectedDate:'');
   if(idx>=0)DB.utilBills[idx]=bill; else DB.utilBills.unshift(bill);
   DB.billWorkingState=null;
   await saveLandlordData();
   renderUtilHistory();
   toast(sendEmail?'帳單已儲存並推送 ✓ 期別：'+period:'帳單已儲存（未通知房客）✓ 期別：'+period);
+};
+
+window.markUtilCollected = async function(i){
+  const b=(DB.utilBills||[])[i]; if(!b)return;
+  const d=prompt('收款日期（YYYY-MM-DD），可留空：', new Date().toISOString().slice(0,10));
+  if(d===null)return;
+  b.deferred=false; b.collectedDate=(d||'').trim();
+  await saveLandlordData();
+  renderUtilHistory();
+  toast('已標記「已收」：'+b.period);
+};
+window.markUtilDeferred = async function(i){
+  const b=(DB.utilBills||[])[i]; if(!b)return;
+  if(!confirm('將 '+b.period+' 期改標為「緩收中（房客尚未繳費）」？'))return;
+  b.deferred=true; b.collectedDate='';
+  await saveLandlordData();
+  renderUtilHistory();
+  toast('已改標「緩收中」：'+b.period);
 };
 
 window.showAllBills = function(){
@@ -5268,7 +5290,7 @@ window.renderUtilHistory = function(){
     return `<div class="hist-item">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.4rem;">
         <div style="flex:1;min-width:0;">
-          <div style="font-weight:900;">📅 ${b.period} 期水電帳單</div>
+          <div style="font-weight:900;">📅 ${b.period} 期水電帳單 ${b.deferred?'<span style="font-size:.72rem;color:var(--danger);font-weight:900;">⏸️ 緩收中</span>':'<span style="font-size:.72rem;color:var(--success);font-weight:900;">✅ 已收'+(b.collectedDate?'（'+b.collectedDate+'）':'')+'</span>'}</div>
           <div class="txt-m">${b.dateStart||''}～${b.dateEnd||''} · 電費$${b.elecTotal||0}｜水費$${b.waterTotal||0}｜瓦斯$${b.gasTotal||0}｜度數${b.totalKwh||'—'}度</div>
           ${b.note?`<div class="txt-m">備註：${b.note}</div>`:''}
           <div style="margin-top:.3rem;flex-wrap:wrap;display:flex;gap:.2rem;">${roomSummary}</div>
@@ -5278,6 +5300,7 @@ window.renderUtilHistory = function(){
           <button class="btn bp sm" onclick="showBillText(['${b.period}'])">📋 帳單文字</button>
           <button class="btn bo sm" onclick="toggleUtilDetail('${detailId}')">📋 明細</button>
           <button class="btn ba sm" onclick="loadUtilBillToEdit(${i})">✏️ 載入編輯</button>
+          ${b.deferred?`<button class="btn bs sm" onclick="markUtilCollected(${i})">💰 標記已收</button>`:`<button class="btn bo sm" onclick="markUtilDeferred(${i})">⏸️ 改標緩收</button>`}
           <button class="btn bd sm" onclick="deleteUtilBill(${i})">🗑️ 刪除</button>
         </div>
       </div>
@@ -5397,6 +5420,7 @@ window.loadUtilBillToEdit = function(i){
   setVal('u-gas',    b.gasTotal);
   setVal('u-total-kwh', b.totalKwh||'');
   setVal('u-note',   b.note);
+  { const _ud=document.getElementById('u-deferred'); if(_ud)_ud.checked=!!b.deferred; }
   // 計算起迄天數
   if(b.dateStart&&b.dateEnd){
     const diff=Math.round((new Date(b.dateEnd)-new Date(b.dateStart))/86400000)+1;
@@ -5431,7 +5455,7 @@ window.deleteUtilBill = async function(i){
   await saveLandlordData(); renderUtilHistory(); toast('已刪除');
 };
 
-// ── 信件通知：依身份顯示不同按鈕 ────────────────────────
+// ── 信件通知：依身分顯示不同按鈕 ────────────────────────
 window.renderMailPage = function(){
   const lb=document.getElementById('mail-btns-landlord');
   const tb=document.getElementById('mail-btns-tenant');
@@ -5571,7 +5595,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06210715'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06211227'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
