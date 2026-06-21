@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06211359</span>
+    <span class="version-tag">v06220708</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -932,7 +932,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div style="display:flex;gap:.7rem;align-items:flex-start;padding:.55rem .75rem;background:rgba(255,255,255,.6);border-radius:.7rem;border:1px solid #e8d8c0;">
         <span style="font-size:1.1rem;flex-shrink:0;">📅</span>
         <div><span style="font-weight:900;color:var(--primary);">租約到期提醒</span><br>
-        <span style="color:var(--muted);">租約到期前 <strong style="color:var(--danger);">30天</strong>，系統自動寄 Gmail 提醒您提早續約或辦理退租點交。</span></div>
+        <span style="color:var(--muted);">租約到期前 <strong style="color:var(--danger);">45天</strong>，系統自動寄 Gmail 提醒您提早續約或辦理退租點交。</span></div>
       </div>
       <div style="display:flex;gap:.7rem;align-items:flex-start;padding:.55rem .75rem;background:rgba(255,255,255,.6);border-radius:.7rem;border:1px solid #e8d8c0;">
         <span style="font-size:1.1rem;flex-shrink:0;">💡</span>
@@ -2025,7 +2025,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, reserveProfile:{}, maintenanceDueSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
 
 // ============================================================
@@ -2300,6 +2300,7 @@ const completeLogin = async (email, method=null) => {
   if(isLandlord) setTimeout(()=>{
     checkPendingAnnounces();
     checkRentOverdue();
+    checkLeaseExpiry();
     updateRepairBadge();
   },1500);
   // 更新郵局帳號顯示（確保 Firebase 資料已讀取後再更新）
@@ -2407,6 +2408,7 @@ const loadLandlordData = async () => {
       if(d.taxReserveLog)DB.taxReserveLog=d.taxReserveLog;
       if(d.reserveProfile)DB.reserveProfile=d.reserveProfile;
       if(d.maintenanceDueSent)DB.maintenanceDueSent=d.maintenanceDueSent;
+      if(d.leaseExpirySent)DB.leaseExpirySent=d.leaseExpirySent;
       if(d.reserveReportSent)DB.reserveReportSent=d.reserveReportSent;
       if(d.reserveAutoLog)DB.reserveAutoLog=d.reserveAutoLog;
       if(d.billWorkingState!==undefined)DB.billWorkingState=d.billWorkingState;
@@ -2451,6 +2453,7 @@ const saveLandlordData = async () => {
     taxReserveLog:DB.taxReserveLog||[],
     reserveProfile:DB.reserveProfile||{},
     maintenanceDueSent:DB.maintenanceDueSent||{},
+    leaseExpirySent:DB.leaseExpirySent||{},
     reserveReportSent:DB.reserveReportSent||{},
     reserveAutoLog:DB.reserveAutoLog||[],
     billWorkingState:DB.billWorkingState||null,
@@ -2730,6 +2733,37 @@ window.checkMaintenanceDue=async function(){
   if(changed) await saveLandlordData();
 };
 
+
+// ── 契約課：租約到期前45天自動寄Gmail提醒房東（通知部對房東課）──
+window.checkLeaseExpiry = async function(){
+  if(!DB.tenants) return;
+  if(!DB.leaseExpirySent) DB.leaseExpirySent={};
+  const toSend=[]; const now=new Date();
+  ROOMS.forEach(r=>{
+    const t=DB.tenants[r]; if(!t||!t.expiry||t.status==='vacant'||!t.name) return;
+    const exp=new Date(t.expiry);
+    const daysLeft=Math.round((exp-now)/86400000);
+    if(daysLeft<=45 && daysLeft>=-30){
+      const k=r+'@'+t.expiry;
+      if(!DB.leaseExpirySent[k]) toSend.push({r,t,exp,daysLeft,k});
+    }
+  });
+  if(!toSend.length) return;
+  if(typeof initEJS==='function') initEJS();
+  let changed=false;
+  for(const x of toSend){
+    const intent=x.t.renewalIntent;
+    const act = intent==='yes' ? '房客已表達續約意願，請準備續約契約。'
+            : intent==='no' ? '房客已表達不續約，請準備退租點交與押金退還。'
+            : '房客續約意願未定，請及早確認並安排續約或退租點交。';
+    const when=x.exp.toLocaleDateString('zh-TW');
+    const left=x.daysLeft<0 ? ('已逾期 '+Math.abs(x.daysLeft)+' 天') : ('還有 '+x.daysLeft+' 天');
+    const msg='📅 契約到期提醒：'+(RL[x.r]||x.r)+' '+(x.t.name||'')+' 租約將於 '+when+' 到期（'+left+'）。'+act+'（到期前45天自動提醒）';
+    try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:LANDLORD_EMAIL,otp:msg}); }catch(e){}
+    DB.leaseExpirySent[x.k]=true; changed=true;
+  }
+  if(changed) await saveLandlordData();
+};
 
 // ── 稅務每月預存追蹤 ─────────────────────────────────────────
 window.taxMonthlyTarget = function(){
@@ -5615,7 +5649,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06211359'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06220708'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
