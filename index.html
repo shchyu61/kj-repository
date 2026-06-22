@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06220708</span>
+    <span class="version-tag">v06221351</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -864,6 +864,10 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div id="rent-rows"></div>
     <div class="gap mt">
       <button class="btn bs" style="flex:1;" onclick="saveRent(true)">💾 儲存收租紀錄</button>
+    </div>
+    <div style="margin-top:.6rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+      <button id="rent-notify-toggle" class="btn bd sm" onclick="toggleNotifyTenant()" style="min-width:210px;">🔕 目前：暫不寄收訖給房客（關）</button>
+      <span style="font-size:.72rem;color:var(--muted);">開啟後，儲存收租時自動寄「收訖通知」給已全額繳清、非緩收且有填 Email 的房客；預設關閉以免打擾。</span>
     </div>
   </div>
   <div class="card">
@@ -2025,7 +2029,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
 
 // ============================================================
@@ -2403,12 +2407,14 @@ const loadLandlordData = async () => {
       if(d.defaultNetFee!==undefined)DB.defaultNetFee=d.defaultNetFee;
       if(d.brotherEmail!==undefined)DB.brotherEmail=d.brotherEmail;
       if(d.notifyBrother!==undefined)DB.notifyBrother=d.notifyBrother;
+      if(d.notifyTenant!==undefined)DB.notifyTenant=d.notifyTenant;
       if(d.preBills)DB.preBills=d.preBills;
       if(d.draftBills)DB.draftBills=d.draftBills;
       if(d.taxReserveLog)DB.taxReserveLog=d.taxReserveLog;
       if(d.reserveProfile)DB.reserveProfile=d.reserveProfile;
       if(d.maintenanceDueSent)DB.maintenanceDueSent=d.maintenanceDueSent;
       if(d.leaseExpirySent)DB.leaseExpirySent=d.leaseExpirySent;
+      if(d.rentReceiptSent)DB.rentReceiptSent=d.rentReceiptSent;
       if(d.reserveReportSent)DB.reserveReportSent=d.reserveReportSent;
       if(d.reserveAutoLog)DB.reserveAutoLog=d.reserveAutoLog;
       if(d.billWorkingState!==undefined)DB.billWorkingState=d.billWorkingState;
@@ -2448,12 +2454,14 @@ const saveLandlordData = async () => {
     defaultNetFee:DB.defaultNetFee||1409,
     brotherEmail:DB.brotherEmail||'',
     notifyBrother:DB.notifyBrother||false,
+    notifyTenant:DB.notifyTenant||false,
     preBills:DB.preBills||[],
     draftBills:DB.draftBills||[],
     taxReserveLog:DB.taxReserveLog||[],
     reserveProfile:DB.reserveProfile||{},
     maintenanceDueSent:DB.maintenanceDueSent||{},
     leaseExpirySent:DB.leaseExpirySent||{},
+    rentReceiptSent:DB.rentReceiptSent||{},
     reserveReportSent:DB.reserveReportSent||{},
     reserveAutoLog:DB.reserveAutoLog||[],
     billWorkingState:DB.billWorkingState||null,
@@ -3775,6 +3783,7 @@ function getRentPauseForRoom(room, period){
 }
 
 window.initRent = function(){
+  if(window.updateTenantToggleUI)updateTenantToggleUI();
   const rr=document.getElementById('rent-rows'); rr.innerHTML='';
   renderRentPauseList();
 
@@ -3838,6 +3847,23 @@ window.saveRent = async function(sendEmail=true){
   const idx=DB.rentRecords.findIndex(x=>x.period===period);
   if(idx>=0)DB.rentRecords[idx]=rec; else DB.rentRecords.unshift(rec);
   await saveLandlordData(); renderRentHistory(); toast('收租紀錄已儲存 ✓');
+  // ⑥ 收訖通知：收租後寄收訖信給「已全額繳清且非緩收」之房客（受 notifyTenant 開關控管，預設關＝暫不寄發給房客）
+  if(DB.notifyTenant){
+    if(typeof initEJS==='function') initEJS();
+    if(!DB.rentReceiptSent) DB.rentReceiptSent={};
+    let _sent=false;
+    for(const r of ROOMS){
+      const t=DB.tenants[r], p=payments[r];
+      if(!t||!t.name||!(t.tenantEmail||'').trim()) continue;
+      if(!p||!(p.amount>0)||!((p.paid||0)>=p.amount)) continue;
+      if(getRentPauseForRoom(r, period)) continue;
+      const _k=period+'@'+r;
+      if(DB.rentReceiptSent[_k]) continue;
+      const msg='✅ 收訖通知：'+(t.name||'')+' 您好，您 '+period+' 期租金 NT$'+p.amount.toLocaleString()+' 已收訖'+(p.date?('（收款日 '+p.date+'）'):'')+'，謝謝您！';
+      try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:t.tenantEmail.trim(),otp:msg}); DB.rentReceiptSent[_k]=true; _sent=true; }catch(e){}
+    }
+    if(_sent) await saveLandlordData();
+  }
 };
 function renderRentHistory(){
   const el=document.getElementById('rent-history');
@@ -4842,6 +4868,20 @@ window.updateBrotherToggleUI = function(){
     btn.style.minWidth='160px';
   }
 };
+window.toggleNotifyTenant = async function(){
+  DB.notifyTenant = !DB.notifyTenant;
+  await saveLandlordData();
+  updateTenantToggleUI();
+  toast(DB.notifyTenant?'🔔 已開啟：收租後寄收訖通知給房客':'🔕 已關閉：暫不寄發收訖通知給房客');
+};
+window.updateTenantToggleUI = function(){
+  const btn=document.getElementById('rent-notify-toggle');
+  if(btn){
+    if(DB.notifyTenant){ btn.textContent='🔔 目前：收訖通知房客（開）'; btn.className='btn bs sm'; }
+    else { btn.textContent='🔕 目前：暫不寄收訖給房客（關）'; btn.className='btn bd sm'; }
+    btn.style.minWidth='210px';
+  }
+};
 
 // ── 定期維護提醒 ──────────────────────────────────────────
 const MAINTENANCE_ITEMS = {
@@ -5649,7 +5689,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06220708'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06221351'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
