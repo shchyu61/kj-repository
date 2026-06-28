@@ -1,1 +1,40 @@
+# ============================================================
+# 嘉義房租 雲端通知排程（GitHub Actions）
+# 檔案位置：.github/workflows/rental_notify.yml
+# 功能：每日定時跑 rental_cloud_notify.py，檢查房客租約到期前 45 天，
+#       用 Gmail 自動寄提醒信給房東 —— 筆電關機也收得到。
+# 台灣時間 = UTC+8
+# ============================================================
+name: 嘉義房租雲端通知（契約到期45天）
 
+on:
+  schedule:
+    # 台灣每日 08:00 = UTC 00:00
+    - cron: '0 0 * * *'
+  # 允許手動觸發（測試用）
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 取得程式碼
+        uses: actions/checkout@v4
+
+      - name: 安裝 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 安裝套件
+        run: pip install google-auth requests
+
+      - name: 執行房租雲端通知
+        env:
+          GMAIL_ACCOUNT:        ${{ secrets.GMAIL_ACCOUNT }}
+          GMAIL_PASSWORD:       ${{ secrets.GMAIL_PASSWORD }}
+          FIREBASE_SERVICE_KEY: ${{ secrets.FIREBASE_SERVICE_KEY }}
+          NOTIFY_TO:            ${{ secrets.NOTIFY_TO }}
+        run: python rental_cloud_notify.py
