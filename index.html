@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06221351</span>
+    <span class="version-tag">v06281120</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -3545,7 +3545,7 @@ window._buildCurrentBill=function(){
 };
 window.copyUtilSummary = function(){
   if(!window._UR){toast('請先完成計算');return;}
-  const txt=genSingleBillText(_buildCurrentBill());
+  const txt=genSingleBillFull(_buildCurrentBill());
   navigator.clipboard.writeText(txt).then(()=>toast('✅ 帳單文字已複製！可直接貼給房客'))
     .catch(()=>{
       const ta=document.createElement('textarea');
@@ -3612,7 +3612,7 @@ window.markUtilDeferred = async function(i){
 
 window.showAllBills = function(){
   if(!window._UR){toast('請先完成計算');return;}
-  const txt=genSingleBillText(_buildCurrentBill());
+  const txt=genSingleBillFull(_buildCurrentBill());
   const area=document.getElementById('bills-area');
   area.innerHTML='<div style="font-weight:900;font-size:.9rem;margin:.75rem 0 .4rem;color:var(--accent);">📄 帳單通知單（LINE 格式，僅水電瓦斯冷氣）</div>'
     +'<pre style="background:var(--bg2);border:1px solid var(--border2);border-radius:.6rem;padding:.8rem;white-space:pre-wrap;font-family:inherit;font-size:.88rem;line-height:1.55;margin:0 0 .5rem;">'+txt.replace(/</g,'&lt;')+'</pre>'
@@ -5421,6 +5421,9 @@ window.renderUtilHistory = function(){
 };
 
 // ── 產出帳單文字（單期/多期，從已儲存歷史 DB.utilBills）──────────
+const BILL_FOOTER_POST='●各項費用請以【郵局】轉帳給余科蓁。郵局帳號在此群組的【相簿】裡面，有郵局存摺照片檔。\n●請於每期帳單的2/19、4/19、6/19、8/19、10/19、12/19『最後應繳日』之前，完成【郵局】轉帳，避免逾期被台電、台水、瓦斯公司處罰併入下期帳單，謝謝。';
+const BILL_DEFER='●此次費用合併計算，費用較多，若房客當月生活費預算卡住，可延到下個月6號前，再轉帳。\n（若您的公司是每個月１０號發薪日，可順延到下個月１１號再轉帳，謝謝您）\n（學生房客：若本月生活費預算卡住，可順延到下個月１１號再轉帳，謝謝您）';
+window.genSingleBillFull = function(b){ const z=genSingleBillText(b); return z? z+'\n'+BILL_FOOTER_POST : ''; };
 window.genSingleBillText = function(b){
   if(!b) return '';
   const R=b.rooms||{};
@@ -5435,14 +5438,18 @@ window.genSingleBillText = function(b){
   const p=b.period||'';
   const yr=p.slice(0,4), mo=String(+p.slice(4,6)).padStart(2,'0');
   const f=n=>Math.round(n).toLocaleString();
-  let t=`${yr}年${mo}月水、電、瓦斯、冷氣帳單\n\n`;
+  let t=`●${yr}年${mo}月水、電、瓦斯、冷氣帳單\n`;
   ROOMS.forEach(r=>{ t+=`　　${RL[r]||r}　$${f(((R[r]||{}).total)||0)}\n`; });
   t+=`　　房東贊助房客零頭　$${f(N9)}\n`;
   if(tcWEG>0) t+=`　　房東未常住贊助水電瓦斯　$${f(tcWEG)}\n`;
   t+=`　　我本期水電瓦斯　$${f(ltWEG)}\n`;
   t+=`　　我本期冷氣　$${f(ltAC)}\n`;
   t+=`　　以上本期水電瓦斯共　$${f(N14)}\n`;
-  t+=`　　本期平均每度電約${rate.toFixed(2)}元`;
+  t+=`　　本期平均每度電約${rate.toFixed(2)}元\n`;
+  const ltD=lt.days||0, tcD=og.days||0;
+  const ltDs=(lt.stayDates||'').trim(), tcDs=(og.stayDates||'').trim();
+  t+=`　　龍潭房東回嘉義住：${ltD} 天${ltDs?'（'+ltDs+'）':''}\n`;
+  t+=`　　台中房東回嘉義住：${tcD} 天${tcDs?'（'+tcDs+'）':''}`;
   return t;
 };
 window.genMultiBillText = function(periods){
@@ -5451,25 +5458,23 @@ window.genMultiBillText = function(periods){
   if(!bills.length) return '';
   const yr=(bills[0].period||'').slice(0,4);
   const moList=bills.map(b=>String(+(b.period||'').slice(4,6)).padStart(2,'0')+'月').join('+');
-  let t=`${yr}年${moList}水、電、瓦斯、冷氣帳單\n\n\n『\n`;
+  let t=`●${yr}年${moList}水、電、瓦斯、冷氣帳單\n『\n`;
   ROOMS.forEach(r=>{
     const vals=bills.map(b=>((b.rooms||{})[r]||{}).total||0);
     const sum=vals.reduce((sm,v)=>sm+v,0);
     if(sum<=0) return;
     const parts=vals.map(v=>'$'+v.toLocaleString()).join('　＋　');
-    t+=`　　${RL[r]||r}　${parts}　＝　$${sum.toLocaleString()}\n\n`;
+    t+=`　　${RL[r]||r}　${parts}　＝　$${sum.toLocaleString()}\n`;
   });
   t+=`』\n\n`;
-  t+=`此次費用合併計算，費用較多，若房客當月生活費預算卡住，可延到下個月6號再轉帳。\n`;
-  t+=`（若您的公司是每個月１０號發薪日，可順延到下個月１１號再轉帳，謝謝您）\n`;
-  t+=`（學生房客：若本月生活費預算卡住，可順延到下個月１１號再轉帳，謝謝您）\n\n\n`;
-  t+=`▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲\n\n\n`;
-  t+=bills.map(b=>genSingleBillText(b)).join('\n\n');
+  t+=`▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲\n\n`;
+  t+=bills.map(b=>genSingleBillText(b)).join('\n');
+  t+=`\n${BILL_FOOTER_POST}\n${BILL_DEFER}`;
   return t;
 };
 window.showBillText = function(periods){
   if(!periods||!periods.length){ toast('請先勾選至少一個期別'); return; }
-  const txt = periods.length===1 ? genSingleBillText((DB.utilBills||[]).find(x=>x.period===periods[0])) : genMultiBillText(periods);
+  const txt = periods.length===1 ? genSingleBillFull((DB.utilBills||[]).find(x=>x.period===periods[0])) : genMultiBillText(periods);
   window._billText=txt;
   const out=document.getElementById('bill-text-output');
   if(out){
@@ -5689,7 +5694,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06221351'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06281120'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
