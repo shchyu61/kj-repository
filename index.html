@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06281724</span>
+    <span class="version-tag">v06282204</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -3653,6 +3653,7 @@ window.saveUtilBill = async function(sendEmail=true){
   const _exist=idx>=0?DB.utilBills[idx]:null;
   bill.deferred=document.getElementById('u-deferred')?.checked||false;
   bill.collectedDate=bill.deferred?'':((_exist&&_exist.collectedDate)?_exist.collectedDate:'');
+  if(window._ensureRoomCollect)_ensureRoomCollect(bill);
   if(idx>=0)DB.utilBills[idx]=bill; else DB.utilBills.unshift(bill);
   DB.billWorkingState=null;
   await saveLandlordData();
@@ -3660,22 +3661,61 @@ window.saveUtilBill = async function(sendEmail=true){
   toast(sendEmail?'帳單已儲存並推送 ✓ 期別：'+period:'帳單已儲存（未通知房客）✓ 期別：'+period);
 };
 
+window._ensureRoomCollect = function(b){
+  if(!b.roomCollect) b.roomCollect={};
+  ROOMS.forEach(r=>{
+    const ur=(b.rooms||{})[r];
+    if(!ur||!ur.total) return; // 只針對有收費的房客房
+    if(!b.roomCollect[r]) b.roomCollect[r]={ paid: !b.deferred, date: b.deferred?'':(b.collectedDate||'') };
+  });
+  return b.roomCollect;
+};
+window._billCollectStatus = function(b){
+  const rc=_ensureRoomCollect(b); const rk=Object.keys(rc);
+  if(!rk.length) return { label: b.deferred?'⏸️ 緩收中':('✅ 已收'+(b.collectedDate?'（'+b.collectedDate+'）':'')), allPaid: !b.deferred };
+  const paid=rk.filter(r=>rc[r].paid);
+  if(paid.length===rk.length) return { label:'✅ 全部已收', allPaid:true };
+  if(paid.length===0)         return { label:'⏸️ 全部緩收', allPaid:false };
+  return { label:'⏸️ 部分已收（'+paid.length+'/'+rk.length+'）', allPaid:false };
+};
+window._syncBillFromRooms = function(b){
+  const rc=b.roomCollect||{}; const rk=Object.keys(rc);
+  if(!rk.length) return;
+  const allPaid=rk.every(r=>rc[r].paid);
+  b.deferred=!allPaid;
+  b.collectedDate=allPaid?(rk.map(r=>rc[r].date).filter(Boolean).sort().pop()||''):'';
+};
+window.toggleRoomCollect = async function(i, room){
+  const b=(DB.utilBills||[])[i]; if(!b)return;
+  const rc=_ensureRoomCollect(b);
+  if(!rc[room]) rc[room]={paid:false,date:''};
+  if(!rc[room].paid){
+    const d=prompt('「'+(RL[room]||room)+'」收款日期（YYYY-MM-DD），可留空：', new Date().toISOString().slice(0,10));
+    if(d===null)return;
+    rc[room].paid=true; rc[room].date=(d||'').trim();
+  } else { rc[room].paid=false; rc[room].date=''; }
+  _syncBillFromRooms(b);
+  await saveLandlordData(); renderUtilHistory();
+  toast((RL[room]||room)+'：'+(rc[room].paid?('已收'+(rc[room].date?'（'+rc[room].date+'）':'')):'改緩收'));
+};
 window.markUtilCollected = async function(i){
   const b=(DB.utilBills||[])[i]; if(!b)return;
-  const d=prompt('收款日期（YYYY-MM-DD），可留空：', new Date().toISOString().slice(0,10));
+  const d=prompt('全部收款日期（YYYY-MM-DD），可留空：', new Date().toISOString().slice(0,10));
   if(d===null)return;
+  const rc=_ensureRoomCollect(b);
+  Object.keys(rc).forEach(r=>{ rc[r].paid=true; rc[r].date=(d||'').trim(); });
   b.deferred=false; b.collectedDate=(d||'').trim();
-  await saveLandlordData();
-  renderUtilHistory();
-  toast('已標記「已收」：'+b.period);
+  await saveLandlordData(); renderUtilHistory();
+  toast('已標記「全部已收」：'+b.period);
 };
 window.markUtilDeferred = async function(i){
   const b=(DB.utilBills||[])[i]; if(!b)return;
-  if(!confirm('將 '+b.period+' 期改標為「緩收中（房客尚未繳費）」？'))return;
+  if(!confirm('將 '+b.period+' 期「全部」改標為緩收中？'))return;
+  const rc=_ensureRoomCollect(b);
+  Object.keys(rc).forEach(r=>{ rc[r].paid=false; rc[r].date=''; });
   b.deferred=true; b.collectedDate='';
-  await saveLandlordData();
-  renderUtilHistory();
-  toast('已改標「緩收中」：'+b.period);
+  await saveLandlordData(); renderUtilHistory();
+  toast('已改標「全部緩收」：'+b.period);
 };
 
 window.showAllBills = function(){
@@ -5530,20 +5570,30 @@ window.renderUtilHistory = function(){
     }).join('');
 
     const detailId=`util-detail-${i}`;
+    const cst=_billCollectStatus(b);
+    const collectChips=(function(){
+      const rc=_ensureRoomCollect(b); const rk=Object.keys(rc);
+      if(!rk.length) return '';
+      return '<div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;"><span style="font-size:.72rem;color:var(--muted);">逐房收訖：</span>'
+        + rk.map(function(r){ var c=rc[r];
+            return `<button class="btn ${c.paid?'bs':'bo'} sm" style="font-size:.72rem;padding:2px 8px;" onclick="toggleRoomCollect(${i},'${r}')">${RL[r]||r} ${c.paid?('✅'+(c.date?c.date.slice(5):'已收')):'⏸緩收'}</button>`;
+          }).join('') + '</div>';
+    })();
     return `<div class="hist-item">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.4rem;">
         <div style="flex:1;min-width:0;">
-          <div style="font-weight:900;">📅 ${b.period} 期水電帳單 ${b.deferred?'<span style="font-size:.72rem;color:var(--danger);font-weight:900;">⏸️ 緩收中</span>':'<span style="font-size:.72rem;color:var(--success);font-weight:900;">✅ 已收'+(b.collectedDate?'（'+b.collectedDate+'）':'')+'</span>'}</div>
+          <div style="font-weight:900;">📅 ${b.period} 期水電帳單 <span style="font-size:.72rem;font-weight:900;color:${cst.allPaid?'var(--success)':'var(--danger)'};">${cst.label}</span></div>
           <div class="txt-m">${b.dateStart||''}～${b.dateEnd||''} · 電費$${b.elecTotal||0}｜水費$${b.waterTotal||0}｜瓦斯$${b.gasTotal||0}｜度數${b.totalKwh||'—'}度</div>
           ${b.note?`<div class="txt-m">備註：${b.note}</div>`:''}
           <div style="margin-top:.3rem;flex-wrap:wrap;display:flex;gap:.2rem;">${roomSummary}</div>
+          ${collectChips}
         </div>
         <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:flex-start;">
           <label style="font-size:.82rem;display:flex;align-items:center;gap:.25rem;color:var(--primary);font-weight:700;cursor:pointer;"><input type="checkbox" class="bill-pick" value="${b.period}" style="width:1rem;height:1rem;">勾選</label>
           <button class="btn bp sm" onclick="showBillText(['${b.period}'])">📋 帳單文字</button>
           <button class="btn bo sm" onclick="toggleUtilDetail('${detailId}')">📋 明細</button>
           <button class="btn ba sm" onclick="loadUtilBillToEdit(${i})">✏️ 載入編輯</button>
-          ${b.deferred?`<button class="btn bs sm" onclick="markUtilCollected(${i})">💰 標記已收</button>`:`<button class="btn bo sm" onclick="markUtilDeferred(${i})">⏸️ 改標緩收</button>`}
+          ${cst.allPaid?`<button class="btn bo sm" onclick="markUtilDeferred(${i})">⏸️ 全部緩收</button>`:`<button class="btn bs sm" onclick="markUtilCollected(${i})">💰 全部已收</button>`}
           <button class="btn bd sm" onclick="deleteUtilBill(${i})">🗑️ 刪除</button>
         </div>
       </div>
@@ -5843,7 +5893,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06281724'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06282204'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
