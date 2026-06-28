@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06281120</span>
+    <span class="version-tag">v06281712</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1646,6 +1646,40 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
   </div>
 
+  <!-- ══ 哥弟三桶進階結算 ══ -->
+  <div class="card mt" style="border:2px solid var(--accent);">
+    <div class="card-title">🔑 哥弟進階結算（三桶：房租／水電／網路）</div>
+    <div class="alert-box a-info" style="font-size:.82rem;">
+      特殊情況用（例如某期水電由弟先代墊）。輸入實際數字，系統自動算「哥應轉弟」淨額並產生給弟的 Gmail 明細。各項奇數一律哥多 1 元（兄長多出）。
+    </div>
+    <div class="form-row c2">
+      <div><label>① 本期房租收入（要分配，元）</label><input type="number" id="bs-rent" placeholder="如 22500" oninput="calcBroSettle()"></div>
+      <div><label>③ 網路費總額（哥付ISP，元）</label><input type="number" id="bs-net" placeholder="如 7045" oninput="calcBroSettle()"></div>
+    </div>
+    <div class="form-row c3">
+      <div><label>② 弟代墊水電瓦斯（元）</label><input type="number" id="bs-adv" placeholder="如 3733" oninput="calcBroSettle()"></div>
+      <div><label>② 已還弟（如已轉，元）</label><input type="number" id="bs-paid" placeholder="如 3200" oninput="calcBroSettle()"></div>
+      <div><label>施工費（兩房東各半，元）</label><input type="number" id="bs-cons" placeholder="如 25" oninput="calcBroSettle()"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>房東贊助房客零頭（元）</label><input type="number" id="bs-odd" placeholder="如 96" oninput="calcBroSettle()"></div>
+      <div><label>零頭歸屬（固定保存）</label>
+        <button id="bs-odd-toggle" class="btn bd sm" onclick="toggleOddOwner()" style="width:100%;">◉ 哥全包（預設）</button>
+      </div>
+    </div>
+    <div id="bs-result" class="card" style="margin-top:.7rem;display:none;background:#fffdf0;border:2px solid var(--gold);">
+      <div class="card-title">📊 結算結果</div>
+      <div id="bs-detail"></div>
+      <div style="margin-top:.6rem;padding-top:.5rem;border-top:2px solid var(--border2);font-size:1rem;font-weight:900;color:var(--primary);">
+        哥應轉弟淨額：<span id="bs-net-amt" style="color:var(--danger);font-size:1.2rem;">—</span> 元
+      </div>
+    </div>
+    <div class="gap mt">
+      <button class="btn bp" onclick="genBroGmail()">📧 產生給弟的 Gmail 明細（預覽／複製／寄出）</button>
+    </div>
+    <div id="bs-gmail-out"></div>
+  </div>
+
   <!-- 歷史紀錄 -->
   <div class="card">
     <div class="card-title">📁 歷月結算紀錄</div>
@@ -2029,7 +2063,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
 
 // ============================================================
@@ -2408,6 +2442,7 @@ const loadLandlordData = async () => {
       if(d.brotherEmail!==undefined)DB.brotherEmail=d.brotherEmail;
       if(d.notifyBrother!==undefined)DB.notifyBrother=d.notifyBrother;
       if(d.notifyTenant!==undefined)DB.notifyTenant=d.notifyTenant;
+      if(d.bsOddOwner)DB.bsOddOwner=d.bsOddOwner;
       if(d.preBills)DB.preBills=d.preBills;
       if(d.draftBills)DB.draftBills=d.draftBills;
       if(d.taxReserveLog)DB.taxReserveLog=d.taxReserveLog;
@@ -2455,6 +2490,7 @@ const saveLandlordData = async () => {
     brotherEmail:DB.brotherEmail||'',
     notifyBrother:DB.notifyBrother||false,
     notifyTenant:DB.notifyTenant||false,
+    bsOddOwner:DB.bsOddOwner||'all',
     preBills:DB.preBills||[],
     draftBills:DB.draftBills||[],
     taxReserveLog:DB.taxReserveLog||[],
@@ -2842,7 +2878,7 @@ window.ST = function(n){
   if(n==='rent')initRent();
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
-  if(n==='owner-calc'){renderOwnerHistory(); if(window.updateBrotherToggleUI)updateBrotherToggleUI(); const _on=document.getElementById('oc-net'); if(_on&&!_on.value){_on.value=DB.defaultNetFee||1409; calcOwner();}}
+  if(n==='owner-calc'){renderOwnerHistory(); if(window.updateBrotherToggleUI)updateBrotherToggleUI(); const _on=document.getElementById('oc-net'); if(_on&&!_on.value){_on.value=DB.defaultNetFee||1409; calcOwner();} if(window.updateOddOwnerUI)updateOddOwnerUI(); if(window.calcBroSettle)calcBroSettle();}
   if(n==='maintenance'){renderMaintenanceHistory();loadMaintenanceState();renderMaintenanceLog(); checkMaintenanceDue();}
   if(n==='taxreserve'){renderTaxReserve(); renderReserveProfile(); sendReserveReport(false); checkMaintenanceDue();}
   if(n==='announce')renderAnnounce();
@@ -4874,6 +4910,87 @@ window.toggleNotifyTenant = async function(){
   updateTenantToggleUI();
   toast(DB.notifyTenant?'🔔 已開啟：收租後寄收訖通知給房客':'🔕 已關閉：暫不寄發收訖通知給房客');
 };
+window.updateOddOwnerUI = function(){
+  const btn=document.getElementById('bs-odd-toggle');
+  if(btn) btn.textContent = (DB.bsOddOwner==='half') ? '◉ 兄弟各半' : '◉ 哥全包（預設）';
+};
+window.toggleOddOwner = async function(){
+  DB.bsOddOwner = (DB.bsOddOwner==='half') ? 'all' : 'half';
+  if(window.saveLandlordData) await saveLandlordData();
+  updateOddOwnerUI();
+  calcBroSettle();
+  toast(DB.bsOddOwner==='half'?'零頭改：兄弟各半':'零頭改：哥全包');
+};
+window.calcBroSettle = function(){
+  const g=id=>+(document.getElementById(id)?.value||0);
+  const rent=g('bs-rent'), net=g('bs-net'), adv=g('bs-adv'), paid=g('bs-paid'), cons=g('bs-cons'), odd=g('bs-odd');
+  const res=document.getElementById('bs-result');
+  if(!(rent||net||adv||paid||cons||odd)){ if(res)res.style.display='none'; window._bsCalc=null; return; }
+  const oddOwner=DB.bsOddOwner||'all';
+  const consBro=Math.floor(cons/2), consBig=cons-consBro;
+  const oddBro = oddOwner==='half' ? Math.floor(odd/2) : 0;
+  const broBear = consBro + oddBro;
+  const rentBro = Math.floor(rent/2);
+  const utilToBro = adv - broBear - paid;
+  const netBro = Math.floor(net/2);
+  const transfer = rentBro + utilToBro - netBro;
+  window._bsCalc={rent,net,adv,paid,cons,consBro,consBig,odd,oddBro,broBear,rentBro,utilToBro,netBro,transfer,oddOwner};
+  const f=n=>Math.round(n).toLocaleString();
+  document.getElementById('bs-detail').innerHTML=
+    '<div style="font-size:.85rem;line-height:1.95;">'+
+    '<b>桶①房租</b>：'+f(rent)+' → 弟半 <b>'+f(rentBro)+'</b>（哥 '+f(rent-rentBro)+'）<br>'+
+    '<b>桶②水電</b>：弟代墊 '+f(adv)+' － 弟自負 '+f(broBear)+'（施工弟半'+f(consBro)+(oddBro?'＋零頭弟半'+f(oddBro):'')+'）－ 已還 '+f(paid)+' ＝ 補弟 <b>'+f(utilToBro)+'</b><br>'+
+    '<b>桶③網路</b>：'+f(net)+' → 弟半 <b>'+f(netBro)+'</b>（哥 '+f(net-netBro)+'，弟欠哥）<br>'+
+    '<span style="color:var(--muted);">零頭：'+(oddOwner==='all'?'哥全包':'兄弟各半')+'　施工：哥'+f(consBig)+'／弟'+f(consBro)+'</span></div>';
+  document.getElementById('bs-net-amt').textContent=f(transfer);
+  if(res)res.style.display='block';
+};
+window.genBroGmail = function(){
+  if(!window._bsCalc){ toast('請先輸入數字計算'); return; }
+  const c=window._bsCalc, f=n=>Math.round(n).toLocaleString();
+  const txt=`主旨：哥弟結算明細
+
+弟，這期的帳跟你結一下，分三塊：
+
+【1. 房租】
+本期房租收入 ${f(c.rent)}，兩人各半 → 你的部分 ${f(c.rentBro)}
+
+【2. 水電瓦斯（你先代墊的）】
+你代墊 ${f(c.adv)}，扣掉你自負 ${f(c.broBear)}（施工你半 ${f(c.consBro)}${c.oddBro?'＋零頭你半 '+f(c.oddBro):''}），應還你 ${f(c.adv-c.broBear)}。
+我已先轉你 ${f(c.paid)}，這次再補你 ${f(c.utilToBro)}，湊滿應還金額。
+
+【3. 網路費】
+網路費 ${f(c.net)} 我先付，你負擔一半 ${f(c.netBro)}，從上面扣回（我身為兄長多付 1 元）。
+
+【結算】這次我轉你：
+${f(c.rentBro)}（房租）＋ ${f(c.utilToBro)}（水電補你）－ ${f(c.netBro)}（網路）＝ ${f(c.transfer)} 元`;
+  window._bsGmailText=txt;
+  const out=document.getElementById('bs-gmail-out');
+  if(out){
+    const esc=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    out.innerHTML='<div style="border:2px solid var(--gold);border-radius:.8rem;padding:.8rem;margin-top:.7rem;background:#fffdf0;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-wrap:wrap;gap:.4rem;">'+
+      '<strong style="color:var(--primary);font-size:.9rem;">📧 給弟的 Gmail 明細</strong>'+
+      '<span style="display:flex;gap:.4rem;"><button class="btn bs sm" onclick="copyBroGmail()">📋 複製</button>'+
+      '<button class="btn bp sm" onclick="sendBroGmail()">📨 寄給弟</button></span></div>'+
+      '<pre style="white-space:pre-wrap;font-family:inherit;font-size:.85rem;line-height:1.7;color:var(--primary);margin:0;">'+esc+'</pre></div>';
+    out.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+};
+window.copyBroGmail = function(){
+  const t=window._bsGmailText||''; if(!t)return;
+  navigator.clipboard.writeText(t).then(()=>toast('✅ 已複製給弟的明細'))
+    .catch(()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✅ 已複製');});
+};
+window.sendBroGmail = async function(){
+  const t=window._bsGmailText||''; if(!t){toast('請先產生明細');return;}
+  const to=(DB.brotherEmail||'').trim();
+  if(!to){ toast('請先在上方填弟弟 Gmail'); return; }
+  if(!DB.notifyBrother){ toast('🔕 目前設定不通知弟弟；請先切到通知，或用複製'); return; }
+  if(typeof initEJS==='function') initEJS();
+  try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:to,otp:t}); toast('✅ 已寄給弟弟'); }
+  catch(e){ toast('寄送失敗，請改用複製'); }
+};
 window.updateTenantToggleUI = function(){
   const btn=document.getElementById('rent-notify-toggle');
   if(btn){
@@ -5694,7 +5811,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06281120'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06281712'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
