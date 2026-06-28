@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06281712</span>
+    <span class="version-tag">v06281724</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -3192,6 +3192,37 @@ window._countStayInPeriod=function(set){
   });
   return cnt;
 };
+window._stayDatesInPeriod=function(set){
+  const period=document.getElementById('u-period')?.value.trim()||'';
+  let y=new Date().getFullYear(), m=new Date().getMonth()+1;
+  if(period.length>=6){ y=+period.slice(0,4); m=+period.slice(4,6); }
+  const slotYM=(n)=>{ let mm=m-(3-n), yy=y; while(mm<=0){mm+=12;yy--;} return [yy,mm]; };
+  const sv=document.getElementById('u-start')?.value, ev=document.getElementById('u-end')?.value;
+  const start=sv?new Date(sv+'T00:00:00'):null, end=ev?new Date(ev+'T23:59:59'):null;
+  const arr=[];
+  set.forEach(key=>{
+    let d=null;
+    const mtx=(''+key).match(/@(\d+)-(\d+)$/);
+    if(mtx){
+      const mm=+mtx[1], dd=+mtx[2];
+      if(start && end){
+        for(const yy of [start.getFullYear(), end.getFullYear()]){
+          const cand=new Date(yy, mm-1, dd);
+          if(cand>=start && cand<=end){ d=cand; break; }
+        }
+        if(!d) return;
+      } else { d=new Date(y, mm-1, dd); }
+    } else {
+      const mt=(''+key).match(/m(\d)-(\d+)$/); if(!mt) return;
+      const ym=slotYM(+mt[1]); d=new Date(ym[0], ym[1]-1, +mt[2]);
+    }
+    if(start && d<start) return;
+    if(end && d>end) return;
+    arr.push(d);
+  });
+  arr.sort((a,b)=>a-b);
+  return arr.map(d=>(d.getMonth()+1)+'/'+d.getDate()).join(' ');
+};
 window.calcLandlordDays = function(){
   // 從文字輸入取出唯一天數集合（支援逗號/空格/Tab/全形/換行）
   function getTextDaySet(text, monthPrefix){
@@ -3241,6 +3272,7 @@ window.calcLandlordDays = function(){
     ...combineDays('tc-m3','tc-cal-m3','tc-m3'),
   ]);
   const ltDays = _countStayInPeriod(ltSet);
+  window._ltDateStr = _stayDatesInPeriod(ltSet);
   // 原房東石房東：勾選時天數=計費天數，不需填填樂
   const tcInclude = document.getElementById('tc-include')?.checked||false;
   const tcDays = tcInclude ? (window._utilDays||0) : 0;
@@ -3480,7 +3512,7 @@ window.calcU = function(){
     const ltAC=ac['3F後']?.fee||0;
     const ltWEGexact=(sharedE*ratioLT)+(W*ratioLT)+(G*ratioLT);
     const ltTot=ltAC+Math.round(ltWEGexact);
-    window._UR['龍潭房東']={acFee:ltAC,sharedElec:sE_lt,water:sW_lt,gas:sG_lt,wegExact:ltWEGexact,total:ltTot,days:ltDays};
+    window._UR['龍潭房東']={acFee:ltAC,sharedElec:sE_lt,water:sW_lt,gas:sG_lt,wegExact:ltWEGexact,total:ltTot,days:ltDays,stayDates:(window._ltDateStr||'')};
     tb.innerHTML+=`<tr style="background:#f0f8ff;">
       <td class="rl">龍潭房東<span style="font-size:.7rem;color:var(--muted);"> ${ltDays}天×${ltPerson}人</span></td>
       <td class="amt">${ltAC?'NT$'+ltAC:'—'}</td>
@@ -5811,7 +5843,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06281712'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06281724'});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
