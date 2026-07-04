@@ -1666,6 +1666,14 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         <button id="bs-odd-toggle" class="btn bd sm" onclick="toggleOddOwner()" style="width:100%;">◉ 哥全包（預設）</button>
       </div>
     </div>
+    <div class="form-row c2">
+      <div><label>④ 弟代墊公共電費（1樓大廳，元）</label><input type="number" id="bs-pub-bro" placeholder="如 182" oninput="calcBroSettle()"></div>
+      <div><label>④ 哥代墊公共電費（元）</label><input type="number" id="bs-pub-big" placeholder="如 187" oninput="calcBroSettle()"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>網路月費期數（×每月網路費自動算）</label><input type="number" id="bs-net-months" placeholder="如 5"></div>
+      <div style="display:flex;align-items:flex-end;"><button class="btn bd sm" onclick="bsAutoNet()" style="width:100%;">🔄 自動帶入網路費（期數×月費）</button></div>
+    </div>
     <div id="bs-result" class="card" style="margin-top:.7rem;display:none;background:#fffdf0;border:2px solid var(--gold);">
       <div class="card-title">📊 結算結果</div>
       <div id="bs-detail"></div>
@@ -4992,25 +5000,38 @@ window.toggleOddOwner = async function(){
   calcBroSettle();
   toast(DB.bsOddOwner==='half'?'零頭改：兄弟各半':'零頭改：哥全包');
 };
+window.bsAutoNet = function(){
+  const m = +(document.getElementById('bs-net-months')?.value||0);
+  if(!m){ toast('請先填「網路月費期數」（如 5）'); return; }
+  const fee = DB.defaultNetFee||1409;
+  const el=document.getElementById('bs-net'); if(el){ el.value = fee*m; }
+  if(window.calcBroSettle) calcBroSettle();
+  toast('已帶入網路費：'+fee+'×'+m+'＝'+(fee*m).toLocaleString());
+};
 window.calcBroSettle = function(){
   const g=id=>+(document.getElementById(id)?.value||0);
   const rent=g('bs-rent'), net=g('bs-net'), adv=g('bs-adv'), paid=g('bs-paid'), odd=g('bs-odd');
+  const pubBro=g('bs-pub-bro'), pubBig=g('bs-pub-big');
   const res=document.getElementById('bs-result');
-  if(!(rent||net||adv||paid||odd)){ if(res)res.style.display='none'; window._bsCalc=null; return; }
+  if(!(rent||net||adv||paid||odd||pubBro||pubBig)){ if(res)res.style.display='none'; window._bsCalc=null; return; }
   const oddOwner=DB.bsOddOwner||'all';
   const oddBro = oddOwner==='half' ? Math.floor(odd/2) : 0;
   const broBear = oddBro;
   const rentBro = Math.floor(rent/2);
   const utilToBro = adv - broBear - paid;
   const netBro = Math.floor(net/2);
-  const transfer = rentBro + utilToBro - netBro;
-  window._bsCalc={rent,net,adv,paid,odd,oddBro,broBear,rentBro,utilToBro,netBro,transfer,oddOwner};
+  const pubTotal = pubBro + pubBig;
+  const pubBroShare = Math.floor(pubTotal/2);   // 弟應負半(floor，哥ceil多1)
+  const pubToBro = pubBro - pubBroShare;         // 弟已代墊 − 弟應負 ＝ 哥應補弟(可為負)
+  const transfer = rentBro + utilToBro - netBro + pubToBro;
+  window._bsCalc={rent,net,adv,paid,odd,oddBro,broBear,rentBro,utilToBro,netBro,pubBro,pubBig,pubTotal,pubBroShare,pubToBro,transfer,oddOwner};
   const f=n=>Math.round(n).toLocaleString();
   document.getElementById('bs-detail').innerHTML=
     '<div style="font-size:.85rem;line-height:1.95;">'+
     '<b>桶①房租</b>：'+f(rent)+' → 弟半 <b>'+f(rentBro)+'</b>（哥 '+f(rent-rentBro)+'）<br>'+
     '<b>桶②水電</b>：弟代墊 '+f(adv)+' － 弟自負 '+f(broBear)+(oddBro?'（零頭弟半'+f(oddBro)+'）':'')+' － 已還 '+f(paid)+' ＝ 補弟 <b>'+f(utilToBro)+'</b><br>'+
     '<b>桶③網路</b>：'+f(net)+' → 弟半 <b>'+f(netBro)+'</b>（哥 '+f(net-netBro)+'，弟欠哥）<br>'+
+    (pubTotal?'<b>桶④公共電費</b>：弟墊 '+f(pubBro)+'／哥墊 '+f(pubBig)+'（共 '+f(pubTotal)+'，弟應負 '+f(pubBroShare)+'）＝ 哥補弟 <b>'+f(pubToBro)+'</b><br>':'')+
     '<span style="color:var(--muted);">零頭：'+(oddOwner==='all'?'哥全包':'兄弟各半')+'</span></div>';
   document.getElementById('bs-net-amt').textContent=f(transfer);
   if(res)res.style.display='block';
@@ -5031,9 +5052,9 @@ window.genBroGmail = function(){
 
 【3. 網路費】
 網路費 ${f(c.net)} 我先付，你負擔一半 ${f(c.netBro)}，從上面扣回（我身為兄長多付 1 元）。
-
+${c.pubTotal?`\n【4. 公共電費（1樓大廳）】\n你代墊 ${f(c.pubBro)}、我代墊 ${f(c.pubBig)}，共 ${f(c.pubTotal)}，各半你負擔 ${f(c.pubBroShare)}（我多付 1 元），淨${c.pubToBro>=0?'我補你':'你補我'} ${f(Math.abs(c.pubToBro))}。\n`:''}
 【結算】這次我轉你：
-${f(c.rentBro)}（房租）＋ ${f(c.utilToBro)}（水電補你）－ ${f(c.netBro)}（網路）＝ ${f(c.transfer)} 元`;
+${f(c.rentBro)}（房租）＋ ${f(c.utilToBro)}（水電補你）－ ${f(c.netBro)}（網路）${c.pubTotal?(c.pubToBro>=0?'＋ '+f(c.pubToBro)+'（公共電費）':'－ '+f(Math.abs(c.pubToBro))+'（公共電費）'):''} ＝ ${f(c.transfer)} 元`;
   window._bsGmailText=txt;
   const out=document.getElementById('bs-gmail-out');
   if(out){
