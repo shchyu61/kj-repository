@@ -1656,10 +1656,9 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div><label>① 本期房租收入（要分配，元）</label><input type="number" id="bs-rent" placeholder="如 22500" oninput="calcBroSettle()"></div>
       <div><label>③ 網路費總額（哥付ISP，元）</label><input type="number" id="bs-net" placeholder="如 7045" oninput="calcBroSettle()"></div>
     </div>
-    <div class="form-row c3">
+    <div class="form-row c2">
       <div><label>② 弟代墊水電瓦斯（元）</label><input type="number" id="bs-adv" placeholder="如 3733" oninput="calcBroSettle()"></div>
       <div><label>② 已還弟（如已轉，元）</label><input type="number" id="bs-paid" placeholder="如 3200" oninput="calcBroSettle()"></div>
-      <div><label>施工費（兩房東各半，元）</label><input type="number" id="bs-cons" placeholder="如 25" oninput="calcBroSettle()"></div>
     </div>
     <div class="form-row c2">
       <div><label>房東贊助房客零頭（元）</label><input type="number" id="bs-odd" placeholder="如 96" oninput="calcBroSettle()"></div>
@@ -4995,32 +4994,31 @@ window.toggleOddOwner = async function(){
 };
 window.calcBroSettle = function(){
   const g=id=>+(document.getElementById(id)?.value||0);
-  const rent=g('bs-rent'), net=g('bs-net'), adv=g('bs-adv'), paid=g('bs-paid'), cons=g('bs-cons'), odd=g('bs-odd');
+  const rent=g('bs-rent'), net=g('bs-net'), adv=g('bs-adv'), paid=g('bs-paid'), odd=g('bs-odd');
   const res=document.getElementById('bs-result');
-  if(!(rent||net||adv||paid||cons||odd)){ if(res)res.style.display='none'; window._bsCalc=null; return; }
+  if(!(rent||net||adv||paid||odd)){ if(res)res.style.display='none'; window._bsCalc=null; return; }
   const oddOwner=DB.bsOddOwner||'all';
-  const consBro=Math.floor(cons/2), consBig=cons-consBro;
   const oddBro = oddOwner==='half' ? Math.floor(odd/2) : 0;
-  const broBear = consBro + oddBro;
+  const broBear = oddBro;
   const rentBro = Math.floor(rent/2);
   const utilToBro = adv - broBear - paid;
   const netBro = Math.floor(net/2);
   const transfer = rentBro + utilToBro - netBro;
-  window._bsCalc={rent,net,adv,paid,cons,consBro,consBig,odd,oddBro,broBear,rentBro,utilToBro,netBro,transfer,oddOwner};
+  window._bsCalc={rent,net,adv,paid,odd,oddBro,broBear,rentBro,utilToBro,netBro,transfer,oddOwner};
   const f=n=>Math.round(n).toLocaleString();
   document.getElementById('bs-detail').innerHTML=
     '<div style="font-size:.85rem;line-height:1.95;">'+
     '<b>桶①房租</b>：'+f(rent)+' → 弟半 <b>'+f(rentBro)+'</b>（哥 '+f(rent-rentBro)+'）<br>'+
-    '<b>桶②水電</b>：弟代墊 '+f(adv)+' － 弟自負 '+f(broBear)+'（施工弟半'+f(consBro)+(oddBro?'＋零頭弟半'+f(oddBro):'')+'）－ 已還 '+f(paid)+' ＝ 補弟 <b>'+f(utilToBro)+'</b><br>'+
+    '<b>桶②水電</b>：弟代墊 '+f(adv)+' － 弟自負 '+f(broBear)+(oddBro?'（零頭弟半'+f(oddBro)+'）':'')+' － 已還 '+f(paid)+' ＝ 補弟 <b>'+f(utilToBro)+'</b><br>'+
     '<b>桶③網路</b>：'+f(net)+' → 弟半 <b>'+f(netBro)+'</b>（哥 '+f(net-netBro)+'，弟欠哥）<br>'+
-    '<span style="color:var(--muted);">零頭：'+(oddOwner==='all'?'哥全包':'兄弟各半')+'　施工：哥'+f(consBig)+'／弟'+f(consBro)+'</span></div>';
+    '<span style="color:var(--muted);">零頭：'+(oddOwner==='all'?'哥全包':'兄弟各半')+'</span></div>';
   document.getElementById('bs-net-amt').textContent=f(transfer);
   if(res)res.style.display='block';
 };
 window.genBroGmail = function(){
   if(!window._bsCalc){ toast('請先輸入數字計算'); return; }
   const c=window._bsCalc, f=n=>Math.round(n).toLocaleString();
-  const txt=`主旨：哥弟結算明細
+  const txt=`主旨：房租和水、電、瓦斯、網路費結算明細
 
 弟，這期的帳跟你結一下，分三塊：
 
@@ -5028,8 +5026,8 @@ window.genBroGmail = function(){
 本期房租收入 ${f(c.rent)}，兩人各半 → 你的部分 ${f(c.rentBro)}
 
 【2. 水電瓦斯（你先代墊的）】
-你代墊 ${f(c.adv)}，扣掉你自負 ${f(c.broBear)}（施工你半 ${f(c.consBro)}${c.oddBro?'＋零頭你半 '+f(c.oddBro):''}），應還你 ${f(c.adv-c.broBear)}。
-我已先轉你 ${f(c.paid)}，這次再補你 ${f(c.utilToBro)}，湊滿應還金額。
+你代墊 ${f(c.adv)}，扣掉你自負 ${f(c.broBear)}${c.oddBro?'（零頭你半 '+f(c.oddBro)+'）':''}，應還你 ${f(c.adv-c.broBear)}。
+我已在 6/27 先轉你 ${f(c.paid)}，這次再補你 ${f(c.utilToBro)}，湊滿應還金額。
 
 【3. 網路費】
 網路費 ${f(c.net)} 我先付，你負擔一半 ${f(c.netBro)}，從上面扣回（我身為兄長多付 1 元）。
