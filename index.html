@@ -1725,6 +1725,9 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div><label>網路月費期數（×每月網路費自動算）</label><input type="number" id="bs-net-months" placeholder="如 5"></div>
       <div style="display:flex;align-items:flex-end;"><button class="btn bd sm" onclick="bsAutoNet()" style="width:100%;">🔄 自動帶入網路費（期數×月費）</button></div>
     </div>
+    <div class="gap" style="margin-top:.35rem;">
+      <button class="btn bp" onclick="bsAutoFill3()" style="width:100%;">🔄 從帳單／收租自動套入（弟代墊·零頭·公共電費·房租）</button>
+    </div>
     <div id="bs-result" class="card" style="margin-top:.7rem;display:none;background:#fffdf0;border:2px solid var(--gold);">
       <div class="card-title">📊 結算結果</div>
       <div id="bs-detail"></div>
@@ -5130,6 +5133,28 @@ window.copyTenantSimpleBill = function(){
   const t=window._tsbText||''; if(!t)return;
   navigator.clipboard.writeText(t).then(()=>toast('✅ 已複製簡易催收明細'))
     .catch(()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✅ 已複製');});
+};
+window.bsAutoFill3 = function(){
+  const bills = DB.utilBills||[];
+  let adv=0, odd=0, pubBro=0, pubBig=0, nAdv=0;
+  bills.forEach(function(b){
+    odd += (+b.n9||0);
+    pubBro += (+b.pubBro||0);
+    pubBig += (+b.pubBig||0);
+    if((b.utilPaidBy||'弟')==='弟'){ adv += (+b.n14||0); nAdv++; }
+  });
+  let rent=0, nRent=0;
+  (DB.rentRecords||[]).forEach(function(rec){
+    Object.values(rec.payments||{}).forEach(function(p){ if(+p.amount>0){ rent += (+p.amount||0); nRent++; } });
+  });
+  const setV=(id,v)=>{const el=document.getElementById(id); if(el){ el.value=(v||v===0)?v:''; }};
+  setV('bs-rent', rent);
+  setV('bs-adv', adv);
+  setV('bs-odd', odd);
+  setV('bs-pub-bro', pubBro);
+  setV('bs-pub-big', pubBig);
+  if(window.calcBroSettle) calcBroSettle();
+  toast('已自動套入：'+bills.length+'張帳單→弟代墊'+adv.toLocaleString()+'／零頭'+odd+'／公共電費(弟'+pubBro+' 哥'+pubBig+')；'+nRent+'筆收租→房租'+rent.toLocaleString()+'。網路請按「自動帶入網路費」、已還請手填。★請核對是否為本次結算範圍，多餘期別自行調整。');
 };
 window.bsAutoNet = function(){
   const m = +(document.getElementById('bs-net-months')?.value||0);
