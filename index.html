@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v07052103</span>
+    <span class="version-tag" id="ver-tag">v07060225</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -819,13 +819,13 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         <input type="number" id="tsb-rent" placeholder="如 4500" oninput="genTenantSimpleBill()"></div>
     </div>
     <div class="form-row c2">
-      <div><label>房租暫緩期間（文字，如 3/8～7/8）</label>
+      <div><label>房租暫緩期間（自動帶入·可改）</label>
         <input type="text" id="tsb-rent-range" placeholder="如 3/8～7/8" oninput="genTenantSimpleBill()"></div>
-      <div><label>房租期數 N（0＝不催房租）</label>
+      <div><label>房租期數 N（自動換算·可改；0=不催房租）</label>
         <input type="number" id="tsb-rent-n" placeholder="如 5" oninput="genTenantSimpleBill()"></div>
     </div>
     <div class="form-row c2">
-      <div><label>水電暫緩起點（選填，如 2025/12）</label>
+      <div><label>水電暫緩起點（自動帶入·可改）</label>
         <input type="text" id="tsb-util-since" placeholder="如 2025/12" oninput="genTenantSimpleBill()"></div>
       <div style="display:flex;align-items:flex-end;font-size:.78rem;color:var(--muted);">↓ 勾選下方要補收的水電期別</div>
     </div>
@@ -2124,7 +2124,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v07052103'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v07060225'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -5072,11 +5072,35 @@ window.tsbOnRoom = function(){
   const room=document.getElementById('tsb-room').value;
   const rentEl=document.getElementById('tsb-rent');
   const box=document.getElementById('tsb-bills');
-  if(!room){ if(box)box.innerHTML='請先選房客。'; if(rentEl)rentEl.value=''; return; }
+  const rangeEl=document.getElementById('tsb-rent-range');
+  const nEl=document.getElementById('tsb-rent-n');
+  const sinceEl=document.getElementById('tsb-util-since');
+  if(!room){ if(box)box.innerHTML='請先選房客。'; [rentEl,rangeEl,nEl,sinceEl].forEach(e=>{if(e)e.value='';}); return; }
   const t=DB.tenants[room]||{};
   if(rentEl) rentEl.value=+t.rent||0;
+  // ── 自動取得房租暫緩期間與期數（讀 rentPause，王嘉益已結清 settledTo 會自動排除）＋契約收租日 rentDay ──
+  const rentDay=t.rentDay||'';
+  let remMonths=[];
+  Object.values(DB.rentPause||{}).forEach(function(p){
+    if(p.room!==room)return;
+    const all=window._monthRange(p.from,p.to)||[];
+    const rem=p.settledTo?all.filter(mm=>+mm>+p.settledTo):all;
+    remMonths=remMonths.concat(rem);
+  });
+  remMonths=[...new Set(remMonths)].sort();
+  if(remMonths.length && rentDay){
+    const f=remMonths[0], l=remMonths[remMonths.length-1];
+    if(rangeEl)rangeEl.value=(+f.slice(4,6))+'/'+rentDay+'～'+(+l.slice(4,6))+'/'+rentDay;
+    if(nEl)nEl.value=remMonths.length;
+  } else { if(rangeEl)rangeEl.value=''; if(nEl)nEl.value=remMonths.length||''; }
   const bills=(DB.utilBills||[]).filter(b=>b.rooms&&b.rooms[room]&&(b.rooms[room].total||0)>0)
     .slice().sort((a,b)=>(''+(a.period||'')).localeCompare(''+(b.period||'')));
+  // ── 自動取得水電暫緩起點（=該房「最後一期已收」的帳單期別，其後才是暫緩）──
+  if(sinceEl){
+    let lastPaid='';
+    bills.forEach(function(b){ const rc=(b.roomCollect||{})[room]||{}; if(rc.paid && (''+b.period)>lastPaid) lastPaid=''+b.period; });
+    sinceEl.value = lastPaid ? (lastPaid.slice(0,4)+'/'+lastPaid.slice(4,6)) : '';
+  }
   if(!bills.length){ box.innerHTML='<span style="color:var(--muted);">此房目前無水電帳單資料。</span>'; genTenantSimpleBill(); return; }
   box.innerHTML=bills.map(function(b){
     const rc=(b.roomCollect||{})[room]||{}; const unpaid=!rc.paid;
@@ -6073,7 +6097,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:(window.APP_VER||'v07052103')});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:(window.APP_VER||'unknown')});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
