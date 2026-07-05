@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag">v06282204</span>
+    <span class="version-tag" id="ver-tag">v07052103</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -2124,6 +2124,8 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
+window.APP_VER='v07052103'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
 
@@ -6071,7 +6073,7 @@ window.renderBK = function(){
 };
 window.exportData = function(){
   // 匯出時加入備份時間戳記
-  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:'v06282204'});
+  const exportObj = Object.assign({}, DB, {_exportedAt: new Date().toLocaleString('zh-TW'), _version:(window.APP_VER||'v07052103')});
   const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const dateStr = new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
