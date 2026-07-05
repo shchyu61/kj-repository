@@ -790,6 +790,38 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="card-title">📁 已儲存水電帳單歷史</div>
     <div id="util-bill-history"><div class="txt-m">讀取中...</div></div>
   </div>
+
+  <!-- ══ 待辦G：單一房客【房租＋水電瓦斯】簡易催收信 ══ -->
+  <div class="card landlord-only" style="border:2px solid var(--accent);">
+    <div class="card-title">📮 單一房客催收信（房租＋水電瓦斯，簡易版）</div>
+    <div class="alert-box a-info" style="font-size:.82rem;">
+      臨時催收單一房客用：選房客、勾要補收的水電期別、填房租暫緩期數，一鍵產出「讓房客一眼看懂要轉多少」的簡易明細（標題用房號、不冠姓名）。此為簡易版，與群組帳單並存。
+    </div>
+    <div class="form-row c2">
+      <div><label>選房客（房號）</label>
+        <select id="tsb-room" onchange="tsbOnRoom()"><option value="">— 請選 —</option></select></div>
+      <div><label>每期房租（自動帶入可改；0＝不催房租）</label>
+        <input type="number" id="tsb-rent" placeholder="如 4500" oninput="genTenantSimpleBill()"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>房租暫緩期間（文字，如 3/8～7/8）</label>
+        <input type="text" id="tsb-rent-range" placeholder="如 3/8～7/8" oninput="genTenantSimpleBill()"></div>
+      <div><label>房租期數 N（0＝不催房租）</label>
+        <input type="number" id="tsb-rent-n" placeholder="如 5" oninput="genTenantSimpleBill()"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>水電暫緩起點（選填，如 2025/12）</label>
+        <input type="text" id="tsb-util-since" placeholder="如 2025/12" oninput="genTenantSimpleBill()"></div>
+      <div style="display:flex;align-items:flex-end;font-size:.78rem;color:var(--muted);">↓ 勾選下方要補收的水電期別</div>
+    </div>
+    <label style="font-size:.85rem;font-weight:700;">要補收的水電瓦斯期別（預設勾「未收」者）</label>
+    <div id="tsb-bills" style="margin:.4rem 0;font-size:.85rem;">請先選房客。</div>
+    <div class="gap mt">
+      <button class="btn bp" onclick="genTenantSimpleBill()">📋 產生簡易催收明細</button>
+    </div>
+    <div id="tsb-out"></div>
+  </div>
+
   <div id="bills-area"></div>
 </div>
 
@@ -2885,7 +2917,7 @@ window.ST = function(n){
   document.querySelectorAll('.tab-nav button').forEach(b=>{
     if(b.getAttribute('onclick')===`ST('${n}')`)b.classList.add('active');
   });
-  if(n==='utility'){initU(); renderUtilHistory(); if(window.refreshCalendars)window.refreshCalendars(); loadDraftState(); renderDraftBills(); loadLandlordDraftState(); checkBillReminders();}
+  if(n==='utility'){initU(); renderUtilHistory(); if(window.refreshCalendars)window.refreshCalendars(); loadDraftState(); renderDraftBills(); loadLandlordDraftState(); checkBillReminders(); if(window.tsbInitRooms)tsbInitRooms();}
   if(n==='rent')initRent();
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
@@ -5003,6 +5035,81 @@ window.toggleOddOwner = async function(){
   updateOddOwnerUI();
   calcBroSettle();
   toast(DB.bsOddOwner==='half'?'零頭改：兄弟各半':'零頭改：哥全包');
+};
+window.tsbInitRooms = function(){
+  const sel=document.getElementById('tsb-room'); if(!sel) return;
+  const cur=sel.value;
+  let html='<option value="">— 請選 —</option>';
+  ROOMS.forEach(r=>{ const t=DB.tenants[r]||{}; if(t.name) html+='<option value="'+r+'">'+(RL[r]||r)+'｜'+t.name+'</option>'; });
+  sel.innerHTML=html; if(cur) sel.value=cur;
+};
+window.tsbOnRoom = function(){
+  const room=document.getElementById('tsb-room').value;
+  const rentEl=document.getElementById('tsb-rent');
+  const box=document.getElementById('tsb-bills');
+  if(!room){ if(box)box.innerHTML='請先選房客。'; if(rentEl)rentEl.value=''; return; }
+  const t=DB.tenants[room]||{};
+  if(rentEl) rentEl.value=+t.rent||0;
+  const bills=(DB.utilBills||[]).filter(b=>b.rooms&&b.rooms[room]&&(b.rooms[room].total||0)>0)
+    .slice().sort((a,b)=>(''+(a.period||'')).localeCompare(''+(b.period||'')));
+  if(!bills.length){ box.innerHTML='<span style="color:var(--muted);">此房目前無水電帳單資料。</span>'; genTenantSimpleBill(); return; }
+  box.innerHTML=bills.map(function(b){
+    const rc=(b.roomCollect||{})[room]||{}; const unpaid=!rc.paid;
+    const mo=+(''+(b.period||'')).slice(4,6);
+    return '<label style="display:block;margin:.25rem 0;"><input type="checkbox" class="tsb-bill" value="'+b.period+'" '+(unpaid?'checked':'')+' onchange="genTenantSimpleBill()"> '+mo+'月帳單　應繳 $'+((b.rooms[room].total||0).toLocaleString())+' '+(unpaid?'<span style="color:var(--danger);font-size:.75rem;">(未收)</span>':'<span style="color:var(--muted);font-size:.75rem;">(已收)</span>')+'</label>';
+  }).join('');
+  genTenantSimpleBill();
+};
+window.genTenantSimpleBill = function(){
+  const room=document.getElementById('tsb-room')?.value;
+  const out=document.getElementById('tsb-out');
+  if(!room){ if(out)out.innerHTML=''; return; }
+  const f=n=>Math.round(n).toLocaleString();
+  const md=d=>{ if(!d)return ''; const p=(''+d).split('-'); return p.length>=3?((+p[1])+'/'+(+p[2])):d; };
+  const rentPer=+(document.getElementById('tsb-rent')?.value||0);
+  const rentN=+(document.getElementById('tsb-rent-n')?.value||0);
+  const rentRange=(document.getElementById('tsb-rent-range')?.value||'').trim();
+  const since=(document.getElementById('tsb-util-since')?.value||'').trim();
+  const rentSum=rentPer*rentN;
+  const checked=[...document.querySelectorAll('.tsb-bill:checked')].map(c=>c.value);
+  const bills=(DB.utilBills||[]).filter(b=>checked.includes(''+b.period))
+    .slice().sort((a,b)=>(''+(a.period||'')).localeCompare(''+(b.period||'')));
+  let utilSum=0; const utilLines=[];
+  bills.forEach(function(b){
+    const r=b.rooms[room]||{}; const elec=(r.acFee||0)+(r.sharedElec||0); const tot=r.total||0; utilSum+=tot;
+    const mo=+(''+(b.period||'')).slice(4,6);
+    const rng=(md(b.dateStart)&&md(b.dateEnd))?('('+md(b.dateStart)+'～'+md(b.dateEnd)+')'):'';
+    const acNote=(r.acFee||0)>0?('（含冷氣 '+f(r.acFee)+'）'):'';
+    utilLines.push('　　・'+mo+'月帳單'+rng+'：電 '+f(elec)+acNote+'＋水 '+f(r.water||0)+'＋瓦斯 '+f(r.gas||0)+' → 應繳 '+f(tot));
+  });
+  const grand=rentSum+utilSum;
+  let txt='房租＋水電瓦斯 費用明細（'+(RL[room]||room)+'）\n';
+  if(rentSum>0){
+    txt+='【一、房租】每月8日一期，每期 '+f(rentPer)+'\n';
+    txt+=(rentRange?('　　暫緩期間 '+rentRange+'，共 '+rentN+' 期\n'):('　　共 '+rentN+' 期\n'));
+    txt+='　　→ 房租小計 '+f(rentSum)+'\n';
+  }
+  if(utilSum>0){
+    txt+='【二、水電瓦斯】'+(since?('自 '+since+' 帳單後暫緩，'):'')+'補收 '+bills.length+' 期\n';
+    txt+=utilLines.join('\n')+'\n';
+    txt+='　　→ 水電瓦斯小計 '+f(utilSum)+'\n';
+    txt+='　　※ 各期房東均已折讓零頭、取整數\n';
+  }
+  txt+=(rentSum>0&&utilSum>0)?('★ 合計應轉：'+f(rentSum)+' ＋ '+f(utilSum)+' ＝ '+f(grand)+' 元'):('★ 合計應轉：'+f(grand)+' 元');
+  window._tsbText=txt;
+  if(out){
+    const esc=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    out.innerHTML='<div style="border:2px solid var(--gold);border-radius:.8rem;padding:.8rem;margin-top:.7rem;background:#fffdf0;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">'+
+      '<strong style="color:var(--primary);font-size:.9rem;">📮 簡易催收明細</strong>'+
+      '<button class="btn bs sm" onclick="copyTenantSimpleBill()">📋 複製</button></div>'+
+      '<pre style="white-space:pre-wrap;font-family:inherit;font-size:.85rem;line-height:1.7;color:var(--primary);margin:0;">'+esc+'</pre></div>';
+  }
+};
+window.copyTenantSimpleBill = function(){
+  const t=window._tsbText||''; if(!t)return;
+  navigator.clipboard.writeText(t).then(()=>toast('✅ 已複製簡易催收明細'))
+    .catch(()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✅ 已複製');});
 };
 window.bsAutoNet = function(){
   const m = +(document.getElementById('bs-net-months')?.value||0);
