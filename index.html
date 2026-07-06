@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v07060812</span>
+    <span class="version-tag" id="ver-tag">v07062345</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1728,6 +1728,19 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="gap" style="margin-top:.35rem;">
       <button class="btn bp" onclick="bsAutoFill3()" style="width:100%;">🔄 從帳單／收租自動套入（弟代墊·零頭·公共電費·房租）</button>
     </div>
+    <div class="card" style="border:1.5px solid var(--accent);margin-top:.5rem;padding:.7rem;">
+      <div style="font-weight:800;font-size:.88rem;margin-bottom:.35rem;">⑤ 其他共同費用（哥弟各半，哥ceil多1；如排水器、插座、電話費）</div>
+      <div class="form-row c2">
+        <div><label style="font-size:.72rem;">項目</label><input type="text" id="bs-cc-desc" placeholder="如 冷氣排水器"></div>
+        <div><label style="font-size:.72rem;">金額（元）</label><input type="number" id="bs-cc-amt" placeholder="899"></div>
+      </div>
+      <div class="form-row c2">
+        <div><label style="font-size:.72rem;">誰先付（開關）</label><select id="bs-cc-payer"><option value="哥">哥付</option><option value="弟">弟付</option></select></div>
+        <div><label style="font-size:.72rem;">日期（選填）</label><input type="text" id="bs-cc-date" placeholder="4/22"></div>
+      </div>
+      <button class="btn bd sm" onclick="bsAddCommon()" style="margin-top:.4rem;">＋ 加入共同費用</button>
+      <div id="bs-cc-list" style="margin-top:.5rem;font-size:.82rem;"></div>
+    </div>
     <div id="bs-result" class="card" style="margin-top:.7rem;display:none;background:#fffdf0;border:2px solid var(--gold);">
       <div class="card-title">📊 結算結果</div>
       <div id="bs-detail"></div>
@@ -2124,7 +2137,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v07060812'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v07062345'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -2494,6 +2507,7 @@ const loadLandlordData = async () => {
       if(d.lockBatteryRecords)DB.lockBatteryRecords=d.lockBatteryRecords;
       if(d.loginLog)DB.loginLog=d.loginLog;
       if(d.rentPause)DB.rentPause=d.rentPause;
+      if(d.bsCommonCosts)DB.bsCommonCosts=d.bsCommonCosts;
       if(d.landlordSettlements)DB.landlordSettlements=d.landlordSettlements;
       if(d.lastUtilBills)DB.lastUtilBills=d.lastUtilBills;
       if(d.taxRecords)DB.taxRecords=d.taxRecords;
@@ -2542,6 +2556,7 @@ const saveLandlordData = async () => {
     lockBatteryRecords:DB.lockBatteryRecords||[],
     loginLog:DB.loginLog||[],
     rentPause:DB.rentPause||{},
+    bsCommonCosts:DB.bsCommonCosts||[],
     landlordSettlements:DB.landlordSettlements||[],
     lastUtilBills:DB.lastUtilBills||{water:0,elec:0,gas:0},
     taxRecords:DB.taxRecords||{},
@@ -2941,7 +2956,7 @@ window.ST = function(n){
   if(n==='rent')initRent();
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
-  if(n==='owner-calc'){renderOwnerHistory(); if(window.updateBrotherToggleUI)updateBrotherToggleUI(); const _on=document.getElementById('oc-net'); if(_on&&!_on.value){_on.value=DB.defaultNetFee||1409; calcOwner();} if(window.updateOddOwnerUI)updateOddOwnerUI(); if(window.calcBroSettle)calcBroSettle();}
+  if(n==='owner-calc'){renderOwnerHistory(); if(window.updateBrotherToggleUI)updateBrotherToggleUI(); const _on=document.getElementById('oc-net'); if(_on&&!_on.value){_on.value=DB.defaultNetFee||1409; calcOwner();} if(window.updateOddOwnerUI)updateOddOwnerUI(); if(window.bsRenderCommon)bsRenderCommon(); if(window.calcBroSettle)calcBroSettle();}
   if(n==='maintenance'){renderMaintenanceHistory();loadMaintenanceState();renderMaintenanceLog(); checkMaintenanceDue();}
   if(n==='taxreserve'){renderTaxReserve(); renderReserveProfile(); sendReserveReport(false); checkMaintenanceDue();}
   if(n==='announce')renderAnnounce();
@@ -5061,6 +5076,34 @@ window.toggleOddOwner = async function(){
   calcBroSettle();
   toast(DB.bsOddOwner==='half'?'零頭改：兄弟各半':'零頭改：哥全包');
 };
+window.bsAddCommon = async function(){
+  const desc=(document.getElementById('bs-cc-desc')?.value||'').trim();
+  const amt=+(document.getElementById('bs-cc-amt')?.value||0);
+  const payer=document.getElementById('bs-cc-payer')?.value||'哥';
+  const date=(document.getElementById('bs-cc-date')?.value||'').trim();
+  if(!desc||!amt){ toast('請填「項目」與「金額」'); return; }
+  DB.bsCommonCosts=DB.bsCommonCosts||[];
+  DB.bsCommonCosts.push({desc:desc,amount:amt,payer:payer,date:date});
+  if(window.saveLandlordData) await saveLandlordData();
+  ['bs-cc-desc','bs-cc-amt','bs-cc-date'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  bsRenderCommon(); calcBroSettle();
+  toast('已加入共同費用：'+desc+' '+amt+'（'+payer+'付）');
+};
+window.bsDelCommon = async function(i){
+  DB.bsCommonCosts=DB.bsCommonCosts||[];
+  DB.bsCommonCosts.splice(i,1);
+  if(window.saveLandlordData) await saveLandlordData();
+  bsRenderCommon(); calcBroSettle();
+};
+window.bsRenderCommon = function(){
+  const box=document.getElementById('bs-cc-list'); if(!box) return;
+  const list=DB.bsCommonCosts||[]; const f=n=>Math.round(n).toLocaleString();
+  if(!list.length){ box.innerHTML='<span style="color:var(--muted);">尚無共同費用（加入後會自動各半併入結算）。</span>'; return; }
+  box.innerHTML=list.map(function(c,i){
+    const share=Math.floor((+c.amount||0)/2);
+    return '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--border);padding:.28rem 0;gap:.5rem;"><span>'+(c.date?c.date+'　':'')+c.desc+'　$'+f(c.amount)+'（<b>'+c.payer+'付</b>，各半 '+f(share)+'）</span><button class="btn bd sm" style="padding:.1rem .5rem;white-space:nowrap;" onclick="bsDelCommon('+i+')">刪</button></div>';
+  }).join('');
+};
 window.tsbInitRooms = function(){
   const sel=document.getElementById('tsb-room'); if(!sel) return;
   const cur=sel.value;
@@ -5194,8 +5237,9 @@ window.calcBroSettle = function(){
   const g=id=>+(document.getElementById(id)?.value||0);
   const rent=g('bs-rent'), net=g('bs-net'), adv=g('bs-adv'), paid=g('bs-paid'), odd=g('bs-odd');
   const pubBro=g('bs-pub-bro'), pubBig=g('bs-pub-big');
+  const commonList=(DB.bsCommonCosts||[]);
   const res=document.getElementById('bs-result');
-  if(!(rent||net||adv||paid||odd||pubBro||pubBig)){ if(res)res.style.display='none'; window._bsCalc=null; return; }
+  if(!(rent||net||adv||paid||odd||pubBro||pubBig||commonList.length)){ if(res)res.style.display='none'; window._bsCalc=null; return; }
   const oddOwner=DB.bsOddOwner||'all';
   const oddBro = oddOwner==='half' ? Math.floor(odd/2) : 0;
   const broBear = oddBro;
@@ -5205,8 +5249,10 @@ window.calcBroSettle = function(){
   const pubTotal = pubBro + pubBig;
   const pubBroShare = Math.floor(pubTotal/2);   // 弟應負半(floor，哥ceil多1)
   const pubToBro = pubBro - pubBroShare;         // 弟已代墊 − 弟應負 ＝ 哥應補弟(可為負)
-  const transfer = rentBro + utilToBro - netBro + pubToBro;
-  window._bsCalc={rent,net,adv,paid,odd,oddBro,broBear,rentBro,utilToBro,netBro,pubBro,pubBig,pubTotal,pubBroShare,pubToBro,transfer,oddOwner};
+  let commonToBro=0;                             // ⑤共同費用：弟已付 − 弟應負(floor) 之總和
+  commonList.forEach(function(c){ const amt=+c.amount||0; commonToBro += ((c.payer==='弟')?amt:0) - Math.floor(amt/2); });
+  const transfer = rentBro + utilToBro - netBro + pubToBro + commonToBro;
+  window._bsCalc={rent,net,adv,paid,odd,oddBro,broBear,rentBro,utilToBro,netBro,pubBro,pubBig,pubTotal,pubBroShare,pubToBro,common:commonList,commonToBro,transfer,oddOwner};
   const f=n=>Math.round(n).toLocaleString();
   document.getElementById('bs-detail').innerHTML=
     '<div style="font-size:.85rem;line-height:1.95;">'+
@@ -5214,6 +5260,7 @@ window.calcBroSettle = function(){
     '<b>桶②水電</b>：弟代墊 '+f(adv)+' － 弟自負 '+f(broBear)+(oddBro?'（零頭弟半'+f(oddBro)+'）':'')+' － 已還 '+f(paid)+' ＝ 補弟 <b>'+f(utilToBro)+'</b><br>'+
     '<b>桶③網路</b>：'+f(net)+' → 弟半 <b>'+f(netBro)+'</b>（哥 '+f(net-netBro)+'，弟欠哥）<br>'+
     (pubTotal?'<b>桶④公共電費</b>：弟墊 '+f(pubBro)+'／哥墊 '+f(pubBig)+'（共 '+f(pubTotal)+'，弟應負 '+f(pubBroShare)+'）＝ 哥補弟 <b>'+f(pubToBro)+'</b><br>':'')+
+    (commonList.length?'<b>桶⑤共同費用</b>：'+commonList.length+' 筆 → 淨 '+(commonToBro>=0?'哥補弟':'弟補哥')+' <b>'+f(Math.abs(commonToBro))+'</b><br>':'')+
     '<span style="color:var(--muted);">零頭：'+(oddOwner==='all'?'哥全包':'兄弟各半')+'</span></div>';
   document.getElementById('bs-net-amt').textContent=f(transfer);
   if(res)res.style.display='block';
@@ -5234,9 +5281,9 @@ window.genBroGmail = function(){
 
 【3. 網路費】
 網路費 ${f(c.net)} 我先付，你負擔一半 ${f(c.netBro)}，從上面扣回（我身為兄長多付 1 元）。
-${c.pubTotal?`\n【4. 公共電費（1樓大廳）】\n你代墊 ${f(c.pubBro)}、我代墊 ${f(c.pubBig)}，共 ${f(c.pubTotal)}，各半你負擔 ${f(c.pubBroShare)}（我多付 1 元），淨${c.pubToBro>=0?'我補你':'你補我'} ${f(Math.abs(c.pubToBro))}。\n`:''}
+${c.pubTotal?`\n【4. 公共電費（1樓大廳）】\n你代墊 ${f(c.pubBro)}、我代墊 ${f(c.pubBig)}，共 ${f(c.pubTotal)}，各半你負擔 ${f(c.pubBroShare)}（我多付 1 元），淨${c.pubToBro>=0?'我補你':'你補我'} ${f(Math.abs(c.pubToBro))}。\n`:''}${(c.common&&c.common.length)?`\n【5. 其他共同費用（各半，我多付1元）】\n${c.common.map(x=>`・${x.date?x.date+' ':''}${x.desc} $${f(x.amount)}（${x.payer}付，各半 ${f(Math.floor((+x.amount||0)/2))}）`).join('\n')}\n淨${c.commonToBro>=0?'我補你':'你補我'} ${f(Math.abs(c.commonToBro))}。\n`:''}
 【結算】這次我轉你：
-${f(c.rentBro)}（房租）＋ ${f(c.utilToBro)}（水電補你）－ ${f(c.netBro)}（網路）${c.pubTotal?(c.pubToBro>=0?'＋ '+f(c.pubToBro)+'（公共電費）':'－ '+f(Math.abs(c.pubToBro))+'（公共電費）'):''} ＝ ${f(c.transfer)} 元`;
+${f(c.rentBro)}（房租）＋ ${f(c.utilToBro)}（水電補你）－ ${f(c.netBro)}（網路）${c.pubTotal?(c.pubToBro>=0?'＋ '+f(c.pubToBro)+'（公共電費）':'－ '+f(Math.abs(c.pubToBro))+'（公共電費）'):''}${c.commonToBro?(c.commonToBro>=0?'＋ '+f(c.commonToBro)+'（共同費用）':'－ '+f(Math.abs(c.commonToBro))+'（共同費用）'):''} ＝ ${f(c.transfer)} 元`;
   window._bsGmailText=txt;
   const out=document.getElementById('bs-gmail-out');
   if(out){
