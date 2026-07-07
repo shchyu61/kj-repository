@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v07072157</span>
+    <span class="version-tag" id="ver-tag">v07080402</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -801,6 +801,11 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
   </div>
   <!-- 水電帳單歷史（房東可查看所有已儲存帳單）-->
+  <div class="card landlord-only">
+    <div class="card-title">🏢 1樓公共電費歷史（各期，房客看不到）</div>
+    <div class="alert-box a-info" style="font-size:.8rem;">各期在水電帳單「🔑哥弟結算用」填的 1 樓電費，會自動列在這裡直接查詢，不必逐張載入帳單。</div>
+    <div id="pub-elec-history" style="font-size:.85rem;">讀取中...</div>
+  </div>
   <div class="card landlord-only" id="util-history-card">
     <div class="card-title">📁 已儲存水電帳單歷史</div>
     <div id="util-bill-history"><div class="txt-m">讀取中...</div></div>
@@ -2137,7 +2142,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v07072157'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v07080402'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -2952,7 +2957,7 @@ window.ST = function(n){
   document.querySelectorAll('.tab-nav button').forEach(b=>{
     if(b.getAttribute('onclick')===`ST('${n}')`)b.classList.add('active');
   });
-  if(n==='utility'){initU(); renderUtilHistory(); if(window.refreshCalendars)window.refreshCalendars(); loadDraftState(); renderDraftBills(); loadLandlordDraftState(); checkBillReminders(); if(window.tsbInitRooms)tsbInitRooms();}
+  if(n==='utility'){initU(); renderUtilHistory(); if(window.refreshCalendars)window.refreshCalendars(); loadDraftState(); renderDraftBills(); loadLandlordDraftState(); checkBillReminders(); if(window.tsbInitRooms)tsbInitRooms(); if(window.bsRenderPubHistory)bsRenderPubHistory();}
   if(n==='rent')initRent();
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
@@ -5138,6 +5143,19 @@ window.bsDelCommon = async function(i){
     bsRenderCommon(); calcBroSettle();
     toast('⚠️ 雲端儲存失敗！刪除未生效，請重試。');
   }
+};
+window.bsRenderPubHistory = function(){
+  const box=document.getElementById('pub-elec-history'); if(!box) return;
+  const f=n=>Math.round(n).toLocaleString();
+  const bills=(DB.utilBills||[]).filter(b=>(+b.pubBro||0)>0||(+b.pubBig||0)>0)
+    .slice().sort((a,b)=>(''+(b.period||'')).localeCompare(''+(a.period||'')));
+  if(!bills.length){ box.innerHTML='<span style="color:var(--muted);">尚無 1 樓電費資料（請於水電帳單「🔑哥弟結算用」欄輸入弟墊／哥墊）。</span>'; return; }
+  let tBro=0,tBig=0;
+  let html='<table style="width:100%;border-collapse:collapse;"><tr style="background:var(--surface-2);"><th style="text-align:left;padding:.35rem;">期別</th><th style="text-align:right;padding:.35rem;">弟墊</th><th style="text-align:right;padding:.35rem;">哥墊</th><th style="text-align:right;padding:.35rem;">小計</th></tr>';
+  bills.forEach(function(b){ const br=+b.pubBro||0, bg=+b.pubBig||0; tBro+=br; tBig+=bg;
+    html+='<tr style="border-bottom:1px solid var(--border);"><td style="padding:.35rem;">'+(b.period||'')+'</td><td style="text-align:right;padding:.35rem;">'+f(br)+'</td><td style="text-align:right;padding:.35rem;">'+f(bg)+'</td><td style="text-align:right;padding:.35rem;font-weight:700;">'+f(br+bg)+'</td></tr>'; });
+  html+='<tr style="font-weight:800;background:var(--surface-2);"><td style="padding:.35rem;">合計</td><td style="text-align:right;padding:.35rem;">'+f(tBro)+'</td><td style="text-align:right;padding:.35rem;">'+f(tBig)+'</td><td style="text-align:right;padding:.35rem;">'+f(tBro+tBig)+'</td></tr></table>';
+  box.innerHTML=html;
 };
 window.bsRenderCommon = function(){
   const box=document.getElementById('bs-cc-list'); if(!box) return;
