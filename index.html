@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v07071005</span>
+    <span class="version-tag" id="ver-tag">v07071022</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -2137,7 +2137,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v07071005'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v07071022'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -5100,16 +5100,29 @@ window.bsAddCommon = async function(){
   if(!desc||!amt){ toast('請填「項目」與「金額」'); return; }
   DB.bsCommonCosts=DB.bsCommonCosts||[];
   DB.bsCommonCosts.push({desc:desc,amount:amt,payer:payer,date:date});
-  if(window.saveLandlordData) await saveLandlordData();
   ['bs-cc-desc','bs-cc-amt','bs-cc-date'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   bsRenderCommon(); calcBroSettle();
-  toast('已加入共同費用：'+desc+' '+amt+'（'+payer+'付）');
+  try {
+    if(window.saveLandlordData) await saveLandlordData();
+    toast('✅ 已加入並存雲端：'+desc+' '+amt+'（'+payer+'付）');
+  } catch(e){
+    DB.bsCommonCosts.pop();                 // 存雲端失敗→回滾，不讓主帥誤以為已存
+    bsRenderCommon(); calcBroSettle();
+    toast('⚠️ 雲端儲存失敗！此筆「未存」，請檢查網路後重新加入。');
+  }
 };
 window.bsDelCommon = async function(i){
   DB.bsCommonCosts=DB.bsCommonCosts||[];
-  DB.bsCommonCosts.splice(i,1);
-  if(window.saveLandlordData) await saveLandlordData();
+  const removed=DB.bsCommonCosts.splice(i,1);
   bsRenderCommon(); calcBroSettle();
+  try {
+    if(window.saveLandlordData) await saveLandlordData();
+    toast('✅ 已刪除並存雲端');
+  } catch(e){
+    if(removed&&removed.length) DB.bsCommonCosts.splice(i,0,removed[0]);   // 回滾
+    bsRenderCommon(); calcBroSettle();
+    toast('⚠️ 雲端儲存失敗！刪除未生效，請重試。');
+  }
 };
 window.bsRenderCommon = function(){
   const box=document.getElementById('bs-cc-list'); if(!box) return;
