@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v07070448</span>
+    <span class="version-tag" id="ver-tag">v07071005</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -596,7 +596,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
     <div class="alert-box a-warn" style="font-size:.82rem;">
       ⚠️ <b>電費有兩張帳單，這裡只填【2樓以上】那張</b>（電號…15-6，房客均分用，如 2,196）。<br>
-      🏢 <b>【1樓大廳】電費帳單</b>（電號…14-5，如 187）<b>不要填在這裡</b>——請到「🏠 房東課 → 🔑 哥弟進階結算 → ④ 公共電費」輸入（只哥弟各半，房客不分攤）。
+      🏢 <b>【1樓大廳】電費</b>（電號…14-5，如 187）請填在<b>本頁下方的「🔑 哥弟結算用」欄</b>（會存入本期帳單、結算時自動帶入④公共電費）；只哥弟各半、房客不分攤。
     </div>
     <!-- 問題3：用電度數在左、電費在右（比照Excel D3/D4順序） -->
     <div class="form-row c3">
@@ -2137,7 +2137,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v07070448'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v07071005'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -5302,7 +5302,7 @@ window.genBroGmail = function(){
   const c=window._bsCalc, f=n=>Math.round(n).toLocaleString();
   const txt=`主旨：房租和水、電、瓦斯、網路費結算明細
 
-弟，這期的帳跟你結一下，分三塊：
+這期跟你結一下，分三塊：
 
 【1. 房租】
 本期房租收入 ${f(c.rent)}，兩人各半 → 你的部分 ${f(c.rentBro)}
