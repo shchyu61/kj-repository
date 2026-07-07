@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v07071022</span>
+    <span class="version-tag" id="ver-tag">v07072157</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -2137,7 +2137,7 @@ let currentEmail = '';
 let isLandlord   = false;
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v07071022'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v07072157'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -4056,6 +4056,21 @@ window.saveRent = async function(sendEmail=true){
     if(_sent) await saveLandlordData();
   }
 };
+window.bsToggleBxSettled = async function(key){
+  const p=(DB.rentPause||{})[key]; if(!p||!p.settledTo) return;
+  p.bxSettled=!p.bxSettled;
+  if(window.renderRentHistory) renderRentHistory();
+  if(window.calcBroSettle) calcBroSettle();
+  try {
+    if(window.saveLandlordData) await saveLandlordData();
+    toast(p.bxSettled?'✅ 已標記「與弟結算」→ 不再計入自動套入房租':'🔲 已改「未結算」→ 會計入自動套入房租');
+  } catch(e){
+    p.bxSettled=!p.bxSettled;
+    if(window.renderRentHistory) renderRentHistory();
+    if(window.calcBroSettle) calcBroSettle();
+    toast('⚠️ 雲端儲存失敗，狀態未變更，請重試。');
+  }
+};
 window.bsEditSettle = async function(key){
   const p=(DB.rentPause||{})[key];
   if(!p||!p.settledTo){ toast('找不到此結清紀錄'); return; }
@@ -4081,7 +4096,7 @@ function renderRentHistory(){
       +_settled.map(([k,p])=>{
         const ms=_monthRange(p.from,p.settledTo);
         const tn=(DB.tenants[p.room]||{}).name||'';
-        return `<div class="hist-item" style="background:#eef9f0;border-color:#bfe6c8;"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;"><div style="font-weight:900;">✅ ${RL[p.room]||p.room}${tn?'・'+tn:''}　併收 ${ms.length} 期（${p.from}～${p.settledTo}）</div><button class="btn bd sm" style="padding:.1rem .55rem;white-space:nowrap;" onclick="bsEditSettle('${k}')">✏️ 編輯</button></div><div style="font-size:.82rem;">共 NT$${(p.settledAmount||0).toLocaleString()}　收款日 ${p.settledAt||''}${p.settledNote?'　📝'+p.settledNote:''}</div></div>`;
+        return `<div class="hist-item" style="background:${p.bxSettled?'#f0f0f0':'#eef9f0'};border-color:#bfe6c8;"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;"><div style="font-weight:900;">✅ ${RL[p.room]||p.room}${tn?'・'+tn:''}　併收 ${ms.length} 期（${p.from}～${p.settledTo}）</div><div style="display:flex;gap:.3rem;white-space:nowrap;"><button class="btn bd sm" style="padding:.1rem .5rem;" onclick="bsToggleBxSettled('${k}')">${p.bxSettled?'✅已與弟結算':'🔲未結算'}</button><button class="btn bd sm" style="padding:.1rem .5rem;" onclick="bsEditSettle('${k}')">✏️編輯</button></div></div><div style="font-size:.82rem;">共 NT$${(p.settledAmount||0).toLocaleString()}　收款日 ${p.settledAt||''}${p.settledNote?'　📝'+p.settledNote:''}${p.bxSettled?'　<span style="color:var(--muted);">（已與弟結算，不計入自動套入房租）</span>':''}</div></div>`;
       }).join('')
       +(DB.rentRecords.length?'<div style="font-weight:900;font-size:.85rem;color:var(--muted);margin:.6rem 0 .3rem;">📅 各期收租明細</div>':'');
   }
@@ -5242,8 +5257,8 @@ window.bsAutoFill3 = function(silent){
     if((b.utilPaidBy||'弟')==='弟'){ adv += (+b.n14||0); nAdv++; }
   });
   let rent=0, nRent=0;
-  (DB.rentRecords||[]).forEach(function(rec){
-    Object.values(rec.payments||{}).forEach(function(p){ if(+p.amount>0){ rent += (+p.amount||0); nRent++; } });
+  Object.values(DB.rentPause||{}).forEach(function(p){
+    if(p.settledTo && !p.bxSettled){ rent += (+p.settledAmount||0); nRent++; }   // 併收結清且「未與弟結算」才計入
   });
   // 網路期數 = 各房「未結清暫緩月份」的聯集數（=本次結算涵蓋月數）；總額 = 期數 × 月費
   const netSet=new Set();
