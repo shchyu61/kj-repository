@@ -8,6 +8,7 @@
   ② 定期維護到期前 30 天（廚房濾心／冷氣／洗衣機／水塔）
   ③ 每月預存提醒（每月 1 日，稅務備用金哥哥半額）
   ④ 帳單最後應繳日提醒（偶數月 14、19 日，若仍有緩收帳單）
+  ⑤ 哥弟結算通知（動態結算日；同時寄給哥與弟）
 
 依賴：pip install google-auth requests
 Secrets：GMAIL_ACCOUNT / GMAIL_PASSWORD（應用程式密碼）/ FIREBASE_SERVICE_KEY / NOTIFY_TO(可選)
@@ -75,14 +76,44 @@ def load_db():
     return {k: firestore_decode(x) for k, x in r.json().get('fields', {}).items()}
 
 
-def send_mail(subject, body):
+
+def firestore_encode(v):
+    if v is None: return {'nullValue': None}
+    if isinstance(v, bool): return {'booleanValue': v}
+    if isinstance(v, int): return {'integerValue': str(v)}
+    if isinstance(v, float): return {'doubleValue': v}
+    if isinstance(v, str): return {'stringValue': v}
+    if isinstance(v, dict): return {'mapValue': {'fields': {k: firestore_encode(x) for k, x in v.items()}}}
+    if isinstance(v, (list, tuple)): return {'arrayValue': {'values': [firestore_encode(x) for x in v]}}
+    return {'stringValue': str(v)}
+
+
+def save_fields(fields: dict):
+    """把指定欄位寫回 Firestore（只更新這些欄位，其餘不動）"""
+    import requests
+    from google.oauth2 import service_account
+    from google.auth.transport.requests import Request
+    creds = service_account.Credentials.from_service_account_info(
+        json.loads(os.environ.get('FIREBASE_SERVICE_KEY', '')),
+        scopes=['https://www.googleapis.com/auth/datastore'])
+    creds.refresh(Request())
+    mask = '&'.join(f'updateMask.fieldPaths={k}' for k in fields)
+    url = (f'https://firestore.googleapis.com/v1/projects/{PROJECT_ID}'
+           f'/databases/(default)/documents/{DOC_PATH}?{mask}')
+    body = {'fields': {k: firestore_encode(v) for k, v in fields.items()}}
+    r = requests.patch(url, headers={'Authorization': f'Bearer {creds.token}'}, json=body, timeout=30)
+    r.raise_for_status()
+    print(f'  💾 已寫回 Firestore：{", ".join(fields)}')
+
+
+def send_mail(subject, body, to=None):
     msg = MIMEText(body, 'plain', 'utf-8')
     msg['Subject'] = Header(subject, 'utf-8')
     msg['From'] = GMAIL_ACCOUNT
-    msg['To']   = NOTIFY_TO
+    msg['To']   = to or NOTIFY_TO
     with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=30) as s:
         s.login(GMAIL_ACCOUNT, GMAIL_PASSWORD)
-        s.sendmail(GMAIL_ACCOUNT, [NOTIFY_TO], msg.as_string())
+        s.sendmail(GMAIL_ACCOUNT, [to or NOTIFY_TO], msg.as_string())
     print(f'  ✅ 已寄出：{subject}')
 
 
@@ -190,6 +221,197 @@ def check_bill_deadline(db):
         print(f'  ⚠️ 帳單提醒寄送失敗: {e}'); return 0
 
 
+
+# ═══════════ ⑤ 哥弟結算通知（動態結算日） ═══════════
+
+def _month_list(a, b):
+    """a..b（含）月份字串清單，如 202603..202607"""
+    y, m = int(a[:4]), int(a[4:])
+    out = []
+    while y * 100 + m <= int(b):
+        out.append(f'{y}{m:02d}')
+        m += 1
+        if m > 12: m = 1; y += 1
+    return out
+
+
+def unsettled_net_months(db, today):
+    base = str(db.get('netBaseMonth') or '202603')     # 網路費起算月（可在網頁調整）
+    cur = f'{today.year}{today.month:02d}'
+    done = set(str(x) for x in (db.get('netSettledMonths') or []))
+    return [m for m in _month_list(base, cur) if m not in done]
+
+
+def _rent_days(db):
+    """在租房客的契約收租日清單"""
+    out = []
+    for r, t in (db.get('tenants') or {}).items():
+        if not t or t.get('status') == 'vacant' or not t.get('name'):
+            continue
+        d = int(t.get('rentDay') or 0)
+        if d:
+            out.append(d)
+    return out
+
+
+def settle_days(db, today):
+    """回傳 (早鳥結算日, 最終結算日)；自動辨別大小月"""
+    y, m = today.year, today.month
+    last = calendar.monthrange(y, m)[1]          # 大小月：31/30/29/28
+    cost_day = 19 if m % 2 == 0 else 13          # 費用確定日：網路13；偶數月水電19
+    early = min(cost_day + 1, last)              # 奇數月14 / 偶數月20
+    rds = _rent_days(db)
+    late = min((max(rds) if rds else 1) + 1, last)   # 最後一位房客收租日+1，壓月底
+    return early, max(late, early)
+
+
+def calc_settle(db, today):
+    """只計『未標記已結算』的項目 → 徹底避免重複計算"""
+    ym = f'{today.year}{today.month:02d}'
+    rent = 0; lines = []; unpaid = []
+    pause_keys = []
+    for k, p in (db.get('rentPause') or {}).items():
+        if p.get('settledTo') and not p.get('bxSettled'):
+            amt = int(p.get('settledAmount') or 0)
+            rent += amt; pause_keys.append(k)
+            lines.append(f"　・{RL.get(p.get('room'), p.get('room'))} 併收結清 {amt:,}（收款日 {p.get('settledAt','')}）")
+    rec_idx = []
+    for i, rec in enumerate(db.get('rentRecords') or []):
+        if str(rec.get('period')) != ym or rec.get('bxSettled'):
+            continue
+        got = False
+        for room, pay in (rec.get('payments') or {}).items():
+            amt = int(pay.get('amount') or 0)
+            if amt <= 0: continue
+            if pay.get('paid'):
+                rent += amt; got = True
+                lines.append(f'　・{RL.get(room, room)} {today.month}月房租 {amt:,}')
+            else:
+                unpaid.append(f'{RL.get(room, room)}（應收 {amt:,}）')
+        if got: rec_idx.append(i)
+    rent_bro = rent // 2
+
+    adv = odd = pub_bro = pub_big = 0
+    bill_idx = []
+    for i, b in enumerate(db.get('utilBills') or []):
+        if b.get('bxSettled'): continue
+        used = False
+        if int(b.get('n9') or 0) or int(b.get('pubBro') or 0) or int(b.get('pubBig') or 0) or int(b.get('n14') or 0):
+            used = True
+        odd     += int(b.get('n9') or 0)
+        pub_bro += int(b.get('pubBro') or 0)
+        pub_big += int(b.get('pubBig') or 0)
+        if (b.get('utilPaidBy') or '弟') == '弟':
+            adv += int(b.get('n14') or 0)
+        if used: bill_idx.append(i)
+    odd_bro = odd // 2 if (db.get('bsOddOwner') == 'half') else 0
+    paid_back = int(db.get('bsPaidBack') or 0)
+    util_to_bro = adv - odd_bro - paid_back
+    pub_to_bro = pub_bro - ((pub_bro + pub_big) // 2)
+
+    fee = int(db.get('defaultNetFee') or 1409)
+    nm = unsettled_net_months(db, today)
+    net = fee * len(nm)
+    net_bro = net // 2
+
+    common_to_bro = 0; clines = []; com_idx = []
+    for i, c in enumerate(db.get('bsCommonCosts') or []):
+        if c.get('settled'): continue
+        amt = int(c.get('amount') or 0); payer = c.get('payer') or '哥'
+        common_to_bro += (amt if payer == '弟' else 0) - amt // 2
+        clines.append(f"　・{c.get('date','')} {c.get('desc','')} {amt:,}（{payer}付，各半 {amt//2:,}）")
+        com_idx.append(i)
+
+    transfer = rent_bro + util_to_bro - net_bro + pub_to_bro + common_to_bro
+    return dict(rent=rent, rent_bro=rent_bro, lines=lines, unpaid=unpaid,
+                adv=adv, odd_bro=odd_bro, paid_back=paid_back, util_to_bro=util_to_bro,
+                pub_bro=pub_bro, pub_big=pub_big, pub_to_bro=pub_to_bro,
+                fee=fee, net_months=nm, net=net, net_bro=net_bro,
+                clines=clines, common_to_bro=common_to_bro, transfer=transfer,
+                pause_keys=pause_keys, rec_idx=rec_idx, bill_idx=bill_idx, com_idx=com_idx)
+
+
+def mark_settled(db, c, today):
+    """寄信成功後：自動標記已結算 + 存結算單（可在網頁撤銷）"""
+    bills = db.get('utilBills') or []
+    for i in c['bill_idx']: bills[i]['bxSettled'] = True
+    common = db.get('bsCommonCosts') or []
+    for i in c['com_idx']: common[i]['settled'] = True
+    pause = db.get('rentPause') or {}
+    for k in c['pause_keys']: pause[k]['bxSettled'] = True
+    recs = db.get('rentRecords') or []
+    for i in c['rec_idx']: recs[i]['bxSettled'] = True
+    done = [str(x) for x in (db.get('netSettledMonths') or [])] + c['net_months']
+    sett = db.get('settlements') or []
+    sett.append({
+        'id': f"{today.strftime('%Y%m%d%H%M%S')}",
+        'at': today.isoformat(timespec='seconds'),
+        'transfer': int(c['transfer']),
+        'rent': int(c['rent']), 'adv': int(c['adv']), 'net': int(c['net']),
+        'netMonths': c['net_months'],
+        'billIdx': c['bill_idx'], 'comIdx': c['com_idx'],
+        'pauseKeys': c['pause_keys'], 'recIdx': c['rec_idx'],
+        'confirmed': False,
+    })
+    save_fields({'utilBills': bills, 'bsCommonCosts': common, 'rentPause': pause,
+                 'rentRecords': recs, 'netSettledMonths': done, 'settlements': sett})
+
+
+def check_monthly_settle(db):
+    """⑤ 動態結算日：早鳥日若『哥→弟為正』就結算；否則延到最後一位房客收租日"""
+    today = datetime.now()
+    early, late = settle_days(db, today)
+    if today.day not in (early, late):
+        return 0
+    c = calc_settle(db, today)
+    is_final = (today.day == late)
+    if (not is_final) and c['transfer'] < 0:
+        print(f'  ⏸ 早鳥日({early})試算為負（費用>收入），延到最終結算日({late})再寄')
+        return 0
+    if is_final and early != late:
+        pass  # 最終日一律寄（早鳥日已寄過的月份，代表當時為正，本日視為補充/最終確認）
+
+    f = lambda n: f'{int(n):,}'
+    tag = '最終結算' if is_final else '結算'
+    body = (f'【{today.year}年{today.month}月 哥弟{tag}】結算日：{today.month}/{today.day}\n\n'
+            f'① 房租（已收訖）合計 {f(c["rent"])}\n' + ('\n'.join(c['lines']) + '\n' if c['lines'] else '')
+            + f'　→ 弟半 {f(c["rent_bro"])}（哥 {f(c["rent"] - c["rent_bro"])}）\n\n'
+            + f'② 水電瓦斯：弟代墊 {f(c["adv"])}'
+            + (f'－零頭弟半 {f(c["odd_bro"])}' if c['odd_bro'] else '')
+            + (f'－已還弟 {f(c["paid_back"])}' if c['paid_back'] else '')
+            + f' → 補弟 {f(c["util_to_bro"])}\n\n'
+            + f'③ 網路費 {f(c["net"])}（哥付，每月13日出帳、25日自動扣款）→ 弟負半 {f(c["net_bro"])}（哥多付1元）\n\n'
+            + (f'④ 1樓公共電費：弟墊 {f(c["pub_bro"])}／哥墊 {f(c["pub_big"])} → 淨 {f(c["pub_to_bro"])}\n\n' if (c['pub_bro'] or c['pub_big']) else '')
+            + ((f'⑤ 其他共同費用（{len(c["common"])} 筆）\n' + '\n'.join(c['clines'])
+                + f'\n　→ 淨 {"哥補弟" if c["common_to_bro"] >= 0 else "弟補哥"} {f(abs(c["common_to_bro"]))}\n\n') if c['common'] else '')
+            + f'★ 哥應轉弟：{f(c["transfer"])} 元\n\n')
+    if c['unpaid']:
+        body += ('⚠️ 本月尚未收訖（不列入本次結算，待收訖後併入次月，非哥方拖延）：\n'
+                 + '\n'.join('　・' + u for u in c['unpaid']) + '\n\n')
+    body += ('（系統自動試算。已與弟結算完成的併收紀錄，請於網頁「收租歷史」按「✅已與弟結算」標記，'
+             '避免下次重複計算。）\n\n—— 嘉義房租雲端通知（動態結算日：'
+             f'{"最終結算日 " + str(late) if is_final else "早鳥結算日 " + str(early)} 日）')
+
+    subject = f'💵 {today.year}/{today.month:02d} 哥弟{tag}：哥應轉弟 NT${f(c["transfer"])}'
+    sent = 0
+    try:
+        send_mail(subject, body); sent += 1
+    except Exception as e:
+        print(f'  ⚠️ 月結算寄送失敗（哥）: {e}')
+    bro = (db.get('brotherEmail') or '').strip()
+    if bro and db.get('notifyBrother'):
+        try:
+            send_mail(subject, body, to=bro); sent += 1
+        except Exception as e:
+            print(f'  ⚠️ 月結算寄送失敗（弟）: {e}')
+    if sent:
+        try:
+            mark_settled(db, c, today)
+        except Exception as e:
+            print(f'  ⚠️ 自動標記已結算失敗（下次可能重複計算，請至網頁手動標記）: {e}')
+    return sent
+
+
 def main():
     print('▶ 嘉義房租雲端通知 啟動')
     if not (GMAIL_ACCOUNT and GMAIL_PASSWORD):
@@ -200,7 +422,8 @@ def main():
     b = check_maintenance(db)
     c = check_reserve(db)
     d = check_bill_deadline(db)
-    print(f'✔ 完成：契約 {a}、維護 {b}、預存 {c}、帳單最後應繳日 {d} 封')
+    e = check_monthly_settle(db)
+    print(f'✔ 完成：契約 {a}、維護 {b}、預存 {c}、帳單最後應繳日 {d}、哥弟結算 {e} 封')
 
 
 if __name__ == '__main__':
