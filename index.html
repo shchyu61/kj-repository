@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v07131941</span>
+    <span class="version-tag" id="ver-tag">v07140709</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1715,6 +1715,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="form-row c2">
       <div><label>② 弟代墊水電瓦斯（元）</label><input type="number" id="bs-adv" placeholder="如 3733" oninput="calcBroSettle()"></div>
       <div><label>② 已還弟（如已轉，元）</label><input type="number" id="bs-paid" placeholder="如 3200" oninput="calcBroSettle()"></div>
+      <div><label>② 已還弟的日期（通知信會寫出）</label><input type="text" id="bs-paid-date" placeholder="如 6/27" onchange="bsSetPaidDate()"></div>
     </div>
     <div class="form-row c2">
       <div><label>房東贊助房客零頭（元）</label><input type="number" id="bs-odd" placeholder="如 96" oninput="calcBroSettle()"></div>
@@ -2156,9 +2157,31 @@ const CO_ITEMS = [
 // ══ 狀態 ══════════════════════════════════
 let currentEmail = '';
 let isLandlord   = false;
+// ── 【待辦N】權限防呆：主帳號(哥)全權；其他人只能編輯/刪除自己輸入的資料 ──
+const OWNER_EMAIL = LANDLORD_EMAILS[0];                 // 主帳號＝哥
+window.isOwnerAcct = ()=> currentEmail===OWNER_EMAIL;
+window.stampRec = function(o){
+  if(o && typeof o==='object' && !o.createdBy){
+    o.createdBy = currentEmail||'';
+    if(!o.createdAt) o.createdAt = new Date().toISOString().slice(0,19);
+  }
+  return o;
+};
+window.canEditRec = function(o){
+  if(currentEmail===OWNER_EMAIL) return true;            // 哥：全權
+  if(!o || typeof o!=='object') return false;
+  const owner = o.createdBy || OWNER_EMAIL;              // 舊資料視為哥建立
+  return owner === currentEmail;
+};
+window.guardRec = function(o, what){
+  if(window.canEditRec(o)) return true;
+  const who = (o && o.createdBy) ? o.createdBy : '主帳號（哥）';
+  toast('🔒 這筆是「'+who+'」輸入的，只有本人或主帳號可'+(what||'修改／刪除'));
+  return false;
+};
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v07131941'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v07140709'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -2530,6 +2553,7 @@ const loadLandlordData = async () => {
       if(d.rentPause)DB.rentPause=d.rentPause;
       if(d.bsCommonCosts)DB.bsCommonCosts=d.bsCommonCosts;
       if(d.netBaseMonth)DB.netBaseMonth=d.netBaseMonth;
+      if(d.bsPaidDate)DB.bsPaidDate=d.bsPaidDate;
       if(d.netSettledMonths)DB.netSettledMonths=d.netSettledMonths;
       if(d.settlements)DB.settlements=d.settlements;
       if(d.landlordSettlements)DB.landlordSettlements=d.landlordSettlements;
@@ -2582,6 +2606,7 @@ const saveLandlordData = async () => {
     rentPause:DB.rentPause||{},
     bsCommonCosts:DB.bsCommonCosts||[],
     netBaseMonth:DB.netBaseMonth||'202603',
+    bsPaidDate:DB.bsPaidDate||'',
     netSettledMonths:DB.netSettledMonths||[],
     settlements:DB.settlements||[],
     landlordSettlements:DB.landlordSettlements||[],
@@ -3764,7 +3789,8 @@ window.saveUtilBill = async function(sendEmail=true){
   bill.deferred=document.getElementById('u-deferred')?.checked||false;
   bill.collectedDate=bill.deferred?'':((_exist&&_exist.collectedDate)?_exist.collectedDate:'');
   if(window._ensureRoomCollect)_ensureRoomCollect(bill);
-  if(idx>=0)DB.utilBills[idx]=bill; else DB.utilBills.unshift(bill);
+  window.stampRec(bill);
+  if(idx>=0){ if(!window.guardRec(DB.utilBills[idx],'覆蓋'))return; DB.utilBills[idx]=bill; } else DB.utilBills.unshift(bill);
   DB.billWorkingState=null;
   await saveLandlordData();
   renderUtilHistory();
@@ -3886,7 +3912,7 @@ window.saveRentPause = async function(){
   }
   window._editRentPauseKey=null;
   const key=`${room}_${from}_${to}`;
-  DB.rentPause[key]={room,from,to,reason,createdAt:new Date().toLocaleString('zh-TW')};
+  DB.rentPause[key]=window.stampRec({room,from,to,reason,createdAt:new Date().toLocaleString('zh-TW')});
   await saveLandlordData();
   closeRentPauseModal();
   renderRentPauseList();
@@ -3895,6 +3921,7 @@ window.saveRentPause = async function(){
   toast(`✅ 已設定：${room==='all'?'所有房間':RL[room]||room} ${from}～${to} 暫停收租`);
 };
 window.deleteRentPause = async function(key){
+  if(!window.guardRec((DB.rentPause||{})[key],'刪除'))return;
   const _p=(DB.rentPause||{})[key];
   if(_p&&_p.settledTo){
     if(!confirm('⚠️ 此筆已含「結清紀錄」：'+(RL[_p.room]||_p.room)+' '+_p.from+'～'+_p.settledTo+' 共 $'+(_p.settledAmount||0).toLocaleString()+'（'+(_p.settledAt||'')+'）。\n刪除會一併移除「收租歷史→併收結清紀錄」，且無法復原！\n\n確定仍要刪除嗎？'))return;
@@ -4063,7 +4090,8 @@ window.saveRent = async function(sendEmail=true){
   });
   const rec={period,payments,savedAt:new Date().toISOString()};
   const idx=DB.rentRecords.findIndex(x=>x.period===period);
-  if(idx>=0)DB.rentRecords[idx]=rec; else DB.rentRecords.unshift(rec);
+  window.stampRec(rec);
+  if(idx>=0){ if(!window.guardRec(DB.rentRecords[idx],'覆蓋'))return; DB.rentRecords[idx]=rec; } else DB.rentRecords.unshift(rec);
   await saveLandlordData(); renderRentHistory(); toast('收租紀錄已儲存 ✓');
   // ⑥ 收訖通知：收租後寄收訖信給「已全額繳清且非緩收」之房客（受 notifyTenant 開關控管，預設關＝暫不寄發給房客）
   if(DB.notifyTenant){
@@ -4085,6 +4113,7 @@ window.saveRent = async function(sendEmail=true){
 };
 window.bsToggleBxSettled = async function(key){
   const p=(DB.rentPause||{})[key]; if(!p||!p.settledTo) return;
+  if(!window.guardRec(p,'變更結算狀態'))return;
   p.bxSettled=!p.bxSettled;
   if(window.renderRentHistory) renderRentHistory();
   if(window.calcBroSettle) calcBroSettle();
@@ -4101,6 +4130,7 @@ window.bsToggleBxSettled = async function(key){
 window.bsEditSettle = async function(key){
   const p=(DB.rentPause||{})[key];
   if(!p||!p.settledTo){ toast('找不到此結清紀錄'); return; }
+  if(!window.guardRec(p,'編輯'))return;
   const amt=prompt('修改「共收金額」(元)：', p.settledAmount||0);
   if(amt===null) return;
   const date=prompt('修改「收款日」(如 2026-06-18)：', p.settledAt||'');
@@ -4180,6 +4210,7 @@ function renderRentHistory(){
   });
 }
 window.deleteRent = async function(i){
+  if(!window.guardRec((DB.rentRecords||[])[i],'刪除'))return;
   if(confirm('確定刪除？')){DB.rentRecords.splice(i,1);await saveLandlordData();renderRentHistory();toast('已刪除');}
 };
 
@@ -4627,7 +4658,7 @@ window.saveAnnounce = async function(testOnly=false){
   if(testOnly){
     // 測試：直接存，不排程寄信
     const ann={content, datetime, notified:false, testOnly:true, id:now.getTime()};
-    DB.announces.unshift(ann);
+    DB.announces.unshift(window.stampRec(ann));
     await saveLandlordData(); renderAnnounce();
     document.getElementById('ann-content').value='';
     toast('💾 公告已儲存（不寄 Gmail，房客進網頁可看到）✓');
@@ -4635,7 +4666,7 @@ window.saveAnnounce = async function(testOnly=false){
     // 正式發布：排程 30 分鐘後寄信
     const sendAt=now.getTime()+ANN_DELAY_MS;
     const ann={content, datetime, notified:false, testOnly:false, sendAt, id:now.getTime()};
-    DB.announces.unshift(ann);
+    DB.announces.unshift(window.stampRec(ann));
     await saveLandlordData(); renderAnnounce();
     document.getElementById('ann-content').value='';
     toast('✅ 公告已儲存！將在 30 分鐘後自動寄 Gmail 通知房客。可在倒數期間取消。');
@@ -4660,6 +4691,7 @@ window.cancelAnnounce = function(){
 };
 
 window.deleteAnnounce = async function(i){
+  if(!window.guardRec((DB.announces||[])[i],'刪除'))return;
   if(!confirm('確定刪除此公告？'))return;
   DB.announces.splice(i,1);
   await saveLandlordData(); renderAnnounce(); toast('公告已刪除');
@@ -4688,7 +4720,7 @@ window.notifyMail = async function(sendEmail=true){
   const now = new Date().toLocaleString('zh-TW');
   const record = {room, type, note, time:now, savedAt:new Date().toISOString()};
   if(!DB.mailRecords) DB.mailRecords=[];
-  DB.mailRecords.unshift(record);
+  DB.mailRecords.unshift(window.stampRec(record));
   await saveLandlordData();
   if(sendEmail && t.tenantEmail){
     initEJS();
@@ -4723,6 +4755,7 @@ window.renderMailHistory = function(){
 };
 
 window.deleteMailRecord = async function(i){
+  if(!window.guardRec((DB.mailRecords||[])[i],'刪除'))return;
   if(!confirm('確定刪除？'))return;
   DB.mailRecords.splice(i,1);
   await saveLandlordData(); renderMailHistory(); toast('已刪除');
@@ -4733,7 +4766,7 @@ window.notifyLockBattery = async function(sendEmail=true){
   const now = new Date().toLocaleString('zh-TW');
   const record = {note, time:now, savedAt:new Date().toISOString()};
   if(!DB.lockBatteryRecords) DB.lockBatteryRecords=[];
-  DB.lockBatteryRecords.unshift(record);
+  DB.lockBatteryRecords.unshift(window.stampRec(record));
   await saveLandlordData();
   if(sendEmail){
     initEJS();
@@ -4778,6 +4811,7 @@ window.renderLockBatteryHistory = function(){
 };
 
 window.deleteLockRecord = async function(i){
+  if(!window.guardRec((DB.lockBatteryRecords||[])[i],'刪除'))return;
   if(!confirm('確定刪除？'))return;
   DB.lockBatteryRecords.splice(i,1);
   await saveLandlordData(); renderLockBatteryHistory(); toast('已刪除');
@@ -5031,7 +5065,7 @@ window.saveOwnerCalc = async function(sendEmail=true){
   if(!DB.landlordSettlements) DB.landlordSettlements=[];
   const idx = DB.landlordSettlements.findIndex(s=>s.period===r.period);
   if(idx>=0) DB.landlordSettlements[idx]=record;
-  else DB.landlordSettlements.unshift(record);
+  else DB.landlordSettlements.unshift(window.stampRec(record));
 
   await saveLandlordData();
 
@@ -5141,7 +5175,7 @@ window.bsAddCommon = async function(){
   const date=(document.getElementById('bs-cc-date')?.value||'').trim();
   if(!desc||!amt){ toast('請填「項目」與「金額」'); return; }
   DB.bsCommonCosts=DB.bsCommonCosts||[];
-  DB.bsCommonCosts.push({desc:desc,amount:amt,payer:payer,date:date});
+  DB.bsCommonCosts.push(window.stampRec({desc:desc,amount:amt,payer:payer,date:date}));
   ['bs-cc-desc','bs-cc-amt','bs-cc-date'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   bsRenderCommon(); calcBroSettle();
   try {
@@ -5155,6 +5189,7 @@ window.bsAddCommon = async function(){
 };
 window.bsDelCommon = async function(i){
   DB.bsCommonCosts=DB.bsCommonCosts||[];
+  if(!window.guardRec(DB.bsCommonCosts[i],'刪除'))return;
   const removed=DB.bsCommonCosts.splice(i,1);
   bsRenderCommon(); calcBroSettle();
   try {
@@ -5185,7 +5220,7 @@ window.bsRenderCommon = function(){
   if(!list.length){ box.innerHTML='<span style="color:var(--muted);">尚無共同費用（加入後會自動各半併入結算）。</span>'; return; }
   box.innerHTML=list.map(function(c,i){
     const share=Math.floor((+c.amount||0)/2);
-    return '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--border);padding:.28rem 0;gap:.5rem;'+(c.settled?'opacity:.55;':'')+'"><span>'+(c.date?c.date+'　':'')+c.desc+'　$'+f(c.amount)+'（<b>'+c.payer+'付</b>，各半 '+f(share)+'）'+(c.settled?' <span style="color:var(--muted);font-size:.72rem;">✅已與弟結算</span>':'')+'</span><button class="btn bd sm" style="padding:.1rem .5rem;white-space:nowrap;" onclick="bsDelCommon('+i+')">刪</button></div>';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--border);padding:.28rem 0;gap:.5rem;'+(c.settled?'opacity:.55;':'')+'"><span>'+(c.date?c.date+'　':'')+c.desc+'　$'+f(c.amount)+'（<b>'+c.payer+'付</b>，各半 '+f(share)+'）'+(c.settled?' <span style="color:var(--muted);font-size:.72rem;">✅已與弟結算</span>':'')+(c.createdBy?' <span style="color:var(--muted);font-size:.68rem;">👤'+String(c.createdBy).split('@')[0]+'</span>':'')+'</span><button class="btn bd sm" style="padding:.1rem .5rem;white-space:nowrap;" onclick="bsDelCommon('+i+')">刪</button></div>';
   }).join('');
 };
 window.tsbInitRooms = function(){
@@ -5287,6 +5322,11 @@ window.copyTenantSimpleBill = function(){
   navigator.clipboard.writeText(t).then(()=>toast('✅ 已複製簡易催收明細'))
     .catch(()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✅ 已複製');});
 };
+window.bsSetPaidDate = async function(){
+  DB.bsPaidDate=(document.getElementById('bs-paid-date')?.value||'').trim();
+  try{ if(window.saveLandlordData) await saveLandlordData(); }catch(e){ toast('⚠️ 儲存失敗'); }
+  if(window.calcBroSettle) calcBroSettle();
+};
 window.bsSetNetBase = async function(){
   const v=(document.getElementById('bs-net-base')?.value||'').trim();
   if(!/^\d{6}$/.test(v)){ toast('請輸入 6 碼年月，如 202603'); return; }
@@ -5326,9 +5366,9 @@ window.bsMarkSettledNow = async function(){
   DB.netSettledMonths=(DB.netSettledMonths||[]).concat(nm);
   DB.settlements=DB.settlements||[];
   const now=new Date();
-  DB.settlements.push({ id:''+now.getTime(), at:now.toISOString().slice(0,19),
+  DB.settlements.push(window.stampRec({ id:''+now.getTime(), at:now.toISOString().slice(0,19),
     transfer:Math.round(c.transfer), rent:c.rent, adv:c.adv, net:c.net,
-    netMonths:nm, billIdx:billIdx, comIdx:comIdx, pauseKeys:pauseKeys, recIdx:recIdx, confirmed:true, by:'網頁' });
+    netMonths:nm, billIdx:billIdx, comIdx:comIdx, pauseKeys:pauseKeys, recIdx:recIdx, confirmed:true, by:'網頁' }));
   try{
     if(window.saveLandlordData) await saveLandlordData();
     bsRenderSettlements(); if(window.bsRenderCommon)bsRenderCommon(); if(window.bsAutoFill3)bsAutoFill3(true);
@@ -5343,6 +5383,7 @@ window.bsRevokeSettle = async function(id){
   const list=DB.settlements||[]; const i=list.findIndex(s=>String(s.id)===String(id));
   if(i<0) return;
   const s=list[i];
+  if(!window.guardRec(s,'撤銷'))return;
   if(!confirm('撤銷這張結算單？\n\n將把涵蓋的帳單／共同費用／併收結清／網路費月份全部還原為「未結算」，下次自動套入會重新計入。')) return;
   (s.billIdx||[]).forEach(k=>{ if(DB.utilBills&&DB.utilBills[k]) DB.utilBills[k].bxSettled=false; });
   (s.comIdx||[]).forEach(k=>{ if(DB.bsCommonCosts&&DB.bsCommonCosts[k]) DB.bsCommonCosts[k].settled=false; });
@@ -5422,6 +5463,30 @@ window.bsAutoFill3 = function(silent){
   // 網路費：與雲端同一套 → 起算月(netBaseMonth) ~ 本月，扣掉已結算月份(netSettledMonths)
   const nm = window.bsUnsettledNetMonths();
   const netMonths=nm.length, fee=DB.defaultNetFee||1409;
+  // ── 明細（給弟的通知信用）──
+  const rentLines=[], pubLines=[];
+  Object.values(DB.rentPause||{}).forEach(function(p){
+    if(p.settledTo && !p.bxSettled){
+      const ms=(window._monthRange(p.from,p.settledTo)||[]);
+      const tn=(DB.tenants[p.room]||{}).name||'';
+      rentLines.push('・'+(RL[p.room]||p.room)+(tn?'・'+tn:'')+' 併收 '+ms.length+' 期（'+p.from+'～'+p.settledTo+'）共 '+(+p.settledAmount||0).toLocaleString());
+    }
+  });
+  (DB.rentRecords||[]).forEach(function(rec){
+    if(String(rec.period)!==ym || rec.bxSettled) return;
+    Object.entries(rec.payments||{}).forEach(function([room,p]){
+      if((+p.amount||0)>0 && p.paid){
+        const tn=(DB.tenants[room]||{}).name||'';
+        rentLines.push('・'+(RL[room]||room)+(tn?'・'+tn:'')+' '+rec.period+' 房租 '+(+p.amount||0).toLocaleString());
+      }
+    });
+  });
+  (DB.utilBills||[]).forEach(function(b){
+    if(b.bxSettled) return;
+    if(+b.pubBro>0) pubLines.push('・'+(b.period||'')+' 期：你代墊 '+(+b.pubBro).toLocaleString());
+    if(+b.pubBig>0) pubLines.push('・'+(b.period||'')+' 期：我代墊 '+(+b.pubBig).toLocaleString());
+  });
+  window._bsDetail={rentLines:rentLines, pubLines:pubLines};
   const setV=(id,v)=>{const el=document.getElementById(id); if(el){ el.value=(v||v===0)?v:''; }};
   setV('bs-rent', rent);
   setV('bs-adv', adv);
@@ -5482,21 +5547,46 @@ window.calcBroSettle = function(){
 window.genBroGmail = function(){
   if(!window._bsCalc){ toast('請先輸入數字計算'); return; }
   const c=window._bsCalc, f=n=>Math.round(n).toLocaleString();
+  const D=window._bsDetail||{rentLines:[],pubLines:[]};
+  const fee=DB.defaultNetFee||1409;
+  const nMon=+(document.getElementById('bs-net-months')?.value||0);
+  const pd=(DB.bsPaidDate||'').trim();
+  const blocks=3+(c.pubTotal?1:0)+((c.common&&c.common.length)?1:0);
+  const oddAll=(c.oddOwner!=='half');
+  // ⑤ 兩邊各自該付的總額
+  let owedToMe=0, owedToYou=0;
+  (c.common||[]).forEach(function(x){ const a=+x.amount||0; const h=Math.floor(a/2);
+    if((x.payer||'哥')==='哥') owedToMe+=h; else owedToYou+=(a-h); });
+
   const txt=`主旨：房租和水、電、瓦斯、網路費結算明細
 
-這期跟你結一下，分三塊：
+這期跟你結一下，分 ${blocks} 塊：
 
 【1. 房租】
-本期房租收入 ${f(c.rent)}，兩人各半 → 你的部分 ${f(c.rentBro)}
+本期房租收入 ${f(c.rent)}，明細如下：
+${D.rentLines.length?D.rentLines.join('\n'):'・（明細請見網頁「收租紀錄」）'}
+兩人各半 → 你的部分 ${f(c.rentBro)}（我的部分 ${f(c.rent-c.rentBro)}）
 
-【2. 水電瓦斯（你先代墊的）】
-你代墊 ${f(c.adv)}，扣掉你自負 ${f(c.broBear)}${c.oddBro?'（零頭你半 '+f(c.oddBro)+'）':''}，應還你 ${f(c.adv-c.broBear)}。
-我已在 6/27 先轉你 ${f(c.paid)}，這次再補你 ${f(c.utilToBro)}，湊滿應還金額。
+【2. 水電瓦斯（你先幫忙代墊的）】
+你先幫忙代墊了 ${f(c.adv)} 元。
+${c.odd?(oddAll?`（水電帳單的零頭 ${f(c.odd)} 元，全部由我吸收，不用你負擔）\n`:`（水電帳單的零頭 ${f(c.odd)} 元，我們各負責一半，你負擔 ${f(c.oddBro)} 元）\n`):''}我已經在 ${pd||'先前'} 先轉帳給你 ${f(c.paid)} 元，這次再補你 ${f(c.utilToBro)} 元；${f(c.paid)} ＋ ${f(c.utilToBro)} ＝ ${f(c.paid+c.utilToBro)} 元，剛好就是你該拿回去的代墊款。
 
 【3. 網路費】
-網路費 ${f(c.net)} 我先付，你負擔一半 ${f(c.netBro)}，從上面扣回（我身為兄長多付 1 元）。
-${c.pubTotal?`\n【4. 公共電費（1樓大廳）】\n你代墊 ${f(c.pubBro)}、我代墊 ${f(c.pubBig)}，共 ${f(c.pubTotal)}，各半你負擔 ${f(c.pubBroShare)}（我多付 1 元），淨${c.pubToBro>=0?'我補你':'你補我'} ${f(Math.abs(c.pubToBro))}。\n`:''}${(c.common&&c.common.length)?`\n【5. 其他共同費用（各半，我多付1元）】\n${c.common.map(x=>`・${x.date?x.date+' ':''}${x.desc} $${f(x.amount)}（${x.payer}付，各半 ${f(Math.floor((+x.amount||0)/2))}）`).join('\n')}\n淨${c.commonToBro>=0?'我補你':'你補我'} ${f(Math.abs(c.commonToBro))}。\n`:''}
-【結算】這次我轉你：
+網路費 ${f(c.net)} 元（每月 ${f(fee)} 元 × ${nMon||'—'} 個月）是我先付的，你負責一半 ${f(c.netBro)} 元（我多負責 1 元）。
+這 ${f(c.netBro)} 元你不用另外拿錢給我，我會直接從「我要轉帳給你的錢」裡面扣掉。
+${c.pubTotal?`
+【4. 公共電費（1樓大廳）】
+這是 1 樓大廳的電費（電號…14-5），房客不分攤，只有我們兩人各負責一半。各期明細：
+${D.pubLines.length?D.pubLines.join('\n'):'・（明細請見網頁「1樓公共電費歷史」）'}
+合計 ${f(c.pubTotal)} 元，各負責一半 → 你應該負擔 ${f(c.pubBroShare)} 元（我多負責 1 元）。
+你實際已經代墊了 ${f(c.pubBro)} 元，${c.pubToBro>=0?`比應負擔的多墊了 ${f(c.pubToBro)} 元，所以我要補你 ${f(c.pubToBro)} 元。`:`比應負擔的還少 ${f(Math.abs(c.pubToBro))} 元，所以這 ${f(Math.abs(c.pubToBro))} 元我會從轉帳金額裡面扣掉。`}
+`:''}${(c.common&&c.common.length)?`
+【${c.pubTotal?5:4}. 其他共同費用（各負責一半，我多負責 1 元）】
+${c.common.map(x=>`・${x.date?x.date+' ':''}${x.desc} $${f(x.amount)}（${(x.payer||'哥')==='哥'?'我付':'你付'}，各半 ${f(Math.floor((+x.amount||0)/2))}）`).join('\n')}
+我先付的部分，你要付給我 ${f(owedToMe)} 元；你先付的部分，我要付給你 ${f(owedToYou)} 元。
+${c.commonToBro>=0?`兩邊相抵 → 我還要補你 ${f(Math.abs(c.commonToBro))} 元。`:`兩邊相抵 → 你還要補我 ${f(Math.abs(c.commonToBro))} 元，這筆我會從轉帳金額裡面扣掉。`}
+`:''}
+【結算】這次我轉帳給你：
 ${f(c.rentBro)}（房租）＋ ${f(c.utilToBro)}（水電補你）－ ${f(c.netBro)}（網路）${c.pubTotal?(c.pubToBro>=0?'＋ '+f(c.pubToBro)+'（公共電費）':'－ '+f(Math.abs(c.pubToBro))+'（公共電費）'):''}${c.commonToBro?(c.commonToBro>=0?'＋ '+f(c.commonToBro)+'（共同費用）':'－ '+f(Math.abs(c.commonToBro))+'（共同費用）'):''} ＝ ${f(c.transfer)} 元`;
   window._bsGmailText=txt;
   const out=document.getElementById('bs-gmail-out');
@@ -5584,7 +5674,7 @@ window.saveMaintenanceRecord = async function(type){
   const ev={id:'m'+Date.now(), type, label:MAINTENANCE_ITEMS[type]?.label, date:lastDate, cost, cycle, savedAt:new Date().toLocaleString('zh-TW')};
   const dup=DB.maintenanceLog.findIndex(e=>e.type===type && e.date===lastDate);
   if(dup>=0){ ev.id=DB.maintenanceLog[dup].id; DB.maintenanceLog[dup]=ev; }
-  else DB.maintenanceLog.push(ev);
+  else DB.maintenanceLog.push(window.stampRec(ev));
   await saveLandlordData();
   renderMaintenanceHistory();
   renderMaintenanceLog();
@@ -5723,6 +5813,7 @@ window.renderOwnerHistory = function(){
     </div>`).join('');
 };
 window.deleteOwnerRecord = async function(i){
+  if(!window.guardRec((DB.landlordSettlements||[])[i],'刪除'))return;
   if(!confirm('確定刪除？'))return;
   DB.landlordSettlements.splice(i,1);
   await saveLandlordData(); renderOwnerHistory(); toast('已刪除');
@@ -6213,6 +6304,7 @@ window.loadUtilBillToEdit = function(i){
   toast(`✅ 已載入 ${b.period} 期帳單，可修改後重新儲存。`);
 };
 window.deleteUtilBill = async function(i){
+  if(!window.guardRec((DB.utilBills||[])[i],'刪除'))return;
   if(!confirm('確定刪除此期帳單？'))return;
   DB.utilBills.splice(i,1);
   await saveLandlordData(); renderUtilHistory(); toast('已刪除');
@@ -6250,7 +6342,7 @@ window.notifyMail = async function(mode='save'){
   const sender = isLandlord ? '房東' : (RL[room]||room||'房客');
   const record = {room:room||'—', type:type||'訊息', note, time:now, sender, savedAt:new Date().toISOString()};
   if(!DB.mailRecords) DB.mailRecords=[];
-  DB.mailRecords.unshift(record);
+  DB.mailRecords.unshift(window.stampRec(record));
   await saveLandlordData();
   if(mode==='tenant'){
     const t=DB.tenants[room]||{};
@@ -6290,7 +6382,7 @@ window.notifyLockBattery = async function(mode='save'){
   const sender = isLandlord ? '房東' : (RL[myRoom]||myRoom||'房客');
   const record = {note, time:now, sender, savedAt:new Date().toISOString()};
   if(!DB.lockBatteryRecords) DB.lockBatteryRecords=[];
-  DB.lockBatteryRecords.unshift(record);
+  DB.lockBatteryRecords.unshift(window.stampRec(record));
   await saveLandlordData();
   if(mode==='all'){
     initEJS();
