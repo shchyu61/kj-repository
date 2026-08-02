@@ -237,7 +237,15 @@ def _month_list(a, b):
 
 def unsettled_net_months(db, today):
     base = str(db.get('netBaseMonth') or '202603')     # 網路費起算月（可在網頁調整）
-    cur = f'{today.year}{today.month:02d}'
+    # ★計算日期判定：網路費每月 13 日出帳、25 日扣款。
+    #   今天若還沒到出帳日 → 本月尚未發生，不納入（避免多算弟一期）。
+    bill_day = int(db.get('netBillDay') or 13)
+    _y, _m = today.year, today.month
+    if today.day < bill_day:
+        _m -= 1
+        if _m < 1:
+            _m = 12; _y -= 1
+    cur = f'{_y}{_m:02d}'
     done = set(str(x) for x in (db.get('netSettledMonths') or []))
     return [m for m in _month_list(base, cur) if m not in done]
 

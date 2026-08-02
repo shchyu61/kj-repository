@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08030448</span>
+    <span class="version-tag" id="ver-tag">v08030543</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -2186,7 +2186,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08030448'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08030543'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -5419,7 +5419,10 @@ window.bsRenderSettlements = function(){
   const box=document.getElementById('bs-settlements'); if(!box) return;
   const nb=document.getElementById('bs-net-base'); if(nb && !nb.value) nb.value=DB.netBaseMonth||'202603';
   const info=document.getElementById('bs-net-info');
-  if(info){ const nm=window.bsUnsettledNetMonths?window.bsUnsettledNetMonths():[]; info.textContent='未結算網路月份：'+(nm.length?nm.join('、'):'無'); }
+  if(info){ const nm=window.bsUnsettledNetMonths?window.bsUnsettledNetMonths():[];
+    const _d=new Date(), _bd=+(DB.netBillDay||13);
+    const _pend=_d.getDate()<_bd ? ('（'+(_d.getMonth()+1)+'月份'+_bd+'日才出帳，本次不列入）') : '';
+    info.textContent='未結算網路月份：'+(nm.length?nm.join('、'):'無')+_pend; }
   const list=(DB.settlements||[]).slice().sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
   const f=n=>Math.round(n||0).toLocaleString();
   if(!list.length){ box.innerHTML='<span style="color:var(--muted);">尚無結算單。按上方「✅已轉帳給弟」或等雲端每月自動結算後會出現。</span>'; return; }
@@ -5479,7 +5482,12 @@ window.bsSetPaidBack = async function(){
 window.bsUnsettledNetMonths = function(){
   const base = ''+(DB.netBaseMonth||'202603');
   const now = new Date();
-  const cur = now.getFullYear()*100 + (now.getMonth()+1);
+  // ★計算日期判定：網路費每月13日出帳、25日扣款。
+  //   若今天還沒到出帳日 → 本月尚未發生，不可納入結算（否則會多算弟一期）。
+  const BILL_DAY = +(DB.netBillDay||13);
+  let cy = now.getFullYear(), cm = now.getMonth()+1;
+  if(now.getDate() < BILL_DAY){ cm--; if(cm<1){ cm=12; cy--; } }
+  const cur = cy*100 + cm;
   const done = new Set((DB.netSettledMonths||[]).map(String));
   const out=[];
   let y=+base.slice(0,4), m=+base.slice(4,6);
