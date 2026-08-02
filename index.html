@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v07140709</span>
+    <span class="version-tag" id="ver-tag">v08030448</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -779,9 +779,13 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
     <!-- N4~N15 說明欄 -->
     <div id="u-n-summary" style="margin-top:.85rem;"></div>
-    <div class="card" style="border:2px solid var(--accent);margin-top:.6rem;">
-      <div class="card-title" style="font-size:.9rem;">🔑 哥弟結算用（本期，房客看不到）</div>
-      <div class="alert-box a-info" style="font-size:.8rem;">存以下欄位，日後三桶結算可自動套入；零頭(N9)於儲存時自動存檔，不需手填。</div>
+    <div class="card" id="bs-key-card" style="border:3px solid var(--danger);background:#fffaf5;margin-top:.6rem;box-shadow:0 0 0 4px rgba(192,57,43,.08);">
+      <div class="card-title" style="font-size:1rem;color:var(--danger);">🔑 哥弟結算用（★必填，本期，房客看不到）</div>
+      <div class="alert-box a-warn" style="font-size:.82rem;">
+        <b>★ 這一區沒填，「哥弟進階結算」就會算錯！</b><br>
+        1 樓大廳電費（電號…14-5）只有哥弟各半、<b>房客完全不分攤</b>，一定要填在這裡。<br>
+        水電總額(N14)與零頭(N9)會在<b>儲存帳單時自動存檔</b>，不需手填；舊帳單缺這兩欄者，系統開啟「哥弟進階結算」時會<b>自動補算</b>。
+      </div>
       <div class="form-row c2">
         <div><label>本期水電帳單由誰付（台電/水/瓦斯）</label>
           <select id="u-paid-by"><option value="弟">弟代墊</option><option value="哥">哥自付</option></select></div>
@@ -1713,12 +1717,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div><label>③ 網路費總額（哥付ISP，元）</label><input type="number" id="bs-net" placeholder="如 7045" oninput="calcBroSettle()"></div>
     </div>
     <div class="form-row c2">
-      <div><label>② 弟代墊水電瓦斯（元）</label><input type="number" id="bs-adv" placeholder="如 3733" oninput="calcBroSettle()"></div>
-      <div><label>② 已還弟（如已轉，元）</label><input type="number" id="bs-paid" placeholder="如 3200" oninput="calcBroSettle()"></div>
+      <div><label>② 弟代墊水電瓦斯（<span style="color:var(--gold);">自動＝各期未結算帳單的電+水+瓦斯</span>）</label><input type="number" id="bs-adv" placeholder="自動帶入" oninput="calcBroSettle()"></div>
+      <div><label>② 已還弟（自動存雲端，元）</label><input type="number" id="bs-paid" placeholder="如 3200" oninput="calcBroSettle()" onchange="bsSetPaidBack()"></div>
       <div><label>② 已還弟的日期（通知信會寫出）</label><input type="text" id="bs-paid-date" placeholder="如 6/27" onchange="bsSetPaidDate()"></div>
     </div>
     <div class="form-row c2">
-      <div><label>房東贊助房客零頭（元）</label><input type="number" id="bs-odd" placeholder="如 96" oninput="calcBroSettle()"></div>
+      <div><label>房東贊助房客零頭（<span style="color:var(--gold);">自動＝各期 N9 加總</span>）</label><input type="number" id="bs-odd" placeholder="自動帶入" oninput="calcBroSettle()"></div>
       <div><label>零頭歸屬（固定保存）</label>
         <button id="bs-odd-toggle" class="btn bd sm" onclick="toggleOddOwner()" style="width:100%;">◉ 哥全包（預設）</button>
       </div>
@@ -1756,6 +1760,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
     <div class="gap mt">
       <button class="btn bp" onclick="genBroGmail()">📧 產生給弟的 Gmail 明細（預覽／複製／寄出）</button>
+      <button class="btn ba" onclick="backfillBillNums(false)">🔧 補算舊帳單的結算欄位（N14／N9）</button>
       <button class="btn bs" onclick="bsMarkSettledNow()">✅ 已轉帳給弟 → 標記本次結算</button>
     </div>
     <div class="form-row c2" style="margin-top:.5rem;">
@@ -2181,7 +2186,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v07140709'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08030448'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -2554,6 +2559,7 @@ const loadLandlordData = async () => {
       if(d.bsCommonCosts)DB.bsCommonCosts=d.bsCommonCosts;
       if(d.netBaseMonth)DB.netBaseMonth=d.netBaseMonth;
       if(d.bsPaidDate)DB.bsPaidDate=d.bsPaidDate;
+      if(d.bsPaidBack!=null)DB.bsPaidBack=d.bsPaidBack;
       if(d.netSettledMonths)DB.netSettledMonths=d.netSettledMonths;
       if(d.settlements)DB.settlements=d.settlements;
       if(d.landlordSettlements)DB.landlordSettlements=d.landlordSettlements;
@@ -2607,6 +2613,7 @@ const saveLandlordData = async () => {
     bsCommonCosts:DB.bsCommonCosts||[],
     netBaseMonth:DB.netBaseMonth||'202603',
     bsPaidDate:DB.bsPaidDate||'',
+    bsPaidBack:+DB.bsPaidBack||0,
     netSettledMonths:DB.netSettledMonths||[],
     settlements:DB.settlements||[],
     landlordSettlements:DB.landlordSettlements||[],
@@ -3008,7 +3015,9 @@ window.ST = function(n){
   if(n==='rent')initRent();
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
-  if(n==='owner-calc'){renderOwnerHistory(); if(window.updateBrotherToggleUI)updateBrotherToggleUI(); const _on=document.getElementById('oc-net'); if(_on&&!_on.value){_on.value=DB.defaultNetFee||1409; calcOwner();} if(window.updateOddOwnerUI)updateOddOwnerUI(); if(window.bsRenderCommon)bsRenderCommon(); if(window.bsRenderSettlements)bsRenderSettlements(); const _br=document.getElementById('bs-rent'); if(window.bsAutoFill3&&_br&&!_br.value){ bsAutoFill3(true); } else if(window.calcBroSettle){calcBroSettle();}}
+  if(n==='owner-calc'){renderOwnerHistory(); if(window.updateBrotherToggleUI)updateBrotherToggleUI(); const _on=document.getElementById('oc-net'); if(_on&&!_on.value){_on.value=DB.defaultNetFee||1409; calcOwner();} if(window.updateOddOwnerUI)updateOddOwnerUI(); if(window.bsRenderCommon)bsRenderCommon(); if(window.bsRenderSettlements)bsRenderSettlements(); const _bp=document.getElementById('bs-paid'); if(_bp&&!_bp.value&&(+DB.bsPaidBack||0)) _bp.value=+DB.bsPaidBack;
+    if(window.backfillBillNums) backfillBillNums(true);
+    const _br=document.getElementById('bs-rent'); if(window.bsAutoFill3&&_br&&!_br.value){ bsAutoFill3(true); } else if(window.calcBroSettle){calcBroSettle();}}
   if(n==='maintenance'){renderMaintenanceHistory();loadMaintenanceState();renderMaintenanceLog(); checkMaintenanceDue();}
   if(n==='taxreserve'){renderTaxReserve(); renderReserveProfile(); sendReserveReport(false); checkMaintenanceDue();}
   if(n==='announce')renderAnnounce();
@@ -5364,6 +5373,8 @@ window.bsMarkSettledNow = async function(){
   pauseKeys.forEach(k=>{ DB.rentPause[k].bxSettled=true; });
   recIdx.forEach(i=>{ DB.rentRecords[i].bxSettled=true; });
   DB.netSettledMonths=(DB.netSettledMonths||[]).concat(nm);
+  DB.bsPaidBack=0;                       // 本次已全額結清，已還弟歸零，避免下次重複扣抵
+  const _bp=document.getElementById('bs-paid'); if(_bp) _bp.value='';
   DB.settlements=DB.settlements||[];
   const now=new Date();
   DB.settlements.push(window.stampRec({ id:''+now.getTime(), at:now.toISOString().slice(0,19),
@@ -5424,6 +5435,46 @@ window.bsRenderSettlements = function(){
       '<button class="btn bd sm" style="padding:.1rem .5rem;" onclick="bsRevokeSettle(\''+s.id+'\')">↩撤銷</button>'+
       '</div></div></div>';
   }).join('');
+};
+// ── 【待辦P-1】舊帳單自動補算 n14／n9（舊版存檔時尚無這兩欄）──
+window.calcBillN14N9 = function(b){
+  const n14 = (+b.elecTotal||0) + (+b.waterTotal||0) + (+b.gasTotal||0);
+  const R = b.rooms||{};
+  const wegOf = o => o ? Math.round(o.wegExact!=null ? o.wegExact
+                 : ((+o.sharedElec||0)+(+o.water||0)+(+o.gas||0))) : 0;
+  const lt = R['龍潭房東'], og = R['原房東'];
+  const tenantTotal = Object.keys(R)
+      .filter(k=>k!=='龍潭房東' && k!=='原房東')
+      .reduce((sum,k)=> sum + (+((R[k]||{}).total)||0), 0);
+  const n9 = n14 - tenantTotal - wegOf(lt) - (+((lt||{}).acFee)||0)
+                 - wegOf(og) - (+((og||{}).acFee)||0);
+  return { n14: n14, n9: Math.max(0, Math.round(n9)) };
+};
+window.backfillBillNums = async function(silent){
+  const bills = DB.utilBills||[];
+  let fixed=0; const list=[];
+  bills.forEach(function(b){
+    const hasRaw = ((+b.elecTotal||0)+(+b.waterTotal||0)+(+b.gasTotal||0))>0;
+    if((+b.n14||0)>0 || !hasRaw) return;
+    const r = window.calcBillN14N9(b);
+    b.n14 = r.n14;
+    if(!(+b.n9||0)) b.n9 = r.n9;
+    fixed++; list.push(b.period+'（總額 '+r.n14.toLocaleString()+'／零頭 '+r.n9+'）');
+  });
+  if(!fixed){ if(!silent) toast('✅ 所有帳單都已有結算欄位，不需補算'); return 0; }
+  try{
+    if(window.saveLandlordData) await saveLandlordData();
+    toast('🔧 已自動補算 '+fixed+' 張舊帳單：'+list.join('、'));
+    if(window.renderUtilHistory) renderUtilHistory();
+    if(window.bsAutoFill3) bsAutoFill3(true);
+  }catch(e){ toast('⚠️ 補算結果儲存失敗，請重試'); }
+  return fixed;
+};
+// ── 【待辦P-3】「已還弟」持久化（原本只存在畫面，雲端永遠讀到 0）──
+window.bsSetPaidBack = async function(){
+  DB.bsPaidBack = +(document.getElementById('bs-paid')?.value||0);
+  try{ if(window.saveLandlordData) await saveLandlordData(); }catch(e){ toast('⚠️ 儲存失敗，請重試'); }
+  if(window.calcBroSettle) calcBroSettle();
 };
 window.bsUnsettledNetMonths = function(){
   const base = ''+(DB.netBaseMonth||'202603');
