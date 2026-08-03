@@ -275,7 +275,9 @@ def settle_days(db, today):
 
 def calc_settle(db, today):
     """只計『未標記已結算』的項目 → 徹底避免重複計算"""
-    base = str(db.get('settleBaseMonth') or db.get('netBaseMonth') or '202603')
+    base  = str(db.get('settleBaseMonth') or db.get('netBaseMonth') or '202603')  # 房租／網路
+    bbase = str(db.get('billBaseMonth') or '202602')                              # 水電帳單／公共電費
+    # ★兩者不可共用：水電帳單「期別」與網路費「月份」編號基準不同
     rent = 0; lines = []; unpaid = []; periods = []
     pause_keys = []
     for k, p in (db.get('rentPause') or {}).items():
@@ -307,7 +309,7 @@ def calc_settle(db, today):
     bill_idx = []
     unassigned = []; pub_lines = []
     for i, b in enumerate(db.get('utilBills') or []):
-        if b.get('bxSettled') or str(b.get('period') or '') < base: continue
+        if b.get('bxSettled') or str(b.get('period') or '') < bbase: continue
         if not b.get('utilPaidBy') and int(b.get('n14') or 0) > 0:
             unassigned.append(str(b.get('period') or ''))
         periods.append(str(b.get('period') or ''))

@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08040324</span>
+    <span class="version-tag" id="ver-tag">v08040410</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1764,8 +1764,10 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <button class="btn bs" onclick="bsMarkSettledNow()">✅ 已轉帳給弟 → 標記本次結算</button>
     </div>
     <div class="form-row c2" style="margin-top:.5rem;">
-      <div><label style="font-size:.75rem;">★結算起算月（YYYYMM；房租／水電／網路共用，與雲端同步）</label>
+      <div><label style="font-size:.75rem;">★房租／網路 起算月（YYYYMM）</label>
         <input type="text" id="bs-net-base" placeholder="202603" onchange="bsSetNetBase()"></div>
+      <div><label style="font-size:.75rem;">★水電帳單／公共電費 起算「期別」（YYYYMM）</label>
+        <input type="text" id="bs-bill-base" placeholder="202602" onchange="bsSetBillBase()"></div>
       <div style="display:flex;align-items:flex-end;font-size:.75rem;color:var(--muted);" id="bs-net-info">—</div>
     </div>
     <div id="bs-gmail-out"></div>
@@ -2186,7 +2188,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08040324'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08040410'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -2559,6 +2561,7 @@ const loadLandlordData = async () => {
       if(d.bsCommonCosts)DB.bsCommonCosts=d.bsCommonCosts;
       if(d.netBaseMonth)DB.netBaseMonth=d.netBaseMonth;
       if(d.settleBaseMonth)DB.settleBaseMonth=d.settleBaseMonth;
+      if(d.billBaseMonth)DB.billBaseMonth=d.billBaseMonth;
       if(d.bsPaidDate)DB.bsPaidDate=d.bsPaidDate;
       if(d.bsPaidBack!=null)DB.bsPaidBack=d.bsPaidBack;
       if(d.netSettledMonths)DB.netSettledMonths=d.netSettledMonths;
@@ -2614,6 +2617,7 @@ const saveLandlordData = async () => {
     bsCommonCosts:DB.bsCommonCosts||[],
     netBaseMonth:DB.netBaseMonth||'202603',
     settleBaseMonth:DB.settleBaseMonth||DB.netBaseMonth||'202603',
+    billBaseMonth:DB.billBaseMonth||'202602',
     bsPaidDate:DB.bsPaidDate||'',
     bsPaidBack:+DB.bsPaidBack||0,
     netSettledMonths:DB.netSettledMonths||[],
@@ -5198,6 +5202,24 @@ window.bsAddCommon = async function(){
     toast('⚠️ 雲端儲存失敗！此筆「未存」，請檢查網路後重新加入。');
   }
 };
+window.bsEditCommon = async function(i){
+  DB.bsCommonCosts=DB.bsCommonCosts||[];
+  const c=DB.bsCommonCosts[i]; if(!c) return;
+  if(!window.guardRec(c,'編輯')) return;
+  const desc=prompt('項目名稱：', c.desc||''); if(desc===null) return;
+  const amt=prompt('金額（元）：', c.amount||''); if(amt===null) return;
+  const payer=prompt('誰先付？請輸入「哥」或「弟」：', c.payer||'哥'); if(payer===null) return;
+  const date=prompt('日期（選填，如 7/21；留空則不顯示）：', c.date||''); if(date===null) return;
+  const p=(String(payer).indexOf('弟')>=0)?'弟':'哥';
+  const bk={desc:c.desc,amount:c.amount,payer:c.payer,date:c.date};
+  c.desc=String(desc).trim(); c.amount=+amt||0; c.payer=p; c.date=String(date).trim();
+  try{
+    if(window.saveLandlordData) await saveLandlordData();
+    if(window.bsRenderCommon) bsRenderCommon();
+    if(window.calcBroSettle) calcBroSettle();
+    toast('✅ 已更新：'+c.desc+' $'+(+c.amount||0).toLocaleString()+'（'+p+'付）');
+  }catch(e){ Object.assign(c,bk); toast('⚠️ 儲存失敗，請重試'); }
+};
 window.bsDelCommon = async function(i){
   DB.bsCommonCosts=DB.bsCommonCosts||[];
   if(!window.guardRec(DB.bsCommonCosts[i],'刪除'))return;
@@ -5231,7 +5253,7 @@ window.bsRenderCommon = function(){
   if(!list.length){ box.innerHTML='<span style="color:var(--muted);">尚無共同費用（加入後會自動各半併入結算）。</span>'; return; }
   box.innerHTML=list.map(function(c,i){
     const share=Math.floor((+c.amount||0)/2);
-    return '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--border);padding:.28rem 0;gap:.5rem;'+(c.settled?'opacity:.55;':'')+'"><span>'+(c.date?c.date+'　':'')+c.desc+'　$'+f(c.amount)+'（<b>'+c.payer+'付</b>，各半 '+f(share)+'）'+(c.settled?' <span style="color:var(--muted);font-size:.72rem;">✅已與弟結算</span>':'')+(c.createdBy?' <span style="color:var(--muted);font-size:.68rem;">👤'+String(c.createdBy).split('@')[0]+'</span>':'')+'</span><button class="btn bd sm" style="padding:.1rem .5rem;white-space:nowrap;" onclick="bsDelCommon('+i+')">刪</button></div>';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--border);padding:.28rem 0;gap:.5rem;'+(c.settled?'opacity:.55;':'')+'"><span>'+(c.date?c.date+'　':'')+c.desc+'　$'+f(c.amount)+'（<b>'+c.payer+'付</b>，各半 '+f(share)+'）'+(c.settled?' <span style="color:var(--muted);font-size:.72rem;">✅已與弟結算</span>':'')+(c.createdBy?' <span style="color:var(--muted);font-size:.68rem;">👤'+String(c.createdBy).split('@')[0]+'</span>':'')+'</span><span style="display:flex;gap:.25rem;white-space:nowrap;"><button class="btn ba sm" style="padding:.1rem .5rem;" onclick="bsEditCommon('+i+')">✏️編輯</button><button class="btn bd sm" style="padding:.1rem .5rem;" onclick="bsDelCommon('+i+')">刪</button></span></div>';
   }).join('');
 };
 window.tsbInitRooms = function(){
@@ -5338,10 +5360,19 @@ window.bsSetPaidDate = async function(){
   try{ if(window.saveLandlordData) await saveLandlordData(); }catch(e){ toast('⚠️ 儲存失敗'); }
   if(window.calcBroSettle) calcBroSettle();
 };
+window.bsSetBillBase = async function(){
+  const v=(document.getElementById('bs-bill-base')?.value||'').trim();
+  if(!/^\d{6}$/.test(v)){ toast('請輸入 6 碼期別，如 202602'); return; }
+  DB.billBaseMonth=v;
+  try{ if(window.saveLandlordData) await saveLandlordData(); toast('✅ 水電帳單起算期別已存雲端：'+v); }
+  catch(e){ toast('⚠️ 儲存失敗，請重試'); return; }
+  if(window.backfillBillNums) await backfillBillNums(true);
+  if(window.bsAutoFill3) bsAutoFill3(true);
+};
 window.bsSetNetBase = async function(){
   const v=(document.getElementById('bs-net-base')?.value||'').trim();
   if(!/^\d{6}$/.test(v)){ toast('請輸入 6 碼年月，如 202603'); return; }
-  DB.settleBaseMonth=v; DB.netBaseMonth=v;   // 房租／水電／網路共用同一起算月
+  DB.settleBaseMonth=v; DB.netBaseMonth=v;   // 房租／網路共用（水電帳單另有 billBaseMonth）
   try{ if(window.saveLandlordData) await saveLandlordData(); toast('✅ 網路費起算月已存雲端：'+v); }
   catch(e){ toast('⚠️ 儲存失敗，請重試'); return; }
   if(window.bsAutoFill3) bsAutoFill3(true);
@@ -5420,6 +5451,7 @@ window.bsConfirmSettle = async function(id){
 window.bsRenderSettlements = function(){
   const box=document.getElementById('bs-settlements'); if(!box) return;
   const nb=document.getElementById('bs-net-base'); if(nb && !nb.value) nb.value=window.settleBase();
+  const bb=document.getElementById('bs-bill-base'); if(bb && !bb.value) bb.value=window.billBase();
   const info=document.getElementById('bs-net-info');
   if(info){ const nm=window.bsUnsettledNetMonths?window.bsUnsettledNetMonths():[];
     const _d=new Date(), _bd=+(DB.netBillDay||13);
@@ -5458,9 +5490,9 @@ window.calcBillN14N9 = function(b){
 window.backfillBillNums = async function(silent){
   const bills = DB.utilBills||[];
   let fixed=0; const list=[];
-  const _base = window.settleBase();
+  const _base = window.billBase();
   bills.forEach(function(b){
-    if(String(b.period||'') < _base) return;      // ★早於結算起算月者不補算(如媽媽生前帳單)
+    if(String(b.period||'') < _base) return;      // ★早於水電帳單起算月者不補算(如長輩生前帳單)
     const hasRaw = ((+b.elecTotal||0)+(+b.waterTotal||0)+(+b.gasTotal||0))>0;
     if((+b.n14||0)>0 || !hasRaw) return;
     const r = window.calcBillN14N9(b);
@@ -5495,7 +5527,11 @@ window.toggleBillPayer = async function(i){
     toast('已設定 '+b.period+' 期水電瓦斯由「'+(b.utilPaidBy||'未指定')+'」先付');
   }catch(e){ b.utilPaidBy=cur; toast('⚠️ 儲存失敗，請重試'); }
 };
-window.settleBase = function(){ return ''+(DB.settleBaseMonth||DB.netBaseMonth||'202603'); };
+window.settleBase = function(){ return ''+(DB.settleBaseMonth||DB.netBaseMonth||'202603'); };   // 房租／網路費
+window.billBase   = function(){ return ''+(DB.billBaseMonth||'202602'); };                        // 水電帳單／1樓公共電費
+// ★兩者不可共用：水電帳單「期別」與網路費「月份」的編號基準不同
+//   （例：202602 期水電帳單涵蓋 2025/12/08~2026/02/02，仍屬本次結算範圍；
+//     而網路費自 202603 起才由哥支付）
 window.bsUnsettledNetMonths = function(){
   const base = window.settleBase();
   const now = new Date();
@@ -5518,11 +5554,12 @@ window.bsUnsettledNetMonths = function(){
 window.bsAutoFill3 = function(silent){
   const bills = DB.utilBills||[];
   let adv=0, odd=0, pubBro=0, pubBig=0, nAdv=0;
-  const _base = window.settleBase();
+  const _base = window.settleBase();     // 房租／網路
+  const _bbase = window.billBase();      // 水電帳單／公共電費
   const unassigned = [];
   bills.forEach(function(b){
-    if(b.bxSettled) return;                       // ★跳過已與弟結算的帳單
-    if(String(b.period||'') < _base) return;      // ★早於結算起算月者不列入（如長輩生前帳單）
+    if(b.bxSettled) return;                        // ★跳過已與弟結算的帳單
+    if(String(b.period||'') < _bbase) return;      // ★早於水電帳單起算月者不列入
     if(!b.utilPaidBy && (+b.n14||0)>0) unassigned.push(b.period);
     odd += (+b.n9||0);
     pubBro += (+b.pubBro||0);
@@ -5564,7 +5601,7 @@ window.bsAutoFill3 = function(silent){
   });
   const pubArr=[];
   (DB.utilBills||[]).forEach(function(b){
-    if(b.bxSettled || String(b.period||'') < _base) return;
+    if(b.bxSettled || String(b.period||'') < _bbase) return;
     const pp=String(b.period||'');
     if(+b.pubBro>0) pubArr.push({p:pp, t:'・'+pp+' 期：你代墊 '+(+b.pubBro).toLocaleString()});
     if(+b.pubBig>0) pubArr.push({p:pp, t:'・'+pp+' 期：我代墊 '+(+b.pubBig).toLocaleString()});
