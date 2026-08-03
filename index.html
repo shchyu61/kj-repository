@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08030543</span>
+    <span class="version-tag" id="ver-tag">v08040324</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1764,7 +1764,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <button class="btn bs" onclick="bsMarkSettledNow()">✅ 已轉帳給弟 → 標記本次結算</button>
     </div>
     <div class="form-row c2" style="margin-top:.5rem;">
-      <div><label style="font-size:.75rem;">網路費起算月（YYYYMM，與雲端同步）</label>
+      <div><label style="font-size:.75rem;">★結算起算月（YYYYMM；房租／水電／網路共用，與雲端同步）</label>
         <input type="text" id="bs-net-base" placeholder="202603" onchange="bsSetNetBase()"></div>
       <div style="display:flex;align-items:flex-end;font-size:.75rem;color:var(--muted);" id="bs-net-info">—</div>
     </div>
@@ -2186,7 +2186,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08030543'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08040324'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -2558,6 +2558,7 @@ const loadLandlordData = async () => {
       if(d.rentPause)DB.rentPause=d.rentPause;
       if(d.bsCommonCosts)DB.bsCommonCosts=d.bsCommonCosts;
       if(d.netBaseMonth)DB.netBaseMonth=d.netBaseMonth;
+      if(d.settleBaseMonth)DB.settleBaseMonth=d.settleBaseMonth;
       if(d.bsPaidDate)DB.bsPaidDate=d.bsPaidDate;
       if(d.bsPaidBack!=null)DB.bsPaidBack=d.bsPaidBack;
       if(d.netSettledMonths)DB.netSettledMonths=d.netSettledMonths;
@@ -2612,6 +2613,7 @@ const saveLandlordData = async () => {
     rentPause:DB.rentPause||{},
     bsCommonCosts:DB.bsCommonCosts||[],
     netBaseMonth:DB.netBaseMonth||'202603',
+    settleBaseMonth:DB.settleBaseMonth||DB.netBaseMonth||'202603',
     bsPaidDate:DB.bsPaidDate||'',
     bsPaidBack:+DB.bsPaidBack||0,
     netSettledMonths:DB.netSettledMonths||[],
@@ -5339,7 +5341,7 @@ window.bsSetPaidDate = async function(){
 window.bsSetNetBase = async function(){
   const v=(document.getElementById('bs-net-base')?.value||'').trim();
   if(!/^\d{6}$/.test(v)){ toast('請輸入 6 碼年月，如 202603'); return; }
-  DB.netBaseMonth=v;
+  DB.settleBaseMonth=v; DB.netBaseMonth=v;   // 房租／水電／網路共用同一起算月
   try{ if(window.saveLandlordData) await saveLandlordData(); toast('✅ 網路費起算月已存雲端：'+v); }
   catch(e){ toast('⚠️ 儲存失敗，請重試'); return; }
   if(window.bsAutoFill3) bsAutoFill3(true);
@@ -5417,7 +5419,7 @@ window.bsConfirmSettle = async function(id){
 };
 window.bsRenderSettlements = function(){
   const box=document.getElementById('bs-settlements'); if(!box) return;
-  const nb=document.getElementById('bs-net-base'); if(nb && !nb.value) nb.value=DB.netBaseMonth||'202603';
+  const nb=document.getElementById('bs-net-base'); if(nb && !nb.value) nb.value=window.settleBase();
   const info=document.getElementById('bs-net-info');
   if(info){ const nm=window.bsUnsettledNetMonths?window.bsUnsettledNetMonths():[];
     const _d=new Date(), _bd=+(DB.netBillDay||13);
@@ -5456,7 +5458,9 @@ window.calcBillN14N9 = function(b){
 window.backfillBillNums = async function(silent){
   const bills = DB.utilBills||[];
   let fixed=0; const list=[];
+  const _base = window.settleBase();
   bills.forEach(function(b){
+    if(String(b.period||'') < _base) return;      // ★早於結算起算月者不補算(如媽媽生前帳單)
     const hasRaw = ((+b.elecTotal||0)+(+b.waterTotal||0)+(+b.gasTotal||0))>0;
     if((+b.n14||0)>0 || !hasRaw) return;
     const r = window.calcBillN14N9(b);
@@ -5479,8 +5483,21 @@ window.bsSetPaidBack = async function(){
   try{ if(window.saveLandlordData) await saveLandlordData(); }catch(e){ toast('⚠️ 儲存失敗，請重試'); }
   if(window.calcBroSettle) calcBroSettle();
 };
+window.toggleBillPayer = async function(i){
+  const b=(DB.utilBills||[])[i]; if(!b) return;
+  if(!window.guardRec(b,'變更')) return;
+  const cur=b.utilPaidBy||'';
+  b.utilPaidBy = (cur==='弟') ? '哥' : (cur==='哥' ? '' : '弟');
+  try{
+    if(window.saveLandlordData) await saveLandlordData();
+    if(window.renderUtilHistory) renderUtilHistory();
+    if(window.bsAutoFill3) bsAutoFill3(true);
+    toast('已設定 '+b.period+' 期水電瓦斯由「'+(b.utilPaidBy||'未指定')+'」先付');
+  }catch(e){ b.utilPaidBy=cur; toast('⚠️ 儲存失敗，請重試'); }
+};
+window.settleBase = function(){ return ''+(DB.settleBaseMonth||DB.netBaseMonth||'202603'); };
 window.bsUnsettledNetMonths = function(){
-  const base = ''+(DB.netBaseMonth||'202603');
+  const base = window.settleBase();
   const now = new Date();
   // ★計算日期判定：網路費每月13日出帳、25日扣款。
   //   若今天還沒到出帳日 → 本月尚未發生，不可納入結算（否則會多算弟一期）。
@@ -5501,20 +5518,23 @@ window.bsUnsettledNetMonths = function(){
 window.bsAutoFill3 = function(silent){
   const bills = DB.utilBills||[];
   let adv=0, odd=0, pubBro=0, pubBig=0, nAdv=0;
+  const _base = window.settleBase();
+  const unassigned = [];
   bills.forEach(function(b){
     if(b.bxSettled) return;                       // ★跳過已與弟結算的帳單
+    if(String(b.period||'') < _base) return;      // ★早於結算起算月者不列入（如長輩生前帳單）
+    if(!b.utilPaidBy && (+b.n14||0)>0) unassigned.push(b.period);
     odd += (+b.n9||0);
     pubBro += (+b.pubBro||0);
     pubBig += (+b.pubBig||0);
-    if((b.utilPaidBy||'弟')==='弟'){ adv += (+b.n14||0); nAdv++; }
+    if(b.utilPaidBy==='弟'){ adv += (+b.n14||0); nAdv++; }   // ★只算「明示弟先付」，不再預設弟
   });
   let rent=0, nRent=0;
   Object.values(DB.rentPause||{}).forEach(function(p){
     if(p.settledTo && !p.bxSettled){ rent += (+p.settledAmount||0); nRent++; }   // 併收結清且「未與弟結算」才計入
   });
-  const ym = (function(){const d=new Date();return ''+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0');})();
-  (DB.rentRecords||[]).forEach(function(rec){                                    // ★本月一般收租(未結算、已收訖)
-    if(String(rec.period)!==ym || rec.bxSettled) return;
+  (DB.rentRecords||[]).forEach(function(rec){        // ★抓「所有未結算」收租(不再只抓本月)
+    if(rec.bxSettled || String(rec.period||'') < _base) return;
     Object.values(rec.payments||{}).forEach(function(p){
       if((+p.amount||0)>0 && p.paid){ rent += (+p.amount||0); nRent++; }
     });
@@ -5523,29 +5543,48 @@ window.bsAutoFill3 = function(silent){
   const nm = window.bsUnsettledNetMonths();
   const netMonths=nm.length, fee=DB.defaultNetFee||1409;
   // ── 明細（給弟的通知信用）──
-  const rentLines=[], pubLines=[];
+  const rentLines=[], pubLines=[], periods=[];
   Object.values(DB.rentPause||{}).forEach(function(p){
     if(p.settledTo && !p.bxSettled){
       const ms=(window._monthRange(p.from,p.settledTo)||[]);
       const tn=(DB.tenants[p.room]||{}).name||'';
       rentLines.push('・'+(RL[p.room]||p.room)+(tn?'・'+tn:'')+' 併收 '+ms.length+' 期（'+p.from+'～'+p.settledTo+'）共 '+(+p.settledAmount||0).toLocaleString());
+      periods.push(String(p.settledTo||''));
     }
   });
   (DB.rentRecords||[]).forEach(function(rec){
-    if(String(rec.period)!==ym || rec.bxSettled) return;
+    if(rec.bxSettled || String(rec.period||'') < _base) return;
     Object.entries(rec.payments||{}).forEach(function([room,p]){
       if((+p.amount||0)>0 && p.paid){
         const tn=(DB.tenants[room]||{}).name||'';
         rentLines.push('・'+(RL[room]||room)+(tn?'・'+tn:'')+' '+rec.period+' 房租 '+(+p.amount||0).toLocaleString());
+        periods.push(String(rec.period||''));
       }
     });
   });
+  const pubArr=[];
   (DB.utilBills||[]).forEach(function(b){
-    if(b.bxSettled) return;
-    if(+b.pubBro>0) pubLines.push('・'+(b.period||'')+' 期：你代墊 '+(+b.pubBro).toLocaleString());
-    if(+b.pubBig>0) pubLines.push('・'+(b.period||'')+' 期：我代墊 '+(+b.pubBig).toLocaleString());
+    if(b.bxSettled || String(b.period||'') < _base) return;
+    const pp=String(b.period||'');
+    if(+b.pubBro>0) pubArr.push({p:pp, t:'・'+pp+' 期：你代墊 '+(+b.pubBro).toLocaleString()});
+    if(+b.pubBig>0) pubArr.push({p:pp, t:'・'+pp+' 期：我代墊 '+(+b.pubBig).toLocaleString()});
+    periods.push(pp);
   });
-  window._bsDetail={rentLines:rentLines, pubLines:pubLines};
+  pubArr.sort(function(a,b){ return String(a.p).localeCompare(String(b.p)); });   // ★由早到晚
+  pubArr.forEach(function(x){ pubLines.push(x.t); });
+  const nmAll = window.bsUnsettledNetMonths ? window.bsUnsettledNetMonths() : [];
+  nmAll.forEach(function(m){ periods.push(String(m)); });
+  let maxP=''; periods.forEach(function(p){ if(p && p>maxP) maxP=p; });
+  let cutoff='';
+  if(/^\d{6}$/.test(maxP)){
+    const _y=+maxP.slice(0,4), _m=+maxP.slice(4,6);
+    cutoff=_y+'年'+_m+'/'+new Date(_y,_m,0).getDate();      // 例：202607 → 2026年7/31
+  }
+  window._bsDetail={rentLines:rentLines, pubLines:pubLines, periods:periods,
+                    unassigned:unassigned, cutoff:cutoff, netMonths:nmAll};
+  if(unassigned.length && !silent){
+    toast('⚠️ 這幾期水電尚未指定「誰先付」，不列入代墊：'+unassigned.join('、')+'（請到水電帳單歷史點「💰水電由」設定）');
+  }
   const setV=(id,v)=>{const el=document.getElementById(id); if(el){ el.value=(v||v===0)?v:''; }};
   setV('bs-rent', rent);
   setV('bs-adv', adv);
@@ -5606,9 +5645,11 @@ window.calcBroSettle = function(){
 window.genBroGmail = function(){
   if(!window._bsCalc){ toast('請先輸入數字計算'); return; }
   const c=window._bsCalc, f=n=>Math.round(n).toLocaleString();
-  const D=window._bsDetail||{rentLines:[],pubLines:[]};
+  const D=window._bsDetail||{rentLines:[],pubLines:[],netMonths:[],cutoff:'',unassigned:[]};
   const fee=DB.defaultNetFee||1409;
-  const nMon=+(document.getElementById('bs-net-months')?.value||0);
+  const nm=(D.netMonths&&D.netMonths.length)?D.netMonths:[];
+  const nMon=nm.length||+(document.getElementById('bs-net-months')?.value||0);
+  const ymTxt=function(m){ m=String(m); return m.slice(0,4)+'年'+(+m.slice(4,6))+'月'; };
   const pd=(DB.bsPaidDate||'').trim();
   const blocks=3+(c.pubTotal?1:0)+((c.common&&c.common.length)?1:0);
   const oddAll=(c.oddOwner!=='half');
@@ -5616,8 +5657,12 @@ window.genBroGmail = function(){
   let owedToMe=0, owedToYou=0;
   (c.common||[]).forEach(function(x){ const a=+x.amount||0; const h=Math.floor(a/2);
     if((x.payer||'哥')==='哥') owedToMe+=h; else owedToYou+=(a-h); });
+  const subj=(D.cutoff?D.cutoff+'之前的':'')+'房租和水、電、瓦斯、網路費結算明細';
+  const advSentence = (+c.paid>0)
+    ? `我已經在 ${pd||'先前'} 先轉帳給你 ${f(c.paid)} 元，這次再補你 ${f(c.utilToBro)} 元；${f(c.paid)} ＋ ${f(c.utilToBro)} ＝ ${f(c.paid+c.utilToBro)} 元，剛好就是你該拿回去的代墊款。`
+    : `這次我補你 ${f(c.utilToBro)} 元，就是你該拿回去的代墊款。`;
 
-  const txt=`主旨：房租和水、電、瓦斯、網路費結算明細
+  const txt=`主旨：${subj}
 
 這期跟你結一下，分 ${blocks} 塊：
 
@@ -5628,10 +5673,10 @@ ${D.rentLines.length?D.rentLines.join('\n'):'・（明細請見網頁「收租�
 
 【2. 水電瓦斯（你先幫忙代墊的）】
 你先幫忙代墊了 ${f(c.adv)} 元。
-${c.odd?(oddAll?`（水電帳單的零頭 ${f(c.odd)} 元，全部由我吸收，不用你負擔）\n`:`（水電帳單的零頭 ${f(c.odd)} 元，我們各負責一半，你負擔 ${f(c.oddBro)} 元）\n`):''}我已經在 ${pd||'先前'} 先轉帳給你 ${f(c.paid)} 元，這次再補你 ${f(c.utilToBro)} 元；${f(c.paid)} ＋ ${f(c.utilToBro)} ＝ ${f(c.paid+c.utilToBro)} 元，剛好就是你該拿回去的代墊款。
+${c.odd?(oddAll?`（水電帳單的零頭 ${f(c.odd)} 元，全部由我吸收，不用你負擔）\n`:`（水電帳單的零頭 ${f(c.odd)} 元，我們各負責一半，你負擔 ${f(c.oddBro)} 元）\n`):''}${advSentence}
 
 【3. 網路費】
-網路費 ${f(c.net)} 元（每月 ${f(fee)} 元 × ${nMon||'—'} 個月）是我先付的，你負責一半 ${f(c.netBro)} 元（我多負責 1 元）。
+網路費 ${f(c.net)} 元（${nm.length?nm.map(ymTxt).join('、'):'—'}，每月 ${f(fee)} 元 × ${nMon} 個月）是我先付的，你負責一半 ${f(c.netBro)} 元（我多負責 1 元）。
 這 ${f(c.netBro)} 元你不用另外拿錢給我，我會直接從「我要轉帳給你的錢」裡面扣掉。
 ${c.pubTotal?`
 【4. 公共電費（1樓大廳）】
@@ -5641,7 +5686,11 @@ ${D.pubLines.length?D.pubLines.join('\n'):'・（明細請見網頁「1樓公共
 你實際已經代墊了 ${f(c.pubBro)} 元，${c.pubToBro>=0?`比應負擔的多墊了 ${f(c.pubToBro)} 元，所以我要補你 ${f(c.pubToBro)} 元。`:`比應負擔的還少 ${f(Math.abs(c.pubToBro))} 元，所以這 ${f(Math.abs(c.pubToBro))} 元我會從轉帳金額裡面扣掉。`}
 `:''}${(c.common&&c.common.length)?`
 【${c.pubTotal?5:4}. 其他共同費用（各負責一半，我多負責 1 元）】
-${c.common.map(x=>`・${x.date?x.date+' ':''}${x.desc} $${f(x.amount)}（${(x.payer||'哥')==='哥'?'我付':'你付'}，各半 ${f(Math.floor((+x.amount||0)/2))}）`).join('\n')}
+${c.common.map(function(x){
+   const _d=String(x.date||''), _s=String(x.desc||'');
+   const _pre=(_d && _s.indexOf(_d)!==0) ? _d+' ' : '';
+   return `・${_pre}${_s} $${f(x.amount)}（${(x.payer||'哥')==='哥'?'我付':'你付'}，各半 ${f(Math.floor((+x.amount||0)/2))}）`;
+ }).join('\n')}
 我先付的部分，你要付給我 ${f(owedToMe)} 元；你先付的部分，我要付給你 ${f(owedToYou)} 元。
 ${c.commonToBro>=0?`兩邊相抵 → 我還要補你 ${f(Math.abs(c.commonToBro))} 元。`:`兩邊相抵 → 你還要補我 ${f(Math.abs(c.commonToBro))} 元，這筆我會從轉帳金額裡面扣掉。`}
 `:''}
@@ -6204,6 +6253,7 @@ window.renderUtilHistory = function(){
           <label style="font-size:.82rem;display:flex;align-items:center;gap:.25rem;color:var(--primary);font-weight:700;cursor:pointer;"><input type="checkbox" class="bill-pick" value="${b.period}" style="width:1rem;height:1rem;">勾選</label>
           <button class="btn bp sm" onclick="showBillText(['${b.period}'])">📋 帳單文字</button>
           <button class="btn bo sm" onclick="toggleUtilDetail('${detailId}')">📋 明細</button>
+          <button class="btn ${b.utilPaidBy==='弟'?'bs':(b.utilPaidBy==='哥'?'bp':'bd')} sm" onclick="toggleBillPayer(${i})" title="點一下切換：弟先付→哥先付→未指定">💰 水電由：${b.utilPaidBy==='弟'?'弟先付':(b.utilPaidBy==='哥'?'哥先付':'⚠️未指定')}</button>
           <button class="btn ba sm" onclick="loadUtilBillToEdit(${i})">✏️ 載入編輯</button>
           ${cst.allPaid?`<button class="btn bo sm" onclick="markUtilDeferred(${i})">⏸️ 全部緩收</button>`:`<button class="btn bs sm" onclick="markUtilCollected(${i})">💰 全部已收</button>`}
           <button class="btn bd sm" onclick="deleteUtilBill(${i})">🗑️ 刪除</button>

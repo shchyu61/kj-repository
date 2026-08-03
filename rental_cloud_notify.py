@@ -236,7 +236,7 @@ def _month_list(a, b):
 
 
 def unsettled_net_months(db, today):
-    base = str(db.get('netBaseMonth') or '202603')     # 網路費起算月（可在網頁調整）
+    base = str(db.get('settleBaseMonth') or db.get('netBaseMonth') or '202603')  # 結算起算月（房租/水電/網路共用）
     # ★計算日期判定：網路費每月 13 日出帳、25 日扣款。
     #   今天若還沒到出帳日 → 本月尚未發生，不納入（避免多算弟一期）。
     bill_day = int(db.get('netBillDay') or 13)
@@ -275,25 +275,29 @@ def settle_days(db, today):
 
 def calc_settle(db, today):
     """只計『未標記已結算』的項目 → 徹底避免重複計算"""
-    ym = f'{today.year}{today.month:02d}'
-    rent = 0; lines = []; unpaid = []
+    base = str(db.get('settleBaseMonth') or db.get('netBaseMonth') or '202603')
+    rent = 0; lines = []; unpaid = []; periods = []
     pause_keys = []
     for k, p in (db.get('rentPause') or {}).items():
         if p.get('settledTo') and not p.get('bxSettled'):
             amt = int(p.get('settledAmount') or 0)
-            rent += amt; pause_keys.append(k)
-            lines.append(f"　・{RL.get(p.get('room'), p.get('room'))} 併收結清 {amt:,}（收款日 {p.get('settledAt','')}）")
+            rent += amt; pause_keys.append(k); periods.append(str(p.get('settledTo') or ''))
+            _tn = (db.get('tenants') or {}).get(p.get('room'), {}).get('name') or ''
+            _ms = _month_list(str(p.get('from') or ''), str(p.get('settledTo') or '')) if p.get('from') else []
+            lines.append(f"・{RL.get(p.get('room'), p.get('room'))}{('・'+_tn) if _tn else ''} 併收 {len(_ms)} 期（{p.get('from')}～{p.get('settledTo')}）共 {amt:,}")
     rec_idx = []
     for i, rec in enumerate(db.get('rentRecords') or []):
-        if str(rec.get('period')) != ym or rec.get('bxSettled'):
-            continue
+        if rec.get('bxSettled') or str(rec.get('period') or '') < base:
+            continue   # ★抓「所有未結算」收租，不再只抓本月
         got = False
         for room, pay in (rec.get('payments') or {}).items():
             amt = int(pay.get('amount') or 0)
             if amt <= 0: continue
             if pay.get('paid'):
                 rent += amt; got = True
-                lines.append(f'　・{RL.get(room, room)} {today.month}月房租 {amt:,}')
+                periods.append(str(rec.get('period') or ''))
+                _tn = (db.get('tenants') or {}).get(room, {}).get('name') or ''
+                lines.append(f"・{RL.get(room, room)}{('・'+_tn) if _tn else ''} {rec.get('period')} 房租 {amt:,}")
             else:
                 unpaid.append(f'{RL.get(room, room)}（應收 {amt:,}）')
         if got: rec_idx.append(i)
@@ -301,15 +305,24 @@ def calc_settle(db, today):
 
     adv = odd = pub_bro = pub_big = 0
     bill_idx = []
+    unassigned = []; pub_lines = []
     for i, b in enumerate(db.get('utilBills') or []):
-        if b.get('bxSettled'): continue
+        if b.get('bxSettled') or str(b.get('period') or '') < base: continue
+        if not b.get('utilPaidBy') and int(b.get('n14') or 0) > 0:
+            unassigned.append(str(b.get('period') or ''))
+        periods.append(str(b.get('period') or ''))
         used = False
         if int(b.get('n9') or 0) or int(b.get('pubBro') or 0) or int(b.get('pubBig') or 0) or int(b.get('n14') or 0):
             used = True
         odd     += int(b.get('n9') or 0)
+        _pp = str(b.get('period') or '')
+        if int(b.get('pubBro') or 0) > 0:
+            pub_lines.append((_pp, f"・{_pp} 期：你代墊 {int(b.get('pubBro')):,}"))
+        if int(b.get('pubBig') or 0) > 0:
+            pub_lines.append((_pp, f"・{_pp} 期：我代墊 {int(b.get('pubBig')):,}"))
         pub_bro += int(b.get('pubBro') or 0)
         pub_big += int(b.get('pubBig') or 0)
-        if (b.get('utilPaidBy') or '弟') == '弟':
+        if b.get('utilPaidBy') == '弟':          # ★只算「明示弟先付」，不再預設弟
             adv += int(b.get('n14') or 0)
         if used: bill_idx.append(i)
     odd_bro = odd // 2 if (db.get('bsOddOwner') == 'half') else 0
@@ -327,11 +340,21 @@ def calc_settle(db, today):
         if c.get('settled'): continue
         amt = int(c.get('amount') or 0); payer = c.get('payer') or '哥'
         common_to_bro += (amt if payer == '弟' else 0) - amt // 2
-        clines.append(f"　・{c.get('date','')} {c.get('desc','')} {amt:,}（{payer}付，各半 {amt//2:,}）")
+        _d = str(c.get('date') or ''); _s = str(c.get('desc') or '')
+        _pre = (_d + ' ') if (_d and not _s.startswith(_d)) else ''
+        clines.append(f"・{_pre}{_s} ${amt:,}（{'我付' if payer=='哥' else '你付'}，各半 {amt//2:,}）")
         com_idx.append(i)
 
     transfer = rent_bro + util_to_bro - net_bro + pub_to_bro + common_to_bro
-    return dict(rent=rent, rent_bro=rent_bro, lines=lines, unpaid=unpaid,
+    periods.extend([str(x) for x in nm])
+    maxp = max([x for x in periods if x], default='')
+    cutoff = ''
+    if len(maxp) == 6 and maxp.isdigit():
+        _y, _m = int(maxp[:4]), int(maxp[4:])
+        cutoff = f'{_y}年{_m}/{calendar.monthrange(_y, _m)[1]}'
+    pub_lines.sort(key=lambda x: x[0])
+    return dict(cutoff=cutoff, unassigned=unassigned, pub_lines=[t for _, t in pub_lines],
+                rent=rent, rent_bro=rent_bro, lines=lines, unpaid=unpaid,
                 adv=adv, odd_bro=odd_bro, paid_back=paid_back, util_to_bro=util_to_bro,
                 pub_bro=pub_bro, pub_big=pub_big, pub_to_bro=pub_to_bro,
                 fee=fee, net_months=nm, net=net, net_bro=net_bro,
@@ -381,26 +404,85 @@ def check_monthly_settle(db):
 
     f = lambda n: f'{int(n):,}'
     tag = '最終結算' if is_final else '結算'
-    body = (f'【{today.year}年{today.month}月 哥弟{tag}】結算日：{today.month}/{today.day}\n\n'
-            f'① 房租（已收訖）合計 {f(c["rent"])}\n' + ('\n'.join(c['lines']) + '\n' if c['lines'] else '')
-            + f'　→ 弟半 {f(c["rent_bro"])}（哥 {f(c["rent"] - c["rent_bro"])}）\n\n'
-            + f'② 水電瓦斯：弟代墊 {f(c["adv"])}'
-            + (f'－零頭弟半 {f(c["odd_bro"])}' if c['odd_bro'] else '')
-            + (f'－已還弟 {f(c["paid_back"])}' if c['paid_back'] else '')
-            + f' → 補弟 {f(c["util_to_bro"])}\n\n'
-            + f'③ 網路費 {f(c["net"])}（哥付，每月13日出帳、25日自動扣款）→ 弟負半 {f(c["net_bro"])}（哥多付1元）\n\n'
-            + (f'④ 1樓公共電費：弟墊 {f(c["pub_bro"])}／哥墊 {f(c["pub_big"])} → 淨 {f(c["pub_to_bro"])}\n\n' if (c['pub_bro'] or c['pub_big']) else '')
-            + ((f'⑤ 其他共同費用（{len(c["common"])} 筆）\n' + '\n'.join(c['clines'])
-                + f'\n　→ 淨 {"哥補弟" if c["common_to_bro"] >= 0 else "弟補哥"} {f(abs(c["common_to_bro"]))}\n\n') if c['common'] else '')
-            + f'★ 哥應轉弟：{f(c["transfer"])} 元\n\n')
-    if c['unpaid']:
-        body += ('⚠️ 本月尚未收訖（不列入本次結算，待收訖後併入次月，非哥方拖延）：\n'
-                 + '\n'.join('　・' + u for u in c['unpaid']) + '\n\n')
-    body += ('（系統自動試算。已與弟結算完成的併收紀錄，請於網頁「收租歷史」按「✅已與弟結算」標記，'
-             '避免下次重複計算。）\n\n—— 嘉義房租雲端通知（動態結算日：'
-             f'{"最終結算日 " + str(late) if is_final else "早鳥結算日 " + str(early)} 日）')
+    fee = int(db.get('defaultNetFee') or 1409)
+    nmt = '、'.join(f'{m[:4]}年{int(m[4:])}月' for m in c['net_months']) or '—'
+    blocks = 3 + (1 if (c['pub_bro'] or c['pub_big']) else 0) + (1 if c['clines'] else 0)
+    odd_all = (db.get('bsOddOwner') != 'half')
+    pd = (db.get('bsPaidDate') or '').strip()
+    owed_to_me = owed_to_you = 0
+    for x in (db.get('bsCommonCosts') or []):
+        if x.get('settled'): continue
+        a = int(x.get('amount') or 0); h = a // 2
+        if (x.get('payer') or '哥') == '哥': owed_to_me += h
+        else: owed_to_you += (a - h)
+    pub_total = c['pub_bro'] + c['pub_big']
+    pub_share = pub_total - pub_total // 2
+    subj = (c['cutoff'] + '之前的' if c['cutoff'] else '') + '房租和水、電、瓦斯、網路費結算明細'
 
-    subject = f'💵 {today.year}/{today.month:02d} 哥弟{tag}：哥應轉弟 NT${f(c["transfer"])}'
+    body = f"主旨：{subj}\n\n這期跟你結一下，分 {blocks} 塊：\n\n"
+    body += "【1. 房租】\n"
+    body += f"本期房租收入 {f(c['rent'])}，明細如下：\n"
+    body += ('\n'.join(c['lines']) if c['lines'] else '・（明細請見網頁「收租紀錄」）') + '\n'
+    body += f"兩人各半 → 你的部分 {f(c['rent_bro'])}（我的部分 {f(c['rent'] - c['rent_bro'])}）\n\n"
+
+    body += "【2. 水電瓦斯（你先幫忙代墊的）】\n"
+    body += f"你先幫忙代墊了 {f(c['adv'])} 元。\n"
+    if c['odd']:
+        body += (f"（水電帳單的零頭 {f(c['odd'])} 元，全部由我吸收，不用你負擔）\n" if odd_all
+                 else f"（水電帳單的零頭 {f(c['odd'])} 元，我們各負責一半，你負擔 {f(c['odd_bro'])} 元）\n")
+    if c['paid_back'] > 0:
+        body += (f"我已經在 {pd or '先前'} 先轉帳給你 {f(c['paid_back'])} 元，這次再補你 {f(c['util_to_bro'])} 元；"
+                 f"{f(c['paid_back'])} ＋ {f(c['util_to_bro'])} ＝ {f(c['paid_back'] + c['util_to_bro'])} 元，"
+                 f"剛好就是你該拿回去的代墊款。\n\n")
+    else:
+        body += f"這次我補你 {f(c['util_to_bro'])} 元，就是你該拿回去的代墊款。\n\n"
+
+    body += "【3. 網路費】\n"
+    body += (f"網路費 {f(c['net'])} 元（{nmt}，每月 {f(fee)} 元 × {len(c['net_months'])} 個月）是我先付的，"
+             f"你負責一半 {f(c['net_bro'])} 元（我多負責 1 元）。\n")
+    body += f"這 {f(c['net_bro'])} 元你不用另外拿錢給我，我會直接從「我要轉帳給你的錢」裡面扣掉。\n"
+
+    if pub_total:
+        body += "\n【4. 公共電費（1樓大廳）】\n"
+        body += "這是 1 樓大廳的電費（電號…14-5），房客不分攤，只有我們兩人各負責一半。各期明細：\n"
+        body += ('\n'.join(c['pub_lines']) if c['pub_lines'] else '・（明細請見網頁「1樓公共電費歷史」）') + '\n'
+        body += f"合計 {f(pub_total)} 元，各負責一半 → 你應該負擔 {f(pub_share)} 元（我多負責 1 元）。\n"
+        if c['pub_to_bro'] >= 0:
+            body += (f"你實際已經代墊了 {f(c['pub_bro'])} 元，比應負擔的多墊了 {f(c['pub_to_bro'])} 元，"
+                     f"所以我要補你 {f(c['pub_to_bro'])} 元。\n")
+        else:
+            body += (f"你實際已經代墊了 {f(c['pub_bro'])} 元，比應負擔的還少 {f(abs(c['pub_to_bro']))} 元，"
+                     f"所以這 {f(abs(c['pub_to_bro']))} 元我會從轉帳金額裡面扣掉。\n")
+
+    if c['clines']:
+        body += f"\n【{5 if pub_total else 4}. 其他共同費用（各負責一半，我多負責 1 元）】\n"
+        body += '\n'.join(c['clines']) + '\n'
+        body += f"我先付的部分，你要付給我 {f(owed_to_me)} 元；你先付的部分，我要付給你 {f(owed_to_you)} 元。\n"
+        if c['common_to_bro'] >= 0:
+            body += f"兩邊相抵 → 我還要補你 {f(abs(c['common_to_bro']))} 元。\n"
+        else:
+            body += f"兩邊相抵 → 你還要補我 {f(abs(c['common_to_bro']))} 元，這筆我會從轉帳金額裡面扣掉。\n"
+
+    body += "\n【結算】這次我轉帳給你：\n"
+    body += f"{f(c['rent_bro'])}（房租）＋ {f(c['util_to_bro'])}（水電補你）－ {f(c['net_bro'])}（網路）"
+    if pub_total:
+        body += (f"＋ {f(c['pub_to_bro'])}（公共電費）" if c['pub_to_bro'] >= 0
+                 else f"－ {f(abs(c['pub_to_bro']))}（公共電費）")
+    if c['common_to_bro']:
+        body += (f"＋ {f(c['common_to_bro'])}（共同費用）" if c['common_to_bro'] >= 0
+                 else f"－ {f(abs(c['common_to_bro']))}（共同費用）")
+    body += f" ＝ {f(c['transfer'])} 元"
+
+    if c['unpaid']:
+        body += ('\n\n⚠️ 本月尚未收訖（不列入本次結算，待收訖後併入次月，非我方拖延）：\n'
+                 + '\n'.join('　・' + u for u in c['unpaid']))
+    if c['unassigned']:
+        body += ('\n\n（系統備註，給我自己看：這幾期水電尚未指定誰先付，未列入代墊：'
+                 + '、'.join(c['unassigned']) + '）')
+    body += ('\n\n（本次涵蓋的所有項目已由系統自動標記為已結算，下個月不會重複計算。'
+             '若尚未轉帳或有誤，可至網頁「房東課→結算單」撤銷本次結算。）')
+
+    subject = f'💵 {subj}（我轉帳給你 NT${f(c["transfer"])}）'
     sent = 0
     try:
         send_mail(subject, body); sent += 1
