@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08040944</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
+    <span class="version-tag" id="ver-tag">v08042350</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1818,10 +1818,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         <div><label>查詢迄日</label><input type="date" id="bt-to"></div>
       </div>
       <div class="gap" style="margin-top:.4rem;flex-wrap:wrap;">
-        <button class="btn ba sm" onclick="btQuick('all')">全部</button>
         <button class="btn ba sm" onclick="btQuick('30')">近 30 天</button>
+        <button class="btn ba sm" onclick="btQuick('60')">近 2 個月</button>
+        <button class="btn ba sm" onclick="btQuick('90')">近 3 個月</button>
         <button class="btn ba sm" onclick="btQuick('year')">今年</button>
         <button class="btn ba sm" onclick="btQuick('prev')">去年至今</button>
+        <button class="btn ba sm" onclick="btQuick('all')">全部</button>
         <button class="btn bs sm" onclick="btRender()">🔍 查詢</button>
       </div>
       <div id="bt-list"><div class="txt-m">讀取中...</div></div>
@@ -2233,7 +2235,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08040944'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08042350'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -5677,7 +5679,9 @@ window.btQuick = function(mode){
   const F=document.getElementById('bt-from'), T=document.getElementById('bt-to');
   const now=new Date(), iso=function(x){ return x.toISOString().slice(0,10); };
   if(mode==='all'){ if(F)F.value=''; if(T)T.value=''; }
-  else if(mode==='30'){ const s=new Date(now.getTime()-30*86400000); if(F)F.value=iso(s); if(T)T.value=iso(now); }
+  else if(mode==='30'||mode==='60'||mode==='90'){
+    const _d=+mode;                                  // 近30天／近2個月(60天)／近3個月(90天)
+    const s=new Date(now.getTime()-_d*86400000); if(F)F.value=iso(s); if(T)T.value=iso(now); }
   else if(mode==='year'){ if(F)F.value=now.getFullYear()+'-01-01'; if(T)T.value=iso(now); }
   else if(mode==='prev'){ if(F)F.value=(now.getFullYear()-1)+'-01-01'; if(T)T.value=iso(now); }
   btRender();
