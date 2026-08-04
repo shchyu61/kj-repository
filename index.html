@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08040841</span>
+    <span class="version-tag" id="ver-tag">v08040912</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1807,7 +1807,8 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div><label>對應月份／期間</label><input type="text" id="bt-period" placeholder="如 202602 或 202603~202607"></div>
     </div>
     <div><label>備註（選填）</label><input type="text" id="bt-note" placeholder="如 水電瓦斯代墊先還一部分"></div>
-    <div class="gap mt"><button class="btn bp" onclick="btAdd()">＋ 新增轉帳紀錄</button></div>
+    <div class="gap mt"><button class="btn bp" onclick="btAdd()">＋ 新增轉帳紀錄</button>
+      <button class="btn bs" onclick="verifyCloud()">☁️ 驗證雲端存檔（從雲端撈回比對）</button></div>
 
     <div style="margin-top:.8rem;padding-top:.6rem;border-top:2px solid var(--border2);">
       <div class="form-row c2">
@@ -2230,7 +2231,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08040841'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08040912'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -2639,6 +2640,8 @@ const loadLandlordData = async () => {
 const saveLandlordData = async () => {
   if(!isLandlord){ toast('⚠️ 無權限儲存'); return; }
   await initFBAuth();
+  if(window.setCloudStatus) setCloudStatus('saving');
+  try{
   await window._setDoc(landlordPath(),{
     tenants:DB.tenants,
     utilBills:DB.utilBills,
@@ -2689,6 +2692,41 @@ const saveLandlordData = async () => {
     reserveAutoLog:DB.reserveAutoLog||[],
     billWorkingState:DB.billWorkingState||null,
   });
+  }catch(e){ if(window.setCloudStatus) setCloudStatus('fail'); throw e; }
+  if(window.setCloudStatus) setCloudStatus('ok');
+};
+// ★★ 必須掛上 window：新版函式以 if(window.saveLandlordData) 判斷，
+//    未掛載時會整段【靜默跳過存檔】（2026/08/04 重大事故根因，切勿刪除此行）
+window.saveLandlordData = saveLandlordData;
+
+// ── 雲端存檔狀態指示（讓主帥隨時確認資料是否真的上雲）──
+window.setCloudStatus = function(st){
+  const el=document.getElementById('cloud-status'); if(!el) return;
+  const t=new Date().toTimeString().slice(0,8);
+  if(st==='saving'){ el.textContent='⏳ 存雲端中…'; el.style.background='#fef3c7'; el.style.color='#92400e'; }
+  else if(st==='ok'){ el.textContent='☁️ 已存雲端 '+t; el.style.background='#dcfce7'; el.style.color='#166534'; window._lastCloudSave=t; }
+  else { el.textContent='⚠️ 雲端存檔失敗！'; el.style.background='#fee2e2'; el.style.color='#991b1b'; }
+};
+// ── 雲端存檔驗證：直接回雲端把資料撈回來比對筆數 ──
+window.verifyCloud = async function(){
+  try{
+    if(window.setCloudStatus) setCloudStatus('saving');
+    const snap=await window._getDoc(landlordPath());
+    if(!snap || !snap.exists()){ toast('⚠️ 雲端還沒有這份資料！請先按任一儲存動作'); if(window.setCloudStatus) setCloudStatus('fail'); return; }
+    const d=snap.data()||{};
+    const n=function(x){ return Array.isArray(x)?x.length:(x?Object.keys(x).length:0); };
+    if(window.setCloudStatus) setCloudStatus('ok');
+    alert('☁️ 雲端實際存放的資料（剛剛從雲端撈回來的，不是本機畫面）：\n\n'+
+      '・轉帳給弟紀錄：'+n(d.broTransfers)+' 筆\n'+
+      '・共同費用：'+n(d.bsCommonCosts)+' 筆\n'+
+      '・水電帳單：'+n(d.utilBills)+' 期\n'+
+      '・收租紀錄：'+n(d.rentRecords)+' 期\n'+
+      '・結算單：'+n(d.settlements)+' 張\n'+
+      '・房租/網路起算月：'+(d.settleBaseMonth||'(未設定)')+'\n'+
+      '・水電帳單起算期別：'+(d.billBaseMonth||'(未設定)')+'\n'+
+      '・已還弟：'+(d.bsPaidBack||0)+' 元（'+(d.bsPaidDate||'未填')+'）\n\n'+
+      '若這裡的筆數與畫面一致 → 資料確實已存雲端，按 F5 不會消失。');
+  }catch(e){ if(window.setCloudStatus) setCloudStatus('fail'); toast('⚠️ 讀取雲端失敗：'+(e&&e.message?e.message:e)); }
 };
 
 // ══ TABS ═══════════════════════════════════
