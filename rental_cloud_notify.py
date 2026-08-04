@@ -328,7 +328,18 @@ def calc_settle(db, today):
             adv += int(b.get('n14') or 0)
         if used: bill_idx.append(i)
     odd_bro = odd // 2 if (db.get('bsOddOwner') == 'half') else 0
-    paid_back = int(db.get('bsPaidBack') or 0)
+    # 哥已還弟的水電代墊：優先取自「轉帳給弟紀錄簿」（水電代墊且尚未納入結算者）
+    _bts = [t for t in (db.get('broTransfers') or [])
+            if not t.get('settled') and (t.get('kind') or '') == '水電代墊']
+    bt_ids = [str(t.get('id')) for t in _bts]
+    if _bts:
+        paid_back = sum(int(t.get('amount') or 0) for t in _bts)
+        _last = max((str(t.get('date') or '') for t in _bts), default='')
+        _pp = _last.split('-')
+        paid_date = f'{int(_pp[1])}/{int(_pp[2])}' if len(_pp) == 3 else _last
+    else:
+        paid_back = int(db.get('bsPaidBack') or 0)
+        paid_date = (db.get('bsPaidDate') or '').strip()
     util_to_bro = adv - odd_bro - paid_back
     pub_to_bro = pub_bro - ((pub_bro + pub_big) // 2)
 
@@ -356,6 +367,7 @@ def calc_settle(db, today):
         cutoff = f'{_y}年{_m}/{calendar.monthrange(_y, _m)[1]}'
     pub_lines.sort(key=lambda x: x[0])
     return dict(cutoff=cutoff, unassigned=unassigned, pub_lines=[t for _, t in pub_lines],
+                paid_date=paid_date, bt_ids=bt_ids,
                 rent=rent, rent_bro=rent_bro, lines=lines, unpaid=unpaid,
                 adv=adv, odd_bro=odd_bro, paid_back=paid_back, util_to_bro=util_to_bro,
                 pub_bro=pub_bro, pub_big=pub_big, pub_to_bro=pub_to_bro,
@@ -374,6 +386,11 @@ def mark_settled(db, c, today):
     for k in c['pause_keys']: pause[k]['bxSettled'] = True
     recs = db.get('rentRecords') or []
     for i in c['rec_idx']: recs[i]['bxSettled'] = True
+    bts = db.get('broTransfers') or []
+    _ids = set(c.get('bt_ids') or [])
+    for t in bts:
+        if str(t.get('id')) in _ids:
+            t['settled'] = True
     done = [str(x) for x in (db.get('netSettledMonths') or [])] + c['net_months']
     sett = db.get('settlements') or []
     sett.append({
@@ -384,10 +401,12 @@ def mark_settled(db, c, today):
         'netMonths': c['net_months'],
         'billIdx': c['bill_idx'], 'comIdx': c['com_idx'],
         'pauseKeys': c['pause_keys'], 'recIdx': c['rec_idx'],
+        'btIds': c.get('bt_ids') or [],
         'confirmed': False,
     })
     save_fields({'utilBills': bills, 'bsCommonCosts': common, 'rentPause': pause,
-                 'rentRecords': recs, 'netSettledMonths': done, 'settlements': sett})
+                 'rentRecords': recs, 'netSettledMonths': done, 'settlements': sett,
+                 'broTransfers': bts})
 
 
 def check_monthly_settle(db):
@@ -410,7 +429,7 @@ def check_monthly_settle(db):
     nmt = '、'.join(f'{m[:4]}年{int(m[4:])}月' for m in c['net_months']) or '—'
     blocks = 3 + (1 if (c['pub_bro'] or c['pub_big']) else 0) + (1 if c['clines'] else 0)
     odd_all = (db.get('bsOddOwner') != 'half')
-    pd = (db.get('bsPaidDate') or '').strip()
+    pd = c.get('paid_date') or (db.get('bsPaidDate') or '').strip()
     owed_to_me = owed_to_you = 0
     for x in (db.get('bsCommonCosts') or []):
         if x.get('settled'): continue
