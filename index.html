@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08040912</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
+    <span class="version-tag" id="ver-tag">v08040944</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -1790,7 +1790,9 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       每次一轉帳就先記在這裡（日期／金額／是哪個月份的什麼項目），結算時
       「② 已還弟」與「② 已還弟的日期」會<b>自動帶入</b>，不必再翻郵局 App 查。<br>
       ★ 只有「<b>水電代墊</b>」類別會自動帶入結算欄位；其他類別僅供查詢對帳。<br>
-      ★ 若平常忘了記，結算時仍可直接在那兩個欄位手動輸入（手動值優先）。
+      ★ 若平常忘了記，結算時仍可直接在那兩個欄位手動輸入（手動值優先）。<br>
+      ★ 按「✅已轉帳給弟→標記本次結算」時，系統會問實際轉帳日期並<b>自動寫入一筆「結算款」</b>，
+        不必再手動補登；該筆不會被算進「已還弟」，撤銷結算時會自動移除。
     </div>
     <div class="form-row c2">
       <div><label>轉帳日期</label><input type="date" id="bt-date"></div>
@@ -2231,7 +2233,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08040912'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08040944'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -5463,7 +5465,11 @@ window.bsMarkSettledNow = async function(){
   const c=window._bsCalc;
   if(!c){ toast('請先按「從帳單／收租自動套入」產生結算內容'); return; }
   const f=n=>Math.round(n).toLocaleString();
-  if(!confirm('確認已把 '+f(c.transfer)+' 元轉帳給弟？\n\n按確定後，本次涵蓋的帳單／共同費用／併收結清／網路費月份都會標記為「已與弟結算」，下次不再重複計算。\n（如有誤可在結算單按「撤銷」還原）')) return;
+  const _today=new Date().toISOString().slice(0,10);
+  const _tdate=prompt('請輸入「實際轉帳日期」（YYYY-MM-DD），系統會自動寫入轉帳紀錄簿：', _today);
+  if(_tdate===null) return;
+  const _td=(String(_tdate).trim()||_today);
+  if(!confirm('確認已於 '+_td+' 把 '+f(c.transfer)+' 元轉帳給弟？\n\n按確定後，本次涵蓋的帳單／共同費用／併收結清／網路費月份都會標記為「已與弟結算」，下次不再重複計算。\n（如有誤可在結算單按「撤銷」還原）')) return;
 
   const nm=window.bsUnsettledNetMonths ? window.bsUnsettledNetMonths() : [];
   const ym=(function(){const d=new Date();return ''+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0');})();
@@ -5495,7 +5501,15 @@ window.bsMarkSettledNow = async function(){
   const _bp=document.getElementById('bs-paid'); if(_bp) _bp.value='';
   DB.settlements=DB.settlements||[];
   const now=new Date();
-  DB.settlements.push(window.stampRec({ id:''+now.getTime(), at:now.toISOString().slice(0,19),
+  const _sid=''+now.getTime();
+  DB.broTransfers=DB.broTransfers||[];
+  DB.broTransfers.push(window.stampRec({           // ★結算轉帳自動入帳，區間查詢不會缺筆
+    id:'st'+_sid, date:_td, amount:Math.round(c.transfer), kind:'結算款',
+    period:(window._bsDetail&&window._bsDetail.cutoff)?(window._bsDetail.cutoff+'之前'):'',
+    note:'由「已轉帳給弟→標記本次結算」自動產生（結算單 '+_sid+'）',
+    settled:true, autoFrom:_sid
+  }));
+  DB.settlements.push(window.stampRec({ id:_sid, at:now.toISOString().slice(0,19),
     transfer:Math.round(c.transfer), rent:c.rent, adv:c.adv, net:c.net,
     netMonths:nm, billIdx:billIdx, comIdx:comIdx, pauseKeys:pauseKeys, recIdx:recIdx,
     btIds:btIds, confirmed:true, by:'網頁' }));
@@ -5521,6 +5535,7 @@ window.bsRevokeSettle = async function(id){
   (s.comIdx||[]).forEach(k=>{ if(DB.bsCommonCosts&&DB.bsCommonCosts[k]) DB.bsCommonCosts[k].settled=false; });
   (s.pauseKeys||[]).forEach(k=>{ if(DB.rentPause&&DB.rentPause[k]) DB.rentPause[k].bxSettled=false; });
   (s.recIdx||[]).forEach(k=>{ if(DB.rentRecords&&DB.rentRecords[k]) DB.rentRecords[k].bxSettled=false; });
+  DB.broTransfers=(DB.broTransfers||[]).filter(function(t){ return String(t.autoFrom||'')!==String(s.id); });
   (s.btIds||[]).forEach(function(id){ const t=(DB.broTransfers||[]).find(function(x){ return String(x.id)===String(id); }); if(t) t.settled=false; });
   const rm=new Set((s.netMonths||[]).map(String));
   DB.netSettledMonths=(DB.netSettledMonths||[]).filter(m=>!rm.has(String(m)));
