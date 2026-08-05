@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08051523</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
+    <span class="version-tag" id="ver-tag">v08051552</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -995,7 +995,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div><label>所屬租期・起日</label><input type="date" id="rp-ps"></div>
       <div><label>所屬租期・迄日</label><input type="date" id="rp-pe"></div>
     </div>
-    <div><label>備註（選填）</label><input type="text" id="rp-note" placeholder="如 提前3天付款／補繳6月份"></div>
+    <!-- ★08051552：提前／延遲天數改為「常駐」顯示。
+         原本只用 toast 快顯（2.2 秒就消失），使用者按完按鈕再看就找不到了，
+         需要核對的資訊不該放在會自動消失的地方。 -->
+    <div id="rp-hint" style="display:none;margin:.4rem 0 .2rem;padding:.45rem .7rem;
+         border-radius:6px;font-size:.85rem;font-weight:700;"></div>
+    <div><label>備註（選填）</label><input type="text" id="rp-note" placeholder="有特殊情況才填，例如：分期補繳、代收代付"></div>
     <div class="gap mt">
       <button class="btn ba" onclick="rpAuto()">🔄 自動帶入租期</button>
       <button class="btn bs" onclick="rpSave()">＋ 新增入帳紀錄</button>
@@ -2348,7 +2353,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08051523'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08051552'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[] };
 let _ejsOk = false;
@@ -7705,12 +7710,21 @@ checkSession();
       if(r) document.getElementById('rp-amt').value=r;
     }
     var dd=Math.round((new Date(base+'T00:00:00')-new Date(d+'T00:00:00'))/86400000);
-    toast('已帶入租期 '+base+' ～ '+endD+(dd>0?'（提前 '+dd+' 天付款）':(dd<0?'（延遲 '+(-dd)+' 天）':'')));
+    var word = dd>0 ? '提前 '+dd+' 天付款' : (dd<0 ? '延遲 '+(-dd)+' 天付款' : '當日付款');
+    var col  = dd<0 ? {bg:'#fef2f2',fg:'#C0392B'} : {bg:'#f0fdf4',fg:'#16a34a'};
+    var hint=document.getElementById('rp-hint');
+    if(hint){
+      hint.style.display='block'; hint.style.background=col.bg; hint.style.color=col.fg;
+      hint.innerHTML='✅ 已帶入所屬租期　'+E(base)+' ～ '+E(endD)+
+                     '　<span style="font-size:.95em;">【'+E(word)+'】</span>';
+    }
+    toast('已帶入租期 '+base+' ～ '+endD+'（'+word+'）');
   };
 
   window.rpClear=function(){
     ['rp-date','rp-amt','rp-ps','rp-pe','rp-note'].forEach(function(i){
       var e=document.getElementById(i); if(e)e.value=''; });
+    var hint=document.getElementById('rp-hint'); if(hint){ hint.style.display='none'; hint.innerHTML=''; }
     delete document.getElementById('rp-room').dataset.editId;
   };
 
