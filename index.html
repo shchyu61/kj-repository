@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08051435</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
+    <span class="version-tag" id="ver-tag">v08051455</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -2302,6 +2302,15 @@ const EJS_KEY  = '5dk4HoCBYIS7ypwiw';
 
 // ── 【1-2】房間設定 ────────────────────────────────────────────
 const ROOMS = ['3F前','3F後','4F前','4F後','5F前'];
+/* ★08051455 新增共用函式：取「本地時區」的今天（YYYY-MM-DD）。
+   絕對不要用 new Date().toISOString().slice(0,10) —— 那是 UTC，
+   台灣 UTC+8 在【凌晨 00:00～08:00】之間會取到「前一天」，
+   會讓收款日、轉帳日等預設值整個錯一天，且不會有任何錯誤訊息。 */
+window.todayLocal = function(d){
+  d = d || new Date();
+  var m = d.getMonth()+1, dd = d.getDate();
+  return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(dd<10?'0':'')+dd;
+};
 const RL    = {'3F前':'3樓前','3F後':'3樓後','4F前':'4樓前','4F後':'4樓後','5F前':'5樓前'};
 const CO_ITEMS = [
   {k:'chair',  l:'椅子損壞',       mv:760},
@@ -2339,9 +2348,9 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08051435'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08051455'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
-let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
+let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[] };
 let _ejsOk = false;
 
 // ============================================================
@@ -4035,7 +4044,7 @@ window.toggleRoomCollect = async function(i, room){
   const rc=_ensureRoomCollect(b);
   if(!rc[room]) rc[room]={paid:false,date:''};
   if(!rc[room].paid){
-    const d=prompt('「'+(RL[room]||room)+'」收款日期（YYYY-MM-DD），可留空：', new Date().toISOString().slice(0,10));
+    const d=prompt('「'+(RL[room]||room)+'」收款日期（YYYY-MM-DD），可留空：', window.todayLocal());
     if(d===null)return;
     rc[room].paid=true; rc[room].date=(d||'').trim();
   } else { rc[room].paid=false; rc[room].date=''; }
@@ -4045,7 +4054,7 @@ window.toggleRoomCollect = async function(i, room){
 };
 window.markUtilCollected = async function(i){
   const b=(DB.utilBills||[])[i]; if(!b)return;
-  const d=prompt('全部收款日期（YYYY-MM-DD），可留空：', new Date().toISOString().slice(0,10));
+  const d=prompt('全部收款日期（YYYY-MM-DD），可留空：', window.todayLocal());
   if(d===null)return;
   const rc=_ensureRoomCollect(b);
   Object.keys(rc).forEach(r=>{ rc[r].paid=true; rc[r].date=(d||'').trim(); });
@@ -4192,7 +4201,7 @@ window.openSettleRent=function(key){
   const rent=+((DB.tenants[p.room]||{}).rent)||0;
   document.getElementById('sr-rent').value=rent;
   document.getElementById('sr-to').value=p.to;
-  document.getElementById('sr-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('sr-date').value=window.todayLocal();
   document.getElementById('sr-note').value='';
   const tn=(DB.tenants[p.room]||{}).name||'';
   document.getElementById('settle-rent-info').innerHTML=`房客：<b>${RL[p.room]||p.room}${tn?'・'+tn:''}</b>　緩收區間：${p.from}～${p.to}`;
@@ -4212,7 +4221,7 @@ window.confirmSettleRent=async function(){
   const p=(DB.rentPause||{})[_settleKey]; if(!p){closeSettleRent();return;}
   const settleTo=document.getElementById('sr-to').value.trim()||p.to;
   const amount=+document.getElementById('sr-amount').value||0;
-  const date=document.getElementById('sr-date').value||new Date().toISOString().slice(0,10);
+  const date=document.getElementById('sr-date').value||window.todayLocal();
   const note=document.getElementById('sr-note').value.trim();
   const months=_monthRange(p.from, settleTo).filter(mm=> !p.settledTo || +mm>+p.settledTo);
   if(!months.length){toast('無可結清期數');return;}
@@ -5584,7 +5593,7 @@ window.bsMarkSettledNow = async function(){
   const c=window._bsCalc;
   if(!c){ toast('請先按「從帳單／收租自動套入」產生結算內容'); return; }
   const f=n=>Math.round(n).toLocaleString();
-  const _today=new Date().toISOString().slice(0,10);
+  const _today=window.todayLocal();
   const _tdate=prompt('請輸入「實際轉帳日期」（YYYY-MM-DD），系統會自動寫入轉帳紀錄簿：', _today);
   if(_tdate===null) return;
   const _td=(String(_tdate).trim()||_today);
@@ -5794,7 +5803,10 @@ window.btDel = async function(id){
 };
 window.btQuick = function(mode){
   const F=document.getElementById('bt-from'), T=document.getElementById('bt-to');
-  const now=new Date(), iso=function(x){ return x.toISOString().slice(0,10); };
+  // ★08051455 修正：原本用 toISOString()（UTC），台灣 +8 會使日期倒退一天，
+  //   導致「近30天／今年」等快捷鍵的起訖日整體早一天。改用本地年月日組字串。
+  const now=new Date(), iso=function(x){ const m=x.getMonth()+1,d=x.getDate();
+    return x.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(d<10?'0':'')+d; };
   if(mode==='all'){ if(F)F.value=''; if(T)T.value=''; }
   else if(mode==='30'||mode==='60'||mode==='90'){
     const _d=+mode;                                  // 近30天／近2個月(60天)／近3個月(90天)
@@ -7576,17 +7588,36 @@ checkSession();
 (function(){
   'use strict';
   var CL={yellow:'📒 7-11版(黃)',red:'📕 書局版(紅)',other:'📄 其他'};
+  /* ★08051455 修正：ROOMS 在主程式是「const ROOMS = [...]」的頂層宣告，
+     頂層 const/let 只存在於全域語彙環境，【不會】成為 window 的屬性，
+     因此 window.ROOMS 永遠是 undefined，會導致房間下拉選單一個選項都沒有。
+     必須直接參照識別字 ROOMS（同一份文件的後續 script 讀得到）。 */
+  function RMS(){
+    try{ if(typeof ROOMS!=='undefined' && ROOMS && ROOMS.length) return ROOMS; }catch(e){}
+    return (window.ROOMS||[]);
+  }
   function E(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function N(n){ return Math.round(+n||0).toLocaleString(); }
-  function iso(d){ return d.toISOString().slice(0,10); }
+  /* ★08051455 修正：不可用 toISOString()（那是 UTC）。
+     台灣為 UTC+8，本地 2026-02-15 00:00 轉成 UTC 是 2026-02-14 16:00，
+     取前 10 碼會得到 2026-02-14，整個日期【倒退一天】，
+     且在 UTC 環境測試時完全看不出來。必須用本地年月日自行組字串。 */
+  function iso(d){
+    var m=d.getMonth()+1, dd=d.getDate();
+    return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(dd<10?'0':'')+dd;
+  }
   function addD(str,n){ var d=new Date(str+'T00:00:00'); d.setDate(d.getDate()+n); return iso(d); }
   function fillRooms(id){
-    var el=document.getElementById(id); if(!el||el.dataset.filled) return;
-    el.innerHTML=(window.ROOMS||[]).map(function(r){
-      var t=(DB.tenants&&DB.tenants[r])||{}; 
+    var el=document.getElementById(id); if(!el) return;
+    var rooms=RMS(); if(!rooms.length) return;   // 尚未載入就不標記，下次重繪會再試
+    var html=rooms.map(function(r){
+      var t=(DB.tenants&&DB.tenants[r])||{};
       return '<option value="'+E(r)+'">'+E(r)+(t.name?'（'+E(t.name)+'）':'（空房）')+'</option>'; }).join('');
-    el.dataset.filled='1';
+    if(el.dataset.sig===html) return;             // 內容沒變就不重建，避免蓋掉使用者的選擇
+    var keep=el.value;
+    el.innerHTML=html; el.dataset.sig=html;
+    if(keep) el.value=keep;
   }
   function uid(){ return 'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 
@@ -7681,7 +7712,7 @@ checkSession();
     var all=DB.rentContracts||[];
     if(!all.length){ box.innerHTML='<div class="txt-m">尚無契約紀錄。請依「改版記錄」的建檔清單逐本輸入。</div>'; return; }
     var h='';
-    (window.ROOMS||[]).forEach(function(room){
+    RMS().forEach(function(room){
       var l=contractsOf(room); if(!l.length) return;
       var t=(DB.tenants&&DB.tenants[room])||{};
       h+='<div style="margin-top:.7rem;"><strong style="color:var(--primary);">'+E(room)+
@@ -7715,7 +7746,7 @@ checkSession();
     var rd=+t.rentDay||0;
     if(!rd){ toast('⚠️ 該房客未設定收租日，請先到「房客管理」填寫'); return; }
     var dt=new Date(d+'T00:00:00'), y=dt.getFullYear(), m=dt.getMonth();
-    function mk(y,m){ var x=new Date(y,m,rd); return iso(new Date(x.getTime()-x.getTimezoneOffset()*60000)); }
+    function mk(y,m){ return iso(new Date(y,m,rd)); }   // iso() 已改為本地時間，不需再做時區補償
     var base=mk(y,m), diff=(new Date(d+'T00:00:00')-new Date(base+'T00:00:00'))/86400000;
     if(diff>15) base=mk(y,m+1);
     else if(diff<-15) base=mk(y,m-1);
@@ -7843,6 +7874,12 @@ checkSession();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hook);
   else hook();
+  /* 雲端資料是非同步載入的，房客姓名與契約要等資料回來才有；
+     開頁後前 20 秒每 2 秒重繪一次，確保下拉選單與清單一定會補上。 */
+  var _n=0, _t=setInterval(function(){
+    _n++; if(_n>10){ clearInterval(_t); return; }
+    try{ rcRender(); rpRender(); }catch(e){}
+  },2000);
 })();
 </script>
 
