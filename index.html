@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08042350</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
+    <span class="version-tag" id="ver-tag">v08051435</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -915,6 +915,45 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   </div>
 
 
+  <!-- ===== 房租-3：租賃契約管理（08051435 新增） ===== -->
+  <div class="card mt landlord-only" id="rent-contract-card">
+    <div class="card-title">📜 租賃契約管理（多本契約・自動處理重疊期）</div>
+    <div class="alert-box a-warn" style="font-size:.85rem;">
+      每簽一本（含續約）就登記一筆。系統會<b>自動依起日排序</b>，
+      若下一本的起日落在上一本期間內（例如死亡當日重簽），
+      <b>上一本會自動截止於下一本起日的前一天</b>，避免同一段期間被重複計算。<br>
+      ★<b>到期日一律以實際契約為準</b>，系統<b>不會</b>用「起日＋12個月」自動推算。<br>
+      ★半價期、不同月租的契約，請各自填「該期月租」，歷史統計才會正確。
+    </div>
+    <div class="form-row c2">
+      <div><label>房間</label><select id="rc-room"></select></div>
+      <div><label>契約本別（顏色／版本）</label>
+        <select id="rc-color">
+          <option value="yellow">📒 7-11版（黃）</option>
+          <option value="red">📕 書局版（紅）</option>
+          <option value="other">📄 其他／自訂</option>
+        </select></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>契約起日 <span style="font-size:.72rem;color:var(--muted);">（不可考則留空並勾下方）</span></label>
+        <input type="date" id="rc-start"></div>
+      <div><label>契約訖日（實際契約上的到期日）</label><input type="date" id="rc-end"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>該期月租（元）</label><input type="number" id="rc-rent" placeholder="如 4500；半價期填實收金額"></div>
+      <div style="display:flex;align-items:flex-end;">
+        <label style="font-size:.85rem;display:flex;align-items:center;gap:.4rem;">
+          <input type="checkbox" id="rc-unknown"> 起日不可考（舊契約已不可考）</label>
+      </div>
+    </div>
+    <div><label>備註（選填）</label><input type="text" id="rc-note" placeholder="如 前2個月沒住只收半價／自媽媽離世當日起重簽"></div>
+    <div class="gap mt">
+      <button class="btn ba" onclick="rcSave()">＋ 新增／更新契約</button>
+      <button class="btn bd sm" onclick="rcClear()">清空表單</button>
+    </div>
+    <div id="rc-list" class="mt"><div class="txt-m">讀取中...</div></div>
+  </div>
+
   <div class="card mt">
     <div class="card-title">💰 本期收租登記</div>
     <div class="form-row">
@@ -930,8 +969,73 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <span style="font-size:.72rem;color:var(--muted);">開啟後，儲存收租時自動寄「收訖通知」給已全額繳清、非緩收且有填 Email 的房客；預設關閉以免打擾。</span>
     </div>
   </div>
+  <!-- ===== 房租-1＋房租-2：房租入帳紀錄簿（08051435 新增） ===== -->
+  <div class="card landlord-only" id="rent-pay-card">
+    <div class="card-title">💵 房客租金入帳紀錄簿（實際收到錢就記這裡）</div>
+    <div class="alert-box a-info" style="font-size:.85rem;">
+      ★<b>「入帳日」與「所屬租期」是兩件事，必須分開記。</b>
+      台灣房租是<b>先付款後享受</b>，房客常提前幾天付款。<br>
+      例：8/5 收到 4,500 元，<b>入帳日＝8/5</b>，但<b>所屬租期＝8/8～9/7</b>。
+      只記一個日期的話，當月收款統計與當期租期損益會互相污染，跨月更會整期錯位。<br>
+      填好房間與入帳日後，按 <b>🔄 自動帶入租期</b> 即可依收租日與契約自動推算。
+    </div>
+    <div class="form-row c2">
+      <div><label>房間</label><select id="rp-room"></select></div>
+      <div><label>入帳日（實際收到錢的日期）</label><input type="date" id="rp-date"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>金額（元）</label><input type="number" id="rp-amt" placeholder="如 4500"></div>
+      <div><label>付款方式</label>
+        <select id="rp-method">
+          <option>郵局 App 轉帳</option><option>ATM 轉帳</option><option>網路銀行匯款</option>
+          <option>現金</option><option>其他</option>
+        </select></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>所屬租期・起日</label><input type="date" id="rp-ps"></div>
+      <div><label>所屬租期・迄日</label><input type="date" id="rp-pe"></div>
+    </div>
+    <div><label>備註（選填）</label><input type="text" id="rp-note" placeholder="如 提前3天付款／補繳6月份"></div>
+    <div class="gap mt">
+      <button class="btn ba" onclick="rpAuto()">🔄 自動帶入租期</button>
+      <button class="btn bs" onclick="rpSave()">＋ 新增入帳紀錄</button>
+      <button class="btn bd sm" onclick="rpClear()">清空表單</button>
+    </div>
+    <div style="margin-top:.8rem;padding-top:.6rem;border-top:2px solid var(--border2);">
+      <div class="form-row c2">
+        <div><label>查詢起日</label><input type="date" id="rp-from"></div>
+        <div><label>查詢迄日</label><input type="date" id="rp-to"></div>
+      </div>
+      <div class="gap" style="margin-top:.4rem;flex-wrap:wrap;">
+        <button class="btn ba sm" onclick="rpQuick('30')">近 30 天</button>
+        <button class="btn ba sm" onclick="rpQuick('60')">近 2 個月</button>
+        <button class="btn ba sm" onclick="rpQuick('90')">近 3 個月</button>
+        <button class="btn ba sm" onclick="rpQuick('year')">今年</button>
+        <button class="btn ba sm" onclick="rpQuick('prev')">去年至今</button>
+        <button class="btn ba sm" onclick="rpQuick('all')">全部</button>
+        <button class="btn bs sm" onclick="rpRender()">🔍 查詢</button>
+      </div>
+      <div id="rp-list"><div class="txt-m">讀取中...</div></div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-title">📋 收租歷史</div>
+    <div style="margin-bottom:.6rem;padding-bottom:.5rem;border-bottom:2px solid var(--border2);">
+      <div class="form-row c2">
+        <div><label>收款日起</label><input type="date" id="rh-from"></div>
+        <div><label>收款日迄</label><input type="date" id="rh-to"></div>
+      </div>
+      <div class="gap" style="margin-top:.4rem;flex-wrap:wrap;">
+        <button class="btn ba sm" onclick="rhQuick('30')">近 30 天</button>
+        <button class="btn ba sm" onclick="rhQuick('60')">近 2 個月</button>
+        <button class="btn ba sm" onclick="rhQuick('90')">近 3 個月</button>
+        <button class="btn ba sm" onclick="rhQuick('year')">今年</button>
+        <button class="btn ba sm" onclick="rhQuick('prev')">去年至今</button>
+        <button class="btn ba sm" onclick="rhQuick('all')">全部</button>
+        <button class="btn bs sm" onclick="renderRentHistory()">🔍 查詢</button>
+      </div>
+    </div>
     <div id="rent-history"></div>
   </div>
 </div>
@@ -2235,7 +2339,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08042350'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08051435'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null };
 let _ejsOk = false;
@@ -2591,6 +2695,8 @@ const loadLandlordData = async () => {
       if(d.tenants)DB.tenants=d.tenants;
       if(d.utilBills)DB.utilBills=d.utilBills;
       if(d.rentRecords)DB.rentRecords=d.rentRecords;
+      if(d.rentContracts)DB.rentContracts=d.rentContracts;
+      if(d.rentPayments)DB.rentPayments=d.rentPayments;
       if(d.checkouts)DB.checkouts=d.checkouts;
       if(d.announces)DB.announces=d.announces;
       if(d.repairs)DB.repairs=d.repairs;
@@ -2695,6 +2801,8 @@ const saveLandlordData = async () => {
     reserveReportSent:DB.reserveReportSent||{},
     reserveAutoLog:DB.reserveAutoLog||[],
     billWorkingState:DB.billWorkingState||null,
+    rentContracts:DB.rentContracts||[],
+    rentPayments:DB.rentPayments||[],
   });
   }catch(e){ if(window.setCloudStatus) setCloudStatus('fail'); throw e; }
   if(window.setCloudStatus) setCloudStatus('ok');
@@ -4258,9 +4366,18 @@ function renderRentHistory(){
       }).join('')
       +(DB.rentRecords.length?'<div style="font-weight:900;font-size:.85rem;color:var(--muted);margin:.6rem 0 .3rem;">📅 各期收租明細</div>':'');
   }
-  if(!DB.rentRecords.length){el.innerHTML=_settleHtml||'<div class="txt-m">尚無紀錄</div>';return;}
+  // 08051435 房租-2：套用收款日期間篩選（未設區間＝全部）
+  const _rhList = DB.rentRecords.filter(r=>(typeof window.rentHistInRange==='function')?window.rentHistInRange(r):true);
+  const _rhOn = !!((document.getElementById('rh-from')||{}).value || (document.getElementById('rh-to')||{}).value);
+  if(_rhOn){
+    _settleHtml += '<div class="result-box" style="font-weight:700;margin:.3rem 0;">🔍 篩選後共 '+_rhList.length+' 期（依各房間收款日）</div>';
+  }
+  if(!_rhList.length){el.innerHTML=(_settleHtml||'')+'<div class="txt-m">此區間沒有收租紀錄</div>';return;}
   el.innerHTML=_settleHtml;
-  DB.rentRecords.slice(0,24).forEach((rec,i)=>{
+  _rhList.slice(0,24).forEach((rec,_fi)=>{
+    // ★08051435 修正：篩選後不可用篩選清單的索引，必須換回 DB.rentRecords 的真實索引，
+    //   否則 deleteRent(i)／markRentPaid(i) 會操作到錯誤的期別（會刪錯資料）。
+    const i = DB.rentRecords.indexOf(rec);
     const total=ROOMS.reduce((s,r)=>s+(rec.payments[r]?.paid||0),0);
     const due=ROOMS.reduce((s,r)=>s+(rec.payments[r]?.amount||0),0);
     const st=total>=due?'pay-paid':total>0?'pay-partial':'pay-unpaid';
@@ -6835,6 +6952,8 @@ window.importData = async function(evt){
       if(d.tenants)DB.tenants=d.tenants;
       if(d.utilBills)DB.utilBills=d.utilBills;
       if(d.rentRecords)DB.rentRecords=d.rentRecords;
+      if(d.rentContracts)DB.rentContracts=d.rentContracts;
+      if(d.rentPayments)DB.rentPayments=d.rentPayments;
       if(d.checkouts)DB.checkouts=d.checkouts;
       if(d.announces)DB.announces=d.announces;
       if(d.repairs)DB.repairs=d.repairs;
@@ -7446,6 +7565,286 @@ checkSession();
     </div>
   </div>
 </div>
+
+<script>
+/* ===================================================================
+   房租-1／房租-2／房租-3　（08051435 新增）
+   ① 租賃契約管理（多本、自動處理重疊期、到期日不推算）
+   ② 房客租金入帳紀錄簿（入帳日 vs 所屬租期，兩個獨立欄位）
+   ③ 週期篩選按鈕（近30天／近2個月／近3個月／今年／去年至今／全部）
+   =================================================================== */
+(function(){
+  'use strict';
+  var CL={yellow:'📒 7-11版(黃)',red:'📕 書局版(紅)',other:'📄 其他'};
+  function E(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function N(n){ return Math.round(+n||0).toLocaleString(); }
+  function iso(d){ return d.toISOString().slice(0,10); }
+  function addD(str,n){ var d=new Date(str+'T00:00:00'); d.setDate(d.getDate()+n); return iso(d); }
+  function fillRooms(id){
+    var el=document.getElementById(id); if(!el||el.dataset.filled) return;
+    el.innerHTML=(window.ROOMS||[]).map(function(r){
+      var t=(DB.tenants&&DB.tenants[r])||{}; 
+      return '<option value="'+E(r)+'">'+E(r)+(t.name?'（'+E(t.name)+'）':'（空房）')+'</option>'; }).join('');
+    el.dataset.filled='1';
+  }
+  function uid(){ return 'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+  /* ---------- 共用：週期快捷 ---------- */
+  function quick(mode,fromId,toId,cb){
+    var F=document.getElementById(fromId), T=document.getElementById(toId), now=new Date();
+    if(mode==='all'){ if(F)F.value=''; if(T)T.value=''; }
+    else if(mode==='30'||mode==='60'||mode==='90'){
+      var s=new Date(now.getTime()-(+mode)*86400000);
+      if(F)F.value=iso(s); if(T)T.value=iso(now); }
+    else if(mode==='year'){ if(F)F.value=now.getFullYear()+'-01-01'; if(T)T.value=iso(now); }
+    else if(mode==='prev'){ if(F)F.value=(now.getFullYear()-1)+'-01-01'; if(T)T.value=iso(now); }
+    if(cb) cb();
+  }
+  window.rpQuick=function(m){ quick(m,'rp-from','rp-to',window.rpRender); };
+  window.rhQuick=function(m){ quick(m,'rh-from','rh-to',window.renderRentHistory); };
+
+  /* ================= 房租-3：租賃契約 ================= */
+  /* 自動截斷重疊：同房間依起日排序，若下一本起日 <= 本本訖日，
+     本本「實際計算至」下一本起日的前一天。原訖日保留顯示，不修改資料。 */
+  function contractsOf(room){
+    var l=(DB.rentContracts||[]).filter(function(c){ return c.room===room; });
+    l.sort(function(a,b){ return String(a.start||'0000-00-00').localeCompare(String(b.start||'0000-00-00')); });
+    l.forEach(function(c,i){
+      var nx=l[i+1];
+      c._effEnd=c.end||'';
+      c._superseded=false;
+      if(nx && nx.start && c.end && nx.start<=c.end){
+        c._effEnd=addD(nx.start,-1); c._superseded=true;
+      }
+      c._seq=i+1;
+    });
+    return l;
+  }
+  window.rcContractsOf=contractsOf;
+
+  window.rcClear=function(){
+    ['rc-start','rc-end','rc-rent','rc-note'].forEach(function(i){
+      var e=document.getElementById(i); if(e)e.value=''; });
+    var u=document.getElementById('rc-unknown'); if(u)u.checked=false;
+    delete document.getElementById('rc-room').dataset.editId;
+  };
+
+  window.rcSave=async function(){
+    if(typeof isLandlord!=='undefined' && !isLandlord){ toast('⚠️ 無權限'); return; }
+    var room=document.getElementById('rc-room').value;
+    var unk=document.getElementById('rc-unknown').checked;
+    var st=document.getElementById('rc-start').value;
+    var en=document.getElementById('rc-end').value;
+    var rt=+document.getElementById('rc-rent').value||0;
+    if(!room){ toast('請選房間'); return; }
+    if(!unk && !st){ toast('請填契約起日（不可考請勾選）'); return; }
+    if(!en){ toast('請填契約訖日'); return; }
+    if(st && en && st>en){ toast('⚠️ 起日不可晚於訖日'); return; }
+    if(!rt){ if(!confirm('該期月租為 0，確定嗎？')) return; }
+    if(!DB.rentContracts) DB.rentContracts=[];
+    var eid=document.getElementById('rc-room').dataset.editId||'';
+    var rec={ id:eid||uid(), room:room, start:unk?'':st, end:en, rent:rt,
+      color:document.getElementById('rc-color').value,
+      unknownStart:!!unk, note:document.getElementById('rc-note').value.trim() };
+    if(window.stampRec) window.stampRec(rec);
+    if(eid){
+      var i=DB.rentContracts.findIndex(function(x){ return x.id===eid; });
+      if(i>=0){ if(window.guardRec && !window.guardRec(DB.rentContracts[i],'修改')) return;
+                rec.createdBy=DB.rentContracts[i].createdBy||rec.createdBy; DB.rentContracts[i]=rec; }
+    } else DB.rentContracts.push(rec);
+    await saveLandlordData(); rcClear(); rcRender(); toast('契約已儲存 ✓');
+  };
+
+  window.rcEdit=function(id){
+    var c=(DB.rentContracts||[]).find(function(x){ return x.id===id; }); if(!c) return;
+    var R=document.getElementById('rc-room'); R.value=c.room; R.dataset.editId=id;
+    document.getElementById('rc-color').value=c.color||'yellow';
+    document.getElementById('rc-start').value=c.start||'';
+    document.getElementById('rc-end').value=c.end||'';
+    document.getElementById('rc-rent').value=c.rent||'';
+    document.getElementById('rc-unknown').checked=!!c.unknownStart;
+    document.getElementById('rc-note').value=c.note||'';
+    document.getElementById('rent-contract-card').scrollIntoView({behavior:'smooth'});
+  };
+
+  window.rcDel=async function(id){
+    var i=(DB.rentContracts||[]).findIndex(function(x){ return x.id===id; }); if(i<0) return;
+    if(window.guardRec && !window.guardRec(DB.rentContracts[i],'刪除')) return;
+    if(!confirm('確定刪除這本契約？（舊契約建議保留供歷史查詢）')) return;
+    DB.rentContracts.splice(i,1); await saveLandlordData(); rcRender(); toast('已刪除');
+  };
+
+  window.rcRender=function(){
+    var box=document.getElementById('rc-list'); if(!box) return;
+    fillRooms('rc-room'); 
+    var all=DB.rentContracts||[];
+    if(!all.length){ box.innerHTML='<div class="txt-m">尚無契約紀錄。請依「改版記錄」的建檔清單逐本輸入。</div>'; return; }
+    var h='';
+    (window.ROOMS||[]).forEach(function(room){
+      var l=contractsOf(room); if(!l.length) return;
+      var t=(DB.tenants&&DB.tenants[room])||{};
+      h+='<div style="margin-top:.7rem;"><strong style="color:var(--primary);">'+E(room)+
+         (t.name?' ・ '+E(t.name):'')+'</strong>　<span style="font-size:.75rem;color:var(--muted);">共 '+l.length+' 本</span></div>';
+      l.forEach(function(c){
+        var warn=c._superseded
+          ? '<div style="font-size:.75rem;color:#C0392B;font-weight:700;">⚠️ 已被下一本取代 → 實際計算至 '+E(c._effEnd)+'（避免期間重複計算）</div>' : '';
+        h+='<div class="list-item" style="padding:.5rem .6rem;">'+
+           '<div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;">'+
+           '<div><strong>第 '+c._seq+' 本</strong>　'+E(CL[c.color]||'')+
+           '　<span style="color:var(--primary);font-weight:700;">'+
+           (c.unknownStart?'（起日不可考）':E(c.start))+' ～ '+E(c.end)+'</span>'+
+           '　月租 NT$'+N(c.rent)+'</div>'+
+           '<div class="gap"><button class="btn bd sm" onclick="rcEdit(\''+c.id+'\')">✏️ 編輯</button>'+
+           '<button class="btn bo sm" onclick="rcDel(\''+c.id+'\')">刪</button></div></div>'+
+           warn+(c.note?'<div style="font-size:.78rem;color:var(--muted);">'+E(c.note)+'</div>':'')+
+           '</div>';
+      });
+    });
+    box.innerHTML=h;
+  };
+
+  /* ================= 房租-1：入帳紀錄簿 ================= */
+  /* 依收租日推算「所屬租期」：以本月收租日為基準，
+     若入帳日超過基準日 15 天 → 視為預付下一期；早於基準日 15 天以上 → 視為補繳上一期。 */
+  window.rpAuto=function(){
+    var room=document.getElementById('rp-room').value;
+    var d=document.getElementById('rp-date').value;
+    if(!room||!d){ toast('請先選房間並填入帳日'); return; }
+    var t=(DB.tenants&&DB.tenants[room])||{};
+    var rd=+t.rentDay||0;
+    if(!rd){ toast('⚠️ 該房客未設定收租日，請先到「房客管理」填寫'); return; }
+    var dt=new Date(d+'T00:00:00'), y=dt.getFullYear(), m=dt.getMonth();
+    function mk(y,m){ var x=new Date(y,m,rd); return iso(new Date(x.getTime()-x.getTimezoneOffset()*60000)); }
+    var base=mk(y,m), diff=(new Date(d+'T00:00:00')-new Date(base+'T00:00:00'))/86400000;
+    if(diff>15) base=mk(y,m+1);
+    else if(diff<-15) base=mk(y,m-1);
+    var endD=addD(mk(new Date(base+'T00:00:00').getFullYear(),
+                     new Date(base+'T00:00:00').getMonth()+1),-1);
+    document.getElementById('rp-ps').value=base;
+    document.getElementById('rp-pe').value=endD;
+    if(!document.getElementById('rp-amt').value){
+      var cs=contractsOf(room).filter(function(c){
+        return (!c.start||c.start<=base) && (!c._effEnd||base<=c._effEnd); });
+      var r=cs.length?cs[cs.length-1].rent:(t.rent||0);
+      if(r) document.getElementById('rp-amt').value=r;
+    }
+    var dd=Math.round((new Date(base+'T00:00:00')-new Date(d+'T00:00:00'))/86400000);
+    toast('已帶入租期 '+base+' ～ '+endD+(dd>0?'（提前 '+dd+' 天付款）':(dd<0?'（延遲 '+(-dd)+' 天）':'')));
+  };
+
+  window.rpClear=function(){
+    ['rp-date','rp-amt','rp-ps','rp-pe','rp-note'].forEach(function(i){
+      var e=document.getElementById(i); if(e)e.value=''; });
+    delete document.getElementById('rp-room').dataset.editId;
+  };
+
+  window.rpSave=async function(){
+    if(typeof isLandlord!=='undefined' && !isLandlord){ toast('⚠️ 無權限'); return; }
+    var room=document.getElementById('rp-room').value;
+    var d=document.getElementById('rp-date').value;
+    var a=+document.getElementById('rp-amt').value||0;
+    var ps=document.getElementById('rp-ps').value, pe=document.getElementById('rp-pe').value;
+    if(!room||!d||!a){ toast('房間、入帳日、金額為必填'); return; }
+    if(!ps||!pe){ toast('請填所屬租期（可按「🔄 自動帶入租期」）'); return; }
+    if(ps>pe){ toast('⚠️ 租期起日不可晚於迄日'); return; }
+    if(!DB.rentPayments) DB.rentPayments=[];
+    var t=(DB.tenants&&DB.tenants[room])||{};
+    var eid=document.getElementById('rp-room').dataset.editId||'';
+    var rec={ id:eid||uid(), room:room, tenant:t.name||'', amount:a, date:d,
+      periodStart:ps, periodEnd:pe,
+      method:document.getElementById('rp-method').value,
+      note:document.getElementById('rp-note').value.trim() };
+    if(window.stampRec) window.stampRec(rec);
+    if(eid){
+      var i=DB.rentPayments.findIndex(function(x){ return x.id===eid; });
+      if(i>=0){ if(window.guardRec && !window.guardRec(DB.rentPayments[i],'修改')) return;
+                rec.createdBy=DB.rentPayments[i].createdBy||rec.createdBy; DB.rentPayments[i]=rec; }
+    } else DB.rentPayments.push(rec);
+    await saveLandlordData(); rpClear(); rpRender(); toast('入帳紀錄已儲存 ✓');
+  };
+
+  window.rpEdit=function(id){
+    var r=(DB.rentPayments||[]).find(function(x){ return x.id===id; }); if(!r) return;
+    var R=document.getElementById('rp-room'); R.value=r.room; R.dataset.editId=id;
+    document.getElementById('rp-date').value=r.date||'';
+    document.getElementById('rp-amt').value=r.amount||'';
+    document.getElementById('rp-method').value=r.method||'郵局 App 轉帳';
+    document.getElementById('rp-ps').value=r.periodStart||'';
+    document.getElementById('rp-pe').value=r.periodEnd||'';
+    document.getElementById('rp-note').value=r.note||'';
+    document.getElementById('rent-pay-card').scrollIntoView({behavior:'smooth'});
+  };
+
+  window.rpDel=async function(id){
+    var i=(DB.rentPayments||[]).findIndex(function(x){ return x.id===id; }); if(i<0) return;
+    if(window.guardRec && !window.guardRec(DB.rentPayments[i],'刪除')) return;
+    if(!confirm('確定刪除這筆入帳紀錄？')) return;
+    DB.rentPayments.splice(i,1); await saveLandlordData(); rpRender(); toast('已刪除');
+  };
+
+  window.rpRender=function(){
+    var box=document.getElementById('rp-list'); if(!box) return;
+    fillRooms('rp-room');
+    var from=(document.getElementById('rp-from')||{}).value||'';
+    var to=(document.getElementById('rp-to')||{}).value||'';
+    var l=(DB.rentPayments||[]).filter(function(r){
+      var d=String(r.date||'');
+      if(from&&d<from) return false;
+      if(to&&d>to) return false;
+      return true; });
+    l.sort(function(a,b){ return String(b.date||'').localeCompare(String(a.date||'')); });
+    if(!l.length){ box.innerHTML='<div class="result-box mt"><div class="txt-m">此區間沒有入帳紀錄。</div></div>'; return; }
+    var tot=l.reduce(function(x,r){ return x+(+r.amount||0); },0);
+    var per={}; l.forEach(function(r){ per[r.room]=(per[r.room]||0)+(+r.amount||0); });
+    var sub=Object.keys(per).map(function(k){ return E(k)+' NT$'+N(per[k]); }).join('　｜　');
+    var h='<div class="result-box mt" style="font-weight:700;">共 '+l.length+' 筆，合計 NT$'+N(tot)+
+          '<div style="font-size:.78rem;font-weight:400;color:var(--muted);margin-top:.25rem;">'+sub+'</div></div>';
+    l.forEach(function(r){
+      var dd=(r.periodStart&&r.date)
+        ? Math.round((new Date(r.periodStart+'T00:00:00')-new Date(r.date+'T00:00:00'))/86400000) : 0;
+      var tagTxt = dd>0 ? '提前 '+dd+' 天' : (dd<0 ? '延遲 '+(-dd)+' 天' : '當日');
+      var tagCol = dd<0 ? '#C0392B' : '#16a34a';
+      h+='<div class="list-item" style="padding:.5rem .6rem;">'+
+         '<div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;">'+
+         '<div><strong style="color:var(--primary);">'+E(r.date)+'　NT$'+N(r.amount)+'</strong>'+
+         '　<span style="font-size:.78rem;">'+E(r.room)+(r.tenant?'・'+E(r.tenant):'')+'</span>'+
+         '　<span style="font-size:.72rem;color:'+tagCol+';font-weight:700;">['+tagTxt+']</span></div>'+
+         '<div class="gap"><button class="btn bd sm" onclick="rpEdit(\''+r.id+'\')">✏️ 編輯</button>'+
+         '<button class="btn bo sm" onclick="rpDel(\''+r.id+'\')">刪</button></div></div>'+
+         '<div style="font-size:.78rem;color:var(--muted);">所屬租期：'+E(r.periodStart)+' ～ '+E(r.periodEnd)+
+         '　｜　'+E(r.method)+(r.note?'　｜　'+E(r.note):'')+
+         (r.createdBy?'　👤 '+E(r.createdBy):'')+'</div></div>';
+    });
+    box.innerHTML=h;
+  };
+
+  /* ---------- 收租歷史：套用日期篩選（房租-2） ---------- */
+  window.rentHistInRange=function(rec){
+    var from=(document.getElementById('rh-from')||{}).value||'';
+    var to=(document.getElementById('rh-to')||{}).value||'';
+    if(!from&&!to) return true;
+    var ds=Object.keys(rec.payments||{}).map(function(k){ return (rec.payments[k]||{}).date||''; })
+             .filter(Boolean);
+    if(!ds.length) return false;
+    return ds.some(function(d){ return (!from||d>=from) && (!to||d<=to); });
+  };
+
+  /* ---------- 掛勾：收租頁重繪時一併更新 ---------- */
+  function hook(){
+    var o=window.renderRentHistory;
+    if(typeof o!=='function'){ setTimeout(hook,300); return; }
+    if(o.__rpHooked) return;
+    var w=function(){ var r=o.apply(this,arguments);
+      try{ rcRender(); rpRender(); }catch(e){ console.warn('rent addon',e); }
+      return r; };
+    w.__rpHooked=true; window.renderRentHistory=w;
+    try{ rcRender(); rpRender(); }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hook);
+  else hook();
+})();
+</script>
 
 </body>
 </html>
