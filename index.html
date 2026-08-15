@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08051947</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
+    <span class="version-tag" id="ver-tag">v08160140</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -382,17 +382,21 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           <input type="date" id="draft-water-start" onchange="saveDraft()" title="計費起日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
           <input type="date" id="draft-water-end" onchange="saveDraft()" title="計費迄日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
         </div>
+        <label style="font-size:.74rem;color:var(--muted);margin-top:.25rem;display:block;">📄 帳單產出日（約每期月底，可改）</label>
+        <input type="date" id="draft-water-issue" onchange="saveDraft()" title="水費帳單產出日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:100%;box-sizing:border-box;">
       </div>
       <div><label>繳費方式 / 期限 / 狀態</label>
         <div style="margin-top:.3rem;display:flex;flex-direction:column;gap:.25rem;">
           <select id="draft-water-pay" onchange="saveDraft()" style="font-size:.82rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;">
             <option value="card">💳 信用卡繳費</option>
             <option value="cash">💵 現金繳費</option>
+            <option value="post">🏣 郵局APP</option>
+            <option value="twpay">🇹🇼 台灣PAY繳費</option>
           </select>
           <label style="font-size:.78rem;color:var(--muted);">📅 繳費期限（預設帳單月21日，可改）</label>
           <input type="date" id="draft-water-due" onchange="saveDraft()" title="繳費期限（預設帳單月21日）" style="font-size:.8rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;box-sizing:border-box;">
           <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;">
-            <input type="checkbox" id="draft-water-paid" onchange="saveDraft()"> ✅ 已繳清
+            <input type="checkbox" id="draft-water-paid" onchange="saveDraft()"> <b>我已繳費給自來水公司</b><div style="font-size:.7rem;color:var(--muted);font-weight:400;margin-left:1.4rem;">（這是「房東對外付款」，不是向房客收款）</div>
           </label>
         </div>
       </div>
@@ -419,12 +423,16 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           <input type="date" id="draft-elec-start" onchange="saveDraft()" title="計費起日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
           <input type="date" id="draft-elec-end" onchange="saveDraft()" title="計費迄日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
         </div>
+        <label style="font-size:.74rem;color:var(--muted);margin-top:.25rem;display:block;">📄 帳單產出日（約抄表日次日，可改）</label>
+        <input type="date" id="draft-elec-issue" onchange="saveDraft()" title="電費帳單產出日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:100%;box-sizing:border-box;">
       </div>
       <div><label>用電度數（度，選填）</label>
         <input type="number" id="draft-elec-kwh" placeholder="如：878" oninput="saveDraft()">
         <select id="draft-elec-pay" onchange="saveDraft()" style="font-size:.82rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;margin-top:.25rem;width:100%;box-sizing:border-box;">
           <option value="card">💳 信用卡繳費</option>
           <option value="cash">💵 現金繳費</option>
+          <option value="post">🏣 郵局APP</option>
+          <option value="twpay">🇹🇼 台灣PAY繳費</option>
         </select>
         <div style="margin-top:.35rem;">
           <label style="font-size:.8rem;color:var(--muted);">📅 繳費期限（預設帳單月28日，可改）</label>
@@ -432,7 +440,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           <div style="font-size:.73rem;color:var(--muted);margin-top:.15rem;">繳費期限前一天未打勾 → 自動 Gmail 提醒</div>
         </div>
         <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;margin-top:.2rem;">
-          <input type="checkbox" id="draft-elec-paid" onchange="saveDraft()"> ✅ 已繳清
+          <input type="checkbox" id="draft-elec-paid" onchange="saveDraft()"> <b>我已繳費給台電</b><div style="font-size:.7rem;color:var(--muted);font-weight:400;margin-left:1.4rem;">（這是「房東對外付款」，不是向房客收款）</div>
         </label>
       </div>
     </div>
@@ -458,17 +466,21 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           <input type="date" id="draft-gas-start" onchange="saveDraft()" title="計費起日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
           <input type="date" id="draft-gas-end" onchange="saveDraft()" title="計費迄日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
         </div>
+        <label style="font-size:.74rem;color:var(--muted);margin-top:.25rem;display:block;">📄 帳單產出日（欣嘉瓦斯約每月上旬，可改）</label>
+        <input type="date" id="draft-gas-issue" onchange="saveDraft()" title="瓦斯帳單產出日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:100%;box-sizing:border-box;">
       </div>
       <div><label>繳費方式 / 期限 / 狀態</label>
         <div style="margin-top:.3rem;display:flex;flex-direction:column;gap:.25rem;">
           <select id="draft-gas-pay" onchange="saveDraft()" style="font-size:.82rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;">
             <option value="cash">💵 現金繳費</option>
             <option value="card">💳 信用卡繳費</option>
+            <option value="post">🏣 郵局APP</option>
+            <option value="twpay">🇹🇼 台灣PAY繳費</option>
           </select>
           <label style="font-size:.78rem;color:var(--muted);">📅 繳費期限（預設帳單月20日，可改）</label>
           <input type="date" id="draft-gas-due" onchange="saveDraft()" title="繳費期限（預設帳單月20日）" style="font-size:.8rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;box-sizing:border-box;">
           <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;">
-            <input type="checkbox" id="draft-gas-paid" onchange="saveDraft()"> ✅ 已繳清
+            <input type="checkbox" id="draft-gas-paid" onchange="saveDraft()"> <b>我已繳費給欣嘉瓦斯</b><div style="font-size:.7rem;color:var(--muted);font-weight:400;margin-left:1.4rem;">（這是「房東對外付款」，不是向房客收款）</div>
           </label>
         </div>
       </div>
@@ -502,6 +514,8 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         <div style="margin-top:.4rem;font-size:.8rem;color:var(--muted);line-height:1.5;">
           🔒 每月 25 日信用卡<strong>自動扣款</strong><br>系統自動視為已繳，無需提醒。
         </div>
+        <label style="font-size:.74rem;color:var(--muted);margin-top:.25rem;display:block;">📄 帳單產出日（約每月13日，可改）</label>
+        <input type="date" id="draft-net-issue" onchange="saveDraft()" title="網路帳單產出日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:100%;box-sizing:border-box;">
       </div>
     </div>
 
@@ -771,7 +785,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <!-- ── 計算結果（問題9：加龍潭/台中，問題11：floor/round） ── -->
   <div class="card hidden" id="u-result-card">
     <div class="card-title">📊 計算結果（各房應付金額）</div>
-    <div class="alert-box a-info" style="font-size:.82rem;">房客欄位（N4~N8）使用<strong>無條件捨去法</strong>優待；龍潭/台中房東欄位（N9~N14）使用<strong>四捨五入</strong>。</div>
+    <div class="alert-box a-info" style="font-size:.82rem;">
+      各欄位金額一律<strong>四捨五入</strong>顯示（與 Excel 相同）；
+      房客的<strong>「本期合計」</strong>才用<strong>無條件捨去到十位</strong>優待，捨去的零頭由房東吸收。
+    </div>
+    <!-- ★08160140 新增：把最容易出錯的兩個關鍵值放出來，主帥可一眼核對 -->
+    <div id="u-verify-bar" class="alert-box a-warn" style="font-size:.82rem;"></div>
     <div class="tbl-wrap">
       <table><thead><tr>
         <th>房間/人員</th><th>冷氣電費</th><th>均分電費</th><th>均分水費</th><th>均分瓦斯</th><th style="background:#4a2c0a;">本期合計</th>
@@ -2353,7 +2372,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08051947'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08160140'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[] };
 let _ejsOk = false;
@@ -3771,12 +3790,15 @@ window.calcU = function(){
   const G=+document.getElementById('u-gas')?.value||0;
   const totalKwh=+document.getElementById('u-total-kwh')?.value||0;
 
-  // 問題7：精確每度電費（不四捨五入，用於計算）
+  // ★08160140 修正：每度電價改用「台電帳單公告值」＝無條件進位到小數2位
+  //   台電 115/08 帳單：3731 ÷ 1183 = 3.1538…，台電公告「當期每度平均電價 3.16」
+  //   Excel K16 已改為 =ROUNDUP(D4/D3,2)，兩邊一致。
+  //   ★嚴禁改回 ROUND 或不進位，否則冷氣費與扣除冷氣後的均分基數都會錯。
   let exactP=0;
   const kwhPriceEl=document.getElementById('u-kwh-price');
   if(E>0 && totalKwh>0){
-    exactP = E/totalKwh;  // 精確值，不先ROUND
-    const displayP = Math.round(exactP*100)/100;  // 顯示用（小數2位，全頁一致）
+    exactP = Math.ceil((E/totalKwh)*100)/100;   // ROUNDUP 2位＝台電公告值
+    const displayP = exactP;
     if(kwhPriceEl){ kwhPriceEl.value=displayP; kwhPriceEl.style.color='var(--accent)'; }
   } else {
     if(kwhPriceEl){ kwhPriceEl.value=''; kwhPriceEl.placeholder='請先填用電度數和電費'; }
@@ -3784,23 +3806,45 @@ window.calcU = function(){
   }
 
   // 問題6：冷氣用度 = ROUND(本期-上期, 0)
-  // 問題7：冷氣電費 = ROUND(原始差值 × 精確單價, 0)（不是先ROUND度數再×單價！）
+  // ★08160140 修正：冷氣電費【保留小數】參與後續計算，只有「顯示」才取整。
+  //   Excel L20~L24 保留小數（例 134.7×3.16=425.652），L25=SUM 後才是 1335.1。
+  //   若先把每一房取整再加總，扣除冷氣後的均分基數會差 1~2 元，全部房客金額連鎖錯。
   let sumAC=0; const ac={};
   ROOMS.forEach(r=>{
     const prev=+document.getElementById('mp-'+r)?.value||0;
     const curr=+document.getElementById('mc-'+r)?.value||0;
     const rawDiff=Math.max(0,curr-prev);
     const kwh=Math.round(rawDiff);                    // 問題6: ROUND(差值, 0)
-    const fee=Math.round(rawDiff*exactP);             // 問題7: ROUND(差值×精確單價, 0)
-    ac[r]={kwh,fee,rawDiff}; sumAC+=fee;
+    const feeExact=rawDiff*exactP;                    // ★精確值，供計算用
+    const fee=Math.round(feeExact);                   // 顯示用
+    ac[r]={kwh,fee,feeExact,rawDiff}; sumAC+=feeExact;
     const kEl=document.getElementById('mk-'+r),fEl=document.getElementById('mf-'+r);
     if(kEl)kEl.value=rawDiff>0?kwh:'';
     if(fEl)fEl.value=rawDiff>0?fee:'';
   });
 
-  // 問題7：共用電費 = 總電費 - 各房冷氣電費合計（用整數）
+  // ★08160140：共用電費 = 總電費 − 各房冷氣電費合計【精確值，不先取整】
+  //   Excel L27 = 3731 − 1335.1 = 2395.9（不是 3731 − 1333 = 2398）
   const sharedE=Math.max(0,E-sumAC);
 
+  // ★08160140 修正：計費天數當場由「計費起迄」重算，不沿用可能過期的 window._utilDays。
+  //   舊版 pd-房間 是 readonly 且由 initU() 預填，若 initU 先於日期設定執行就會留下舊天數，
+  //   實測 202608 期因此少算 1 天（62 天 vs 正確 63 天），造成全部均分金額錯誤。
+  {
+    const _s=document.getElementById('u-start')?.value;
+    const _e=document.getElementById('u-end')?.value;
+    if(_s&&_e){
+      const _d=Math.round((new Date(_e)-new Date(_s))/86400000)+1;  // +1＝起迄兩端都算
+      if(_d>1){
+        window._utilDays=_d;
+        ROOMS.forEach(r=>{
+          const _pn=+document.getElementById('pn-'+r)?.value||0;
+          const _pdEl=document.getElementById('pd-'+r);
+          if(_pdEl) _pdEl.value = _pn>0 ? _d : 0;
+        });
+      }
+    }
+  }
   // 問題8/9：人天計算（含龍潭、台中房東）
   const pd={};
   let totalW=0;
@@ -3824,14 +3868,16 @@ window.calcU = function(){
   window._UR={};
   let sAC=0,sE=0,sW=0,sG=0,sT=0;
 
-  // 問題11：房客（N4~N8）用 floor 優待；房東（N9~N14）用 round
+  // ★08160140 修正：各欄位顯示一律四捨五入（與 Excel 顯示一致，房客／房東同規則）；
+  //   「本期合計」才是房客優待——用【精確值】相加後無條件捨去到十位。
+  //   舊版對每一欄先 floor 再相加，等於重複捨去 3 次，房客金額會偏低、房東被迫多吸收。
   ROOMS.forEach(r=>{
     const ratio=totalW>0?pd[r].w/totalW:0;
-    // 問題11：房客用 floor（無條件捨去）
-    const sE2=Math.floor(sharedE*ratio);
-    const sW2=Math.floor(W*ratio);
-    const sG2=Math.floor(G*ratio);
-    const rawTot=ac[r].fee+sE2+sW2+sG2;
+    const sE2x=sharedE*ratio, sW2x=W*ratio, sG2x=G*ratio;   // ★精確值
+    const sE2=Math.round(sE2x);
+    const sW2=Math.round(sW2x);
+    const sG2=Math.round(sG2x);
+    const rawTot=ac[r].feeExact+sE2x+sW2x+sG2x;              // ★用精確值加總
     const t=DB.tenants[r]||{};
     const hasOcc=pd[r].n>0;
     const isOwnerRoom = (r==='3F後'); // 3樓後改自住，不收費
@@ -3861,8 +3907,8 @@ window.calcU = function(){
     const sE_lt=Math.round(sharedE*ratioLT);
     const sW_lt=Math.round(W*ratioLT);
     const sG_lt=Math.round(G*ratioLT);
-    // 龍潭房東住3樓後，冷氣費用round
-    const ltAC=ac['3F後']?.fee||0;
+    // 龍潭房東住3樓後，冷氣費用round（★由精確值取整）
+    const ltAC=Math.round(ac['3F後']?.feeExact||0);
     const ltWEGexact=(sharedE*ratioLT)+(W*ratioLT)+(G*ratioLT);
     const ltTot=ltAC+Math.round(ltWEGexact);
     window._UR['龍潭房東']={acFee:ltAC,sharedElec:sE_lt,water:sW_lt,gas:sG_lt,wegExact:ltWEGexact,total:ltTot,days:ltDays,stayDates:(window._ltDateStr||'')};
@@ -3955,6 +4001,21 @@ window.calcU = function(){
     window._N_summary={lines, N14, displayP, ltAC_kwh, ltWEG, ltAC_fee, tcWEG, N9}; // tcWEG=原房東石房東
   }
 
+  // ★08160140：關鍵值核對列（天數與每度電價，是歷來最常出錯的兩個值）
+  {
+    const vb=document.getElementById('u-verify-bar');
+    if(vb){
+      const _s=document.getElementById('u-start')?.value||'—';
+      const _e=document.getElementById('u-end')?.value||'—';
+      const _d=window._utilDays||0;
+      const bad = (!_d||_d<2);
+      vb.innerHTML='🔍 <b>請核對這兩個數字</b>　計費期間 <b>'+_s+' ～ '+_e+'</b>　'+
+        '計費天數 <b style="font-size:1.05em;color:'+(bad?'#C0392B':'var(--primary)')+';">'+(_d||'未設定')+' 天</b>'+
+        '（起迄兩端都算）　｜　每度電價 <b style="font-size:1.05em;color:var(--primary);">'+
+        (exactP?exactP.toFixed(2):'—')+' 元</b>（應等於台電帳單「當期每度平均電價」）'+
+        (bad?'<br><span style="color:#C0392B;font-weight:700;">⚠️ 天數未設定或不合理，請先到上方填「計費起迄」，否則均分金額會全錯。</span>':'');
+    }
+  }
   document.getElementById('u-result-card').classList.remove('hidden');
 };
 
@@ -4031,9 +4092,9 @@ window._ensureRoomCollect = function(b){
 };
 window._billCollectStatus = function(b){
   const rc=_ensureRoomCollect(b); const rk=Object.keys(rc);
-  if(!rk.length) return { label: b.deferred?'⏸️ 緩收中':('✅ 已收'+(b.collectedDate?'（'+b.collectedDate+'）':'')), allPaid: !b.deferred };
+  if(!rk.length) return { label: b.deferred?'⏸️ 緩收中':('💰 已向房客收款'+(b.collectedDate?'（'+b.collectedDate+'）':'')), allPaid: !b.deferred };
   const paid=rk.filter(r=>rc[r].paid);
-  if(paid.length===rk.length) return { label:'✅ 全部已收', allPaid:true };
+  if(paid.length===rk.length) return { label:'💰 已向全部房客收款', allPaid:true };
   if(paid.length===0)         return { label:'⏸️ 全部緩收', allPaid:false };
   return { label:'⏸️ 部分已收（'+paid.length+'/'+rk.length+'）', allPaid:false };
 };
@@ -4065,7 +4126,7 @@ window.markUtilCollected = async function(i){
   Object.keys(rc).forEach(r=>{ rc[r].paid=true; rc[r].date=(d||'').trim(); });
   b.deferred=false; b.collectedDate=(d||'').trim();
   await saveLandlordData(); renderUtilHistory();
-  toast('已標記「全部已收」：'+b.period);
+  toast('已標記「已向全部房客收款」：'+b.period);
 };
 window.markUtilDeferred = async function(i){
   const b=(DB.utilBills||[])[i]; if(!b)return;
@@ -6365,6 +6426,31 @@ window.checkBillReminders = async function(){
   }catch(e){}
 };
 
+// ★08160140 新增：帳單產出日自動預估（可被手動值覆蓋，主帥可每期滾動修正）
+//   水費：計費迄日當天出帳（實測 202608 水費計費迄 7/31 → 產出日 7/31）
+//   電費：抄表日＝計費迄日次日出帳（實測 電費計費迄 8/06 → 抄表 8/07）
+//   瓦斯：計費迄日之後數日（實測 瓦斯計費迄 7/16 → 產出日 8/05，約次月上旬5日）
+//   網路：固定每月 13 日（實測 8/13）
+window.estIssueDate = function(kind, endDate, month){
+  const pad=n=>(n<10?'0':'')+n;
+  const fromEnd=(d,addDays)=>{ if(!d) return '';
+    const x=new Date(d+'T00:00:00'); if(isNaN(x)) return '';
+    x.setDate(x.getDate()+addDays);
+    return x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(x.getDate()); };
+  if(kind==='water') return fromEnd(endDate,0);
+  if(kind==='elec')  return fromEnd(endDate,1);
+  if(kind==='gas'){
+    if(!endDate) return '';
+    const x=new Date(endDate+'T00:00:00'); if(isNaN(x)) return '';
+    return x.getFullYear()+'-'+pad(x.getMonth()+2>12?1:x.getMonth()+2)+'-05';
+  }
+  if(kind==='net'){
+    const m=+month||0; if(!m) return '';
+    const y=new Date().getFullYear();
+    return y+'-'+pad(m)+'-13';
+  }
+  return '';
+};
 window.saveDraft = function(){
   const g=id=>document.getElementById(id);
   const d={
@@ -6375,6 +6461,7 @@ window.saveDraft = function(){
     waterDue:g('draft-water-due')?.value||'',
     waterStart:g('draft-water-start')?.value||'',
     waterEnd:g('draft-water-end')?.value||'',
+    waterIssue:g('draft-water-issue')?.value||'',
     elecMonth:g('draft-elec-month')?.value||'',
     elec:g('draft-elec')?.value||'',
     elecKwh:g('draft-elec-kwh')?.value||'',
@@ -6383,6 +6470,7 @@ window.saveDraft = function(){
     elecDue:g('draft-elec-due')?.value||'',
     elecStart:g('draft-elec-start')?.value||'',
     elecEnd:g('draft-elec-end')?.value||'',
+    elecIssue:g('draft-elec-issue')?.value||'',
     gasMonth:g('draft-gas-month')?.value||'',
     gas:g('draft-gas')?.value||'',
     gasPaid:g('draft-gas-paid')?.checked||false,
@@ -6390,8 +6478,10 @@ window.saveDraft = function(){
     gasDue:g('draft-gas-due')?.value||'',
     gasStart:g('draft-gas-start')?.value||'',
     gasEnd:g('draft-gas-end')?.value||'',
+    gasIssue:g('draft-gas-issue')?.value||'',
     netMonth:g('draft-net-month')?.value||'',
     net:g('draft-net')?.value||'',
+    netIssue:g('draft-net-issue')?.value||'',
     netPaid:true,
     note:g('draft-note')?.value||'',
     savedAt:new Date().toLocaleString('zh-TW'),
@@ -6426,6 +6516,8 @@ window.loadDraftState = function(){
     sv('draft-water-end', d.waterEnd || _wEst.end);
     sv('draft-water-pay', d.waterPay || 'card');
     sv('draft-water-due', d.waterDue || _wEst.due);
+    // ★08160140 帳單產出日：未填則以計費迄日自動預估，可手動改（滾動式調整）
+    sv('draft-water-issue', d.waterIssue || estIssueDate('water', d.waterEnd || _wEst.end, _wm));
     sc('draft-water-paid', d.waterPaid);
     // ⚡ 電費（繳費期限預設帳單月28日）
     sv('draft-elec-month',d.elecMonth);
@@ -6437,6 +6529,7 @@ window.loadDraftState = function(){
     sv('draft-elec-pay', d.elecPay || 'card');
     sc('draft-elec-paid',d.elecPaid);
     sv('draft-elec-due', d.elecDue || _eEst.due);
+    sv('draft-elec-issue', d.elecIssue || estIssueDate('elec', d.elecEnd || _eEst.end, d.elecMonth));
     // 🔥 瓦斯費（繳費期限預設帳單月20日，預設現金）
     const _gm = d.gasMonth || _bm;
     sv('draft-gas-month', _gm);
@@ -6446,6 +6539,7 @@ window.loadDraftState = function(){
     sv('draft-gas-end', d.gasEnd || _gEst.end);
     sv('draft-gas-pay', d.gasPay || 'cash');
     sv('draft-gas-due', d.gasDue || _gEst.due);
+    sv('draft-gas-issue', d.gasIssue || estIssueDate('gas', d.gasEnd || _gEst.end, d.gasMonth));
     sc('draft-gas-paid', d.gasPaid);
     // 🌐 網路費：月份自動帶當月；25日信用卡自動扣款、自動視為已繳、無手動勾
     const _autoMonth = String(_td.getMonth()+1).padStart(2,'0');
@@ -6453,6 +6547,7 @@ window.loadDraftState = function(){
     sv('draft-net', d.net || String(DB.defaultNetFee||1409));
     const _dfDisp=document.getElementById('default-net-fee-display');
     if(_dfDisp) _dfDisp.textContent=(DB.defaultNetFee||1409).toLocaleString();
+    sv('draft-net-issue', d.netIssue || estIssueDate('net','', d.netMonth));
     sv('draft-note',d.note);
     const el=document.getElementById('draft-saved-at');
     if(el&&d.savedAt) el.textContent='💾 上次暫存：'+d.savedAt;
@@ -6466,6 +6561,12 @@ window.loadDraftToMain = function(){
     if(d.elec  && document.getElementById('u-elec'))  document.getElementById('u-elec').value=d.elec;
     if(d.gas   && document.getElementById('u-gas'))   document.getElementById('u-gas').value=d.gas;
     if(d.elecKwh && document.getElementById('u-total-kwh')) document.getElementById('u-total-kwh').value=d.elecKwh;
+    // ★08160140 修正（天數錯誤的根因）：舊版只帶金額、沒帶「計費起迄」，
+    //   導致正式計算區沿用上一期的舊日期，天數少算 1 天，全部均分金額連鎖錯誤。
+    let _dsync='';
+    if(d.elecStart && document.getElementById('u-start')) { document.getElementById('u-start').value=d.elecStart; _dsync=d.elecStart; }
+    if(d.elecEnd && document.getElementById('u-end'))     { document.getElementById('u-end').value=d.elecEnd; }
+    if(_dsync && window.recalcDays) recalcDays();
     calcU();
     // 顯示月份提示
     const info=[];
@@ -6622,9 +6723,9 @@ window.renderUtilHistory = function(){
     const collectChips=(function(){
       const rc=_ensureRoomCollect(b); const rk=Object.keys(rc);
       if(!rk.length) return '';
-      return '<div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;"><span style="font-size:.72rem;color:var(--muted);">逐房收訖：</span>'
+      return '<div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;"><span style="font-size:.72rem;color:var(--muted);">向房客收款狀況（與上方「我已繳費給台電/自來水/瓦斯」無關）：</span>'
         + rk.map(function(r){ var c=rc[r];
-            return `<button class="btn ${c.paid?'bs':'bo'} sm" style="font-size:.72rem;padding:2px 8px;" onclick="toggleRoomCollect(${i},'${r}')">${RL[r]||r} ${c.paid?('✅'+(c.date?c.date.slice(5):'已收')):'⏸緩收'}</button>`;
+            return `<button class="btn ${c.paid?'bs':'bo'} sm" style="font-size:.72rem;padding:2px 8px;" onclick="toggleRoomCollect(${i},'${r}')">${RL[r]||r}：${c.paid?('已向房客收款'+(c.date?'（'+c.date.slice(5)+'）':'')):'尚未收款(緩收)'}</button>`;
           }).join('') + '</div>';
     })();
     return `<div class="hist-item">
@@ -6642,7 +6743,7 @@ window.renderUtilHistory = function(){
           <button class="btn bo sm" onclick="toggleUtilDetail('${detailId}')">📋 明細</button>
           <button class="btn ${b.utilPaidBy==='弟'?'bs':(b.utilPaidBy==='哥'?'bp':'bd')} sm" onclick="toggleBillPayer(${i})" title="點一下切換：弟先付→哥先付→未指定">💰 水電由：${b.utilPaidBy==='弟'?'弟先付':(b.utilPaidBy==='哥'?'哥先付':'⚠️未指定')}</button>
           <button class="btn ba sm" onclick="loadUtilBillToEdit(${i})">✏️ 載入編輯</button>
-          ${cst.allPaid?`<button class="btn bo sm" onclick="markUtilDeferred(${i})">⏸️ 全部緩收</button>`:`<button class="btn bs sm" onclick="markUtilCollected(${i})">💰 全部已收</button>`}
+          ${cst.allPaid?`<button class="btn bo sm" onclick="markUtilDeferred(${i})">⏸️ 全部緩收</button>`:`<button class="btn bs sm" onclick="markUtilCollected(${i})">💰 標記已向全部房客收款</button>`}
           <button class="btn bd sm" onclick="deleteUtilBill(${i})">🗑️ 刪除</button>
         </div>
       </div>
