@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08160140</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
+    <span class="version-tag" id="ver-tag">v08160234</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -2372,7 +2372,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08160140'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08160234'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[] };
 let _ejsOk = false;
@@ -4092,9 +4092,9 @@ window._ensureRoomCollect = function(b){
 };
 window._billCollectStatus = function(b){
   const rc=_ensureRoomCollect(b); const rk=Object.keys(rc);
-  if(!rk.length) return { label: b.deferred?'⏸️ 緩收中':('💰 已向房客收款'+(b.collectedDate?'（'+b.collectedDate+'）':'')), allPaid: !b.deferred };
+  if(!rk.length) return { label: b.deferred?'⏸️ 緩收中':('💰 房客已付款'+(b.collectedDate?'（'+b.collectedDate+'）':'')), allPaid: !b.deferred };
   const paid=rk.filter(r=>rc[r].paid);
-  if(paid.length===rk.length) return { label:'💰 已向全部房客收款', allPaid:true };
+  if(paid.length===rk.length) return { label:'💰 房客都已付款', allPaid:true };
   if(paid.length===0)         return { label:'⏸️ 全部緩收', allPaid:false };
   return { label:'⏸️ 部分已收（'+paid.length+'/'+rk.length+'）', allPaid:false };
 };
@@ -6723,27 +6723,34 @@ window.renderUtilHistory = function(){
     const collectChips=(function(){
       const rc=_ensureRoomCollect(b); const rk=Object.keys(rc);
       if(!rk.length) return '';
-      return '<div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;"><span style="font-size:.72rem;color:var(--muted);">向房客收款狀況（與上方「我已繳費給台電/自來水/瓦斯」無關）：</span>'
+      // ★08160234：說明文字獨立成一行（可正常換行），按鈕文字改短，避免撐爆版面
+      return '<div style="margin-top:.4rem;font-size:.72rem;color:var(--muted);line-height:1.5;">'
+        + '💰 <b>向房客收款</b>狀況（此列是「房客有沒有把錢付給我」，'
+        + '與帳單暫存區的「我已繳費給台電／自來水／瓦斯」<b>互不相關、不會連動</b>）：</div>'
+        + '<div style="margin-top:.25rem;display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;">'
         + rk.map(function(r){ var c=rc[r];
-            return `<button class="btn ${c.paid?'bs':'bo'} sm" style="font-size:.72rem;padding:2px 8px;" onclick="toggleRoomCollect(${i},'${r}')">${RL[r]||r}：${c.paid?('已向房客收款'+(c.date?'（'+c.date.slice(5)+'）':'')):'尚未收款(緩收)'}</button>`;
+            return `<button class="btn ${c.paid?'bs':'bo'} sm" style="font-size:.72rem;padding:2px 8px;white-space:nowrap;" onclick="toggleRoomCollect(${i},'${r}')">${RL[r]||r} ${c.paid?('已收款'+(c.date?' '+c.date.slice(5):'')):'未收款'}</button>`;
           }).join('') + '</div>';
     })();
     return `<div class="hist-item">
+      <!-- ★08160234 版面修正：舊版左欄 min-width:0，按鈕一變長就把左欄壓成 1 個字寬，
+           右邊還留下大片空白、頁面被拉得很長。改為最小 260px，並允許整組換行。 -->
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.4rem;">
-        <div style="flex:1;min-width:0;">
+        <div style="flex:1 1 260px;min-width:260px;">
           <div style="font-weight:900;">📅 ${b.period} 期水電帳單 <span style="font-size:.72rem;font-weight:900;color:${cst.allPaid?'var(--success)':'var(--danger)'};">${cst.label}</span></div>
           <div class="txt-m">${b.dateStart||''}～${b.dateEnd||''} · 電費$${b.elecTotal||0}｜水費$${b.waterTotal||0}｜瓦斯$${b.gasTotal||0}｜度數${b.totalKwh||'—'}度</div>
           ${b.note?`<div class="txt-m">備註：${b.note}</div>`:''}
           <div style="margin-top:.3rem;flex-wrap:wrap;display:flex;gap:.2rem;">${roomSummary}</div>
           ${collectChips}
         </div>
-        <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:flex-start;">
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:flex-start;flex:1 1 auto;justify-content:flex-end;">
           <label style="font-size:.82rem;display:flex;align-items:center;gap:.25rem;color:var(--primary);font-weight:700;cursor:pointer;"><input type="checkbox" class="bill-pick" value="${b.period}" style="width:1rem;height:1rem;">勾選</label>
           <button class="btn bp sm" onclick="showBillText(['${b.period}'])">📋 帳單文字</button>
           <button class="btn bo sm" onclick="toggleUtilDetail('${detailId}')">📋 明細</button>
           <button class="btn ${b.utilPaidBy==='弟'?'bs':(b.utilPaidBy==='哥'?'bp':'bd')} sm" onclick="toggleBillPayer(${i})" title="點一下切換：弟先付→哥先付→未指定">💰 水電由：${b.utilPaidBy==='弟'?'弟先付':(b.utilPaidBy==='哥'?'哥先付':'⚠️未指定')}</button>
           <button class="btn ba sm" onclick="loadUtilBillToEdit(${i})">✏️ 載入編輯</button>
-          ${cst.allPaid?`<button class="btn bo sm" onclick="markUtilDeferred(${i})">⏸️ 全部緩收</button>`:`<button class="btn bs sm" onclick="markUtilCollected(${i})">💰 標記已向全部房客收款</button>`}
+          <button class="btn bp sm" onclick="recalcUtilBill(${i})" title="用目前最新的計算公式，重新計算並更新這一期已存的帳單">🔄 用新公式重算</button>
+          ${cst.allPaid?`<button class="btn bo sm" onclick="markUtilDeferred(${i})">⏸️ 全部緩收</button>`:`<button class="btn bs sm" onclick="markUtilCollected(${i})" title="標記「已向全部房客收到錢」">💰 全部已收款</button>`}
           <button class="btn bd sm" onclick="deleteUtilBill(${i})">🗑️ 刪除</button>
         </div>
       </div>
@@ -6854,6 +6861,32 @@ window.toggleUtilDetail = function(id){
 };
 
 // 將歷史帳單資料載入到計算表單，方便編輯後重新儲存
+// ★08160234 新增：用最新公式重算「已儲存」的舊帳單
+//   背景：已存檔的帳單是【當時算好的結果】，公式修正後不會自己更新
+//   （截圖1612/1614 的 5樓前仍顯示 1,870、每度 3.15）。
+//   本函式以存檔中的原始輸入（電表度數、金額、計費起迄）重跑一次現行公式再覆蓋存檔。
+window.recalcUtilBill = async function(i){
+  const b=(DB.utilBills||[])[i]; if(!b){toast('找不到該期帳單');return;}
+  const oldTotal=Object.keys(b.rooms||{}).reduce((s,k)=>s+(+(b.rooms[k]||{}).total||0),0);
+  if(!confirm('要用「目前最新的計算公式」重算 '+b.period+' 期嗎？\n\n'
+    +'・會以這期存檔的電表度數與金額重新計算\n'
+    +'・收款狀態（已收／緩收）與收款日期都會保留\n'
+    +'・舊的計算結果會被覆蓋')) return;
+  try{
+    loadUtilBillToEdit(i);
+    await new Promise(r=>setTimeout(r,400));   // 等欄位填好
+    if(window.recalcDays) recalcDays();
+    calcU();
+    await new Promise(r=>setTimeout(r,200));
+    if(!window._UR){toast('⚠️ 重算失敗：計算結果未產生，請改用「載入編輯」手動檢查');return;}
+    const newTotal=ROOMS.reduce((s,r)=>s+(+(window._UR[r]?.total)||0),0);
+    if(!confirm('重算完成，請確認後再覆蓋存檔：\n\n'
+      +'房客應收合計　舊：$'+oldTotal.toLocaleString()+'　→　新：$'+newTotal.toLocaleString()+'\n\n'
+      +'按「確定」覆蓋這一期的存檔；按「取消」則不變更（計算頁仍保留重算結果供你檢視）。')) return;
+    await saveUtilBill(false);
+    toast('✅ '+b.period+' 期已用新公式重算並更新');
+  }catch(e){ toast('重算失敗：'+e.message); }
+};
 window.loadUtilBillToEdit = function(i){
   const b=DB.utilBills[i];
   if(!b){toast('找不到帳單資料');return;}
