@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08161335</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
+    <span class="version-tag" id="ver-tag">v08161418</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -338,7 +338,22 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 <div id="page-tenants" class="page active">
   <div class="sec-hdr mt"><h2>🏠 房間與房客管理</h2>
     <button class="btn ba sm" onclick="openAddTenant()">＋ 新增房客</button>
-    <button class="btn bp sm" onclick="showRuleWhitelist()" title="產生 Firestore 安全規則所需的房客 email 名單，可直接複製貼上">🔐 產生安全規則名單</button>
+    <button class="btn bp sm" onclick="showRuleWhitelist()" title="產生 Firestore 安全規則所需的房客 email 名單">🔐 產生安全規則名單</button>
+  </div>
+  <!-- ★08161418：改為頁面內面板。原本用 alert() 顯示，★瀏覽器的 alert 內容無法選取複製，
+       主帥實測回報「根本不能複製貼上」。改為 textarea＋複製鈕，並保留手動選取的可能。 -->
+  <div id="rule-wl-panel" class="card mt hidden">
+    <div class="card-title">🔐 Firestore 安全規則－房客名單</div>
+    <div id="rule-wl-msg"></div>
+    <label style="margin-top:.5rem;display:block;">要貼進安全規則的內容（可直接選取複製）</label>
+    <textarea id="rule-wl-text" readonly rows="2"
+      style="width:100%;box-sizing:border-box;font-family:monospace;font-size:.85rem;
+             padding:.5rem;border:2px solid var(--primary);border-radius:.4rem;
+             background:#fffbe9;color:#5a3d1a;"></textarea>
+    <div class="gap mt">
+      <button class="btn bs sm" onclick="copyRuleWhitelist()">📋 複製這一行</button>
+      <button class="btn bd sm" onclick="document.getElementById('rule-wl-panel').classList.add('hidden')">關閉</button>
+    </div>
   </div>
   <div class="alert-box a-info">🔐 房客個資（入住日、租期、押金）僅房東可見。各房客登入後只能查看自己房間的資料。</div>
   <div class="room-grid" id="room-grid"></div>
@@ -2373,7 +2388,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08161335'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08161418'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[] };
 let _ejsOk = false;
@@ -7599,31 +7614,53 @@ window.getTenantEmails = function(){
 };
 window.showRuleWhitelist = function(){
   const list=getTenantEmails();
+  // ★把「入住中但沒填 email」的房間也找出來——這是最容易誤判成「功能壞了」的情況
+  const noMail=ROOMS.filter(r=>{
+    const t=(DB.tenants||{})[r]||{};
+    return t.status==='occupied' && !(t.tenantEmail||'').trim();
+  }).map(r=>(RL[r]||r)+'　'+(((DB.tenants||{})[r]||{}).name||'(未填姓名)'));
   const emails=list.map(x=>x.email);
-  const line = emails.length
-    ? emails.map(e=>"'"+e+"'").join(', ')
-    : '（目前沒有任何「入住中」且有填 email 的房客）';
-  const detail = list.length
-    ? list.map(x=>'　・'+(RL[x.room]||x.room)+'　'+(x.name||'(未填姓名)')+'　'+x.email).join('\n')
-    : '　（無）';
-  const msg =
-    '🔐 Firestore 安全規則－目前的房客名單\n'+
-    '────────────────────────────\n'+
-    '共 '+list.length+' 位入住中房客：\n'+detail+'\n'+
-    '────────────────────────────\n'+
-    '★請把下面這一行，貼到安全規則中【標示為房客名單】的位置：\n\n'+
-    line+'\n\n'+
-    '────────────────────────────\n'+
-    '★注意事項：\n'+
-    '・只列出狀態為「入住中」且有填 email 的房客。\n'+
-    '・空房、已退租但尚未清空的房間，都不會列進來。\n'+
-    '・貼上規則後請務必按 Console 的「發布」，否則不會生效。\n'+
-    '・房東自己的信箱是另一份名單，不在這裡，請勿覆蓋掉。';
-  if(navigator.clipboard && emails.length){
-    navigator.clipboard.writeText(line).then(
-      ()=>{ alert(msg+'\n\n✅ 上面那一行已自動複製到剪貼簿。'); },
-      ()=>{ alert(msg); });
-  } else alert(msg);
+  const line = emails.map(e=>"'"+e+"'").join(', ');
+  const box=document.getElementById('rule-wl-panel');
+  const msgEl=document.getElementById('rule-wl-msg');
+  const txt=document.getElementById('rule-wl-text');
+  if(!box||!msgEl||!txt) return;
+  let h='';
+  if(list.length){
+    h+='<div class="alert-box a-ok"><b>共 '+list.length+' 位入住中且已填 email 的房客：</b><br>'
+      + list.map(x=>'　・'+(RL[x.room]||x.room)+'　'+(x.name||'(未填姓名)')+'　<code>'+x.email+'</code>').join('<br>')
+      + '</div>';
+  } else {
+    h+='<div class="alert-box a-warn"><b>目前沒有任何「入住中且已填 email」的房客，名單是空的。</b><br>'
+      + '★這不是故障。安全規則的房客名單本來就只收「有 email 的現任房客」。</div>';
+  }
+  if(noMail.length){
+    h+='<div class="alert-box a-warn"><b>⚠️ 以下 '+noMail.length+' 間房是「入住中」但<u>沒有填 email</u>，因此不會列入名單：</b><br>'
+      + noMail.map(x=>'　・'+x).join('<br>')
+      + '<br><br>★這些房客<b>目前無法登入網頁版</b>（登入要用 email）。'
+      + '若日後要讓他們使用，請到該房間按「編輯」填入 email，再回來重新產生名單。</div>';
+  }
+  h+='<div class="alert-box a-info" style="font-size:.82rem;">'
+    + '★<b>使用方式</b>：把下方框內的內容，貼到安全規則中<b>標示為房客名單</b>的位置，'
+    + '貼完務必按 Firebase Console 的「<b>發布</b>」，否則不會生效。<br>'
+    + '★<b>房東自己的信箱是另一份名單</b>，不在這裡，請勿覆蓋掉。<br>'
+    + '★空房、已退租但尚未清空的房間，都不會列進來。</div>';
+  msgEl.innerHTML=h;
+  txt.value = line || '（目前無房客 email；請在安全規則中把房客名單留空）';
+  box.classList.remove('hidden');
+  box.scrollIntoView({behavior:'smooth',block:'start'});
+};
+window.copyRuleWhitelist = function(){
+  const txt=document.getElementById('rule-wl-text'); if(!txt) return;
+  txt.select(); txt.setSelectionRange(0,99999);
+  let ok=false;
+  try{ ok=document.execCommand('copy'); }catch(e){}
+  if(ok){ toast('✅ 已複製'); return; }
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt.value).then(
+      ()=>toast('✅ 已複製'),
+      ()=>toast('⚠️ 自動複製失敗，內容已選取，請按 Ctrl+C'));
+  } else toast('⚠️ 內容已選取，請按 Ctrl+C 複製');
 };
 window.notifyWhitelistChanged = function(reason){
   const list=getTenantEmails();
@@ -7640,8 +7677,15 @@ window.notifyWhitelistChanged = function(reason){
 window.copyTenantToFormer = async function(r){
   const t=DB.tenants[r];
   if(!t||!t.name){toast('此房間無房客資料');return;}
-  if(!confirm(`確定將「${t.name}（${RL[r]}）」的資料複製到舊房客存檔？
-（現有房客資料不會被刪除，您可以之後手動編輯或清空）`))return;
+  // ★08161418 修正：原文字括號內也出現「清空」，與後面新增的清空詢問撞字，
+  //   主帥實測時誤以為第一個對話框就是清空詢問，按了取消導致整個流程中止。
+  //   改為【一次講完整個流程】，並明確標示這是第 1 步、共 2 步。
+  if(!confirm(`【步驟 1／2】要把「${t.name}（${RL[r]}）」的資料存進「舊房客存檔」嗎？
+
+・這一步只是「存一份備份」，不會刪除任何東西。
+・按下確定後，會接著問你【步驟 2／2：要不要把這個房間清空】。
+
+（按取消＝完全不做任何事）`))return;
   if(!DB.formerTenants)DB.formerTenants=[];
   const f={
     name:t.name||'',
@@ -7663,9 +7707,13 @@ window.copyTenantToFormer = async function(r){
   // ★08161335 配套C：原本只複製不清除，房客 email 會無限期留在 tenants 裡，
   //   造成「已退租的人仍在安全規則的白名單內」。改為在此主動詢問是否清空。
   const _hadEmail=!!(t.tenantEmail||'').trim();
-  if(confirm('要順便把「'+(RL[r]||r)+'」清空為空房嗎？\n\n'
-    +'★建議選「確定」。若不清空，這位房客的 email 會一直留在系統裡，\n'
-    +'　安全規則會把他當成現任房客，★他仍然讀得到全部房客資料。\n\n'
+  if(confirm('✅ 步驟 1／2 完成：已存進舊房客存檔。\n\n'
+    +'【步驟 2／2】要把「'+(RL[r]||r)+'」清空為空房嗎？\n\n'
+    +(_hadEmail
+      ? '★建議選「確定」。若不清空，這位房客的 email 會一直留在系統裡，\n'
+       +'　安全規則會把他當成現任房客，★他仍然讀得到全部房客資料。\n\n'
+      : '★這位房客沒有填 email，所以不影響安全規則。\n'
+       +'　但若已經退租，建議清空，讓房間狀態正確顯示為空房。\n\n')
     +'（資料已存進舊房客存檔，清空不會遺失任何東西）')){
     DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',
       renewalIntent:'unknown',id:'',note:'',status:'vacant'};
@@ -7673,11 +7721,15 @@ window.copyTenantToFormer = async function(r){
     renderTenants();
     toast('✅ 「'+(RL[r]||r)+'」已清空為空房');
     if(_hadEmail) notifyWhitelistChanged('房客退租：'+(RL[r]||r));
-  } else if(_hadEmail){
-    alert('⚠️ 尚未清空「'+(RL[r]||r)+'」\n\n'
-      +'★這位房客的 email 仍在系統中，安全規則會繼續把他當成現任房客。\n'
-      +'　等你確定要收回權限時，請回到「房客管理」把該房間清空，\n'
-      +'　再按【🔐 產生安全規則名單】更新規則。');
+  } else {
+    alert('ℹ️ 已存進舊房客存檔，但「'+(RL[r]||r)+'」維持原狀（沒有清空）。\n\n'
+      +(_hadEmail
+        ? '★這位房客的 email 仍在系統中，安全規則會繼續把他當成現任房客，\n'
+         +'　他仍然讀得到全部房客資料。\n'
+         +'　等你確定要收回權限時，請回到「房客管理」把該房間清空，\n'
+         +'　再按【🔐 產生安全規則名單】更新規則。'
+        : '★這位房客沒有填 email，不影響安全規則。\n'
+         +'　日後要清空時，到該房間按「編輯」即可。'));
   }
 };
 
