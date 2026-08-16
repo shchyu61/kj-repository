@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08162155</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
+    <span class="version-tag" id="ver-tag">v08162217</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -2303,13 +2303,22 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 <div id="modal-select-room" class="modal-overlay" style="z-index:600;">
   <div class="modal" style="max-width:400px;">
     <div class="mhdr">
-      <h3>🏠 請選擇您的房間</h3>
+      <h3>🏠 尚未設定您的房間</h3>
     </div>
-    <p class="txt-m mb">您好！系統尚未記錄您的房間。<br>請選擇您目前居住的房間，只需設定一次。</p>
-    <div id="room-select-list" style="display:flex;flex-direction:column;gap:.5rem;"></div>
-    <p class="txt-m mt">若您不是房客，請直接點「我是房東」。</p>
+    <!-- ★08162217 全面改寫：舊版讓房客自己點選房間，但房客沒有寫入權限，
+         存檔一定失敗（saveLandlordData 第一行就擋掉非房東），
+         等於這個功能從未真正運作過。改為「告知＋請房東指派」。 -->
+    <p class="txt-m mb">您好，您已經<b>成功登入</b>了 👍<br>
+      但系統還不知道您住哪一間，所以目前<b>還看不到帳單</b>。</p>
+    <div class="alert-box a-info" style="font-size:.84rem;text-align:left;">
+      <b>接下來只要做一件事：</b><br>
+      ★<b>直接告訴房東「我已經登入過了」</b>即可。<br>
+      房東會在系統中幫您指定房間，<b>不需要您提供任何資料</b>。<br>
+      設定完成後，您再登入一次就會看到自己的帳單。
+    </div>
+    <div id="room-select-list" style="display:none;"></div>
     <div class="mftr">
-      <button class="btn bo sm" onclick="skipRoomSelect()">我是房東</button>
+      <button class="btn bp sm" onclick="skipRoomSelect()">我知道了</button>
     </div>
   </div>
 </div>
@@ -2403,7 +2412,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08162155'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08162217'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[] };
 let _ejsOk = false;
@@ -2701,51 +2710,31 @@ function findMyRoom(email){
 
 // 首次登入房客：顯示選房間畫面
 function showRoomSelect(){
+  // ★08162217：不再列出房間讓房客點選（房客無寫入權限，點了也存不進去）
   const list=document.getElementById('room-select-list');
-  list.innerHTML='';
-  /* ★08162155 修正（重大）：舊版對【已入住的房間】也掛上 assignMyRoom，
-     任何人登入後點下去就會【覆蓋原房客的 tenantEmail】，
-     等於把原房客踢出系統、並取得他的帳單。已改為不可點選。 */
-  ROOMS.forEach(r=>{
-    const t=DB.tenants[r]||{};
-    const occ=t.status==='occupied';
-    if(occ){
-      list.innerHTML+=`<div
-        style="padding:.75rem 1rem;background:var(--bg2);border:1.5px dashed var(--border);border-radius:.8rem;font-size:.9rem;font-weight:700;text-align:left;color:var(--muted);cursor:not-allowed;">
-        ${RL[r]} <span style="font-size:.72rem;font-weight:400;">已有房客，無法選擇</span>
-      </div>`;
-    } else {
-      list.innerHTML+=`<button onclick="assignMyRoom('${r}')"
-        style="padding:.75rem 1rem;background:#f8f8f8;border:1.5px solid var(--border2);border-radius:.8rem;font-family:inherit;font-size:.9rem;font-weight:700;cursor:pointer;text-align:left;color:var(--primary);transition:all .18s;"
-        onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)'">
-        ${RL[r]} <span style="font-size:.72rem;color:var(--muted);font-weight:400;">空房</span>
-      </button>`;
-    }
-  });
-  /* ★新增「稍後再說」：主帥指出新房客登入時，連房東自己都可能還不知道他要住哪一間，
-     不應強迫當場選。跳過後 email 仍會留在登入紀錄，房東可事後在「房客管理」指派。 */
-  list.innerHTML+=`<button onclick="skipRoomSelect()"
-    style="padding:.7rem 1rem;margin-top:.5rem;background:#fff;border:1.5px dashed var(--muted);border-radius:.8rem;font-family:inherit;font-size:.86rem;cursor:pointer;text-align:left;color:var(--muted);">
-    🤔 我還不確定要住哪一間 <span style="font-size:.72rem;">（先跳過，之後由房東設定）</span>
-  </button>`;
+  if(list) list.innerHTML='';
   document.getElementById('modal-select-room').classList.add('open');
   if(typeof lucide!=='undefined')lucide.createIcons();
 }
 window.skipRoomSelect = function(){
   document.getElementById('modal-select-room').classList.remove('open');
-  alert('好的，先不設定房間。\n\n'
-    +'・您已經成功登入，登入紀錄已保留。\n'
-    +'・目前還看不到帳單，因為系統還不知道您住哪一間。\n'
-    +'・★請直接告訴房東，房東會在系統中幫您指定房間，之後就能看到自己的帳單。');
 };
 
 async function assignMyRoom(r){
-  // ★08162155 防呆：即使有人繞過畫面直接呼叫，也不得覆蓋已入住房間的房客
+  /* ★08162217：本函式僅保留給房東端使用。
+     舊版由房客呼叫，但房客沒有寫入權限，saveLandlordData 會直接 return，
+     結果是「畫面顯示成功、雲端完全沒存」的假成功。已改由房東用
+     「👥 已登入但尚未指派房間的人」面板指派。 */
+  if(typeof isLandlord!=='undefined' && !isLandlord){
+    alert('⚠️ 房間設定需要由房東操作。\n\n'
+      +'請直接告訴房東「我已經登入過了」，房東會幫您指定房間。');
+    return;
+  }
+  // 防呆：不得覆蓋已入住房間的既有房客
   const _t=DB.tenants[r]||{};
   const _other=(_t.tenantEmail||'').trim().toLowerCase();
   if(_t.status==='occupied' && _other && _other!==(currentEmail||'').toLowerCase()){
-    alert('⚠️ 「'+(RL[r]||r)+'」已經有房客了，無法選擇。\n\n'
-      +'若這確實是您的房間，請直接聯絡房東處理。');
+    alert('⚠️ 「'+(RL[r]||r)+'」已經有房客了，無法選擇。');
     return;
   }
   // 將 email → 房間 寫入 Firebase
@@ -7267,6 +7256,19 @@ window.submitRepair = async function(){
   }
   if(!DB.repairs)DB.repairs=[];
   DB.repairs.unshift(repair);
+  /* ★08162217 修正（全檔稽核發現）：房客沒有寫入 landlord/data 的權限，
+     saveLandlordData 會直接 return 並跳「⚠️ 無權限儲存」，
+     ★結果是「房客看到已送出 ✓，但報修單根本沒存進雲端」，房東的報修頁看不到。
+     ★目前先誠實告知：報修已用 Email 送達房東（這一段是有效的），
+     但雲端紀錄需等 Firestore 安全規則上線、開放房客專屬路徑後才能保存。 */
+  if(typeof isLandlord!=='undefined' && !isLandlord){
+    alert('✅ 您的報修已用 Email 送達房東，房東會收到通知。\n\n'
+      +'★提醒：目前系統還在改版中，這筆報修【不會顯示在網頁的報修清單上】，\n'
+      +'　但房東確實已經收到 Email，不會遺漏。\n'
+      +'　若情況緊急，仍請直接聯絡房東。');
+    document.getElementById('repair-desc').value='';
+    return;
+  }
   await saveLandlordData();
   // 清空表單
   document.getElementById('repair-desc').value='';
