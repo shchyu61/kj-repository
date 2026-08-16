@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08161418</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
+    <span class="version-tag" id="ver-tag">v08162155</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -356,6 +356,21 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
   </div>
   <div class="alert-box a-info">🔐 房客個資（入住日、租期、押金）僅房東可見。各房客登入後只能查看自己房間的資料。</div>
+  <!-- ★08162155 新增：待指派房間（房東不必知道房客的 email，從登入紀錄自動撈） -->
+  <div class="card mt" id="unassigned-card">
+    <div class="card-title">👥 已登入但尚未指派房間的人</div>
+    <div class="alert-box a-info" style="font-size:.82rem;">
+      房客自己登入（輸入 email 收 OTP）後，系統就會記下他的 email，
+      <b>房東不需要事先知道、也不必去問房客的 gmail</b>。<br>
+      ★若房客在登入時已自行選好房間，就不會出現在這裡。<br>
+      ★若他當時選了「我還不確定」，或連房東也還沒決定他住哪一間，就會列在下方，
+      <b>可以事後隨時指派</b>。
+    </div>
+    <div class="gap mb">
+      <button class="btn ba sm" onclick="renderUnassigned()">🔄 重新整理清單</button>
+    </div>
+    <div id="unassigned-list"><div class="txt-m">請按「🔄 重新整理清單」載入。</div></div>
+  </div>
   <div class="room-grid" id="room-grid"></div>
   <div class="card">
     <div class="card-title">📋 房客一覽表（房東專用）</div>
@@ -2388,7 +2403,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08161418'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08162155'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[] };
 let _ejsOk = false;
@@ -2688,20 +2703,51 @@ function findMyRoom(email){
 function showRoomSelect(){
   const list=document.getElementById('room-select-list');
   list.innerHTML='';
+  /* ★08162155 修正（重大）：舊版對【已入住的房間】也掛上 assignMyRoom，
+     任何人登入後點下去就會【覆蓋原房客的 tenantEmail】，
+     等於把原房客踢出系統、並取得他的帳單。已改為不可點選。 */
   ROOMS.forEach(r=>{
     const t=DB.tenants[r]||{};
     const occ=t.status==='occupied';
-    list.innerHTML+=`<button onclick="assignMyRoom('${r}')"
-      style="padding:.75rem 1rem;background:${occ?'var(--bg2)':'#f8f8f8'};border:1.5px solid ${occ?'var(--border)':'var(--border2)'};border-radius:.8rem;font-family:inherit;font-size:.9rem;font-weight:700;cursor:pointer;text-align:left;color:${occ?'var(--primary)':'var(--muted)'};transition:all .18s;"
-      onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='${occ?'var(--border)':'var(--border2)'}'">
-      ${RL[r]} ${occ&&t.name?'・'+t.name:''} <span style="font-size:.72rem;color:var(--muted);font-weight:400;">${occ?'入住中':'空房'}</span>
-    </button>`;
+    if(occ){
+      list.innerHTML+=`<div
+        style="padding:.75rem 1rem;background:var(--bg2);border:1.5px dashed var(--border);border-radius:.8rem;font-size:.9rem;font-weight:700;text-align:left;color:var(--muted);cursor:not-allowed;">
+        ${RL[r]} <span style="font-size:.72rem;font-weight:400;">已有房客，無法選擇</span>
+      </div>`;
+    } else {
+      list.innerHTML+=`<button onclick="assignMyRoom('${r}')"
+        style="padding:.75rem 1rem;background:#f8f8f8;border:1.5px solid var(--border2);border-radius:.8rem;font-family:inherit;font-size:.9rem;font-weight:700;cursor:pointer;text-align:left;color:var(--primary);transition:all .18s;"
+        onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)'">
+        ${RL[r]} <span style="font-size:.72rem;color:var(--muted);font-weight:400;">空房</span>
+      </button>`;
+    }
   });
+  /* ★新增「稍後再說」：主帥指出新房客登入時，連房東自己都可能還不知道他要住哪一間，
+     不應強迫當場選。跳過後 email 仍會留在登入紀錄，房東可事後在「房客管理」指派。 */
+  list.innerHTML+=`<button onclick="skipRoomSelect()"
+    style="padding:.7rem 1rem;margin-top:.5rem;background:#fff;border:1.5px dashed var(--muted);border-radius:.8rem;font-family:inherit;font-size:.86rem;cursor:pointer;text-align:left;color:var(--muted);">
+    🤔 我還不確定要住哪一間 <span style="font-size:.72rem;">（先跳過，之後由房東設定）</span>
+  </button>`;
   document.getElementById('modal-select-room').classList.add('open');
   if(typeof lucide!=='undefined')lucide.createIcons();
 }
+window.skipRoomSelect = function(){
+  document.getElementById('modal-select-room').classList.remove('open');
+  alert('好的，先不設定房間。\n\n'
+    +'・您已經成功登入，登入紀錄已保留。\n'
+    +'・目前還看不到帳單，因為系統還不知道您住哪一間。\n'
+    +'・★請直接告訴房東，房東會在系統中幫您指定房間，之後就能看到自己的帳單。');
+};
 
 async function assignMyRoom(r){
+  // ★08162155 防呆：即使有人繞過畫面直接呼叫，也不得覆蓋已入住房間的房客
+  const _t=DB.tenants[r]||{};
+  const _other=(_t.tenantEmail||'').trim().toLowerCase();
+  if(_t.status==='occupied' && _other && _other!==(currentEmail||'').toLowerCase()){
+    alert('⚠️ 「'+(RL[r]||r)+'」已經有房客了，無法選擇。\n\n'
+      +'若這確實是您的房間，請直接聯絡房東處理。');
+    return;
+  }
   // 將 email → 房間 寫入 Firebase
   myRoom=r;
   DB.tenants[r].tenantEmail=currentEmail;
@@ -7603,6 +7649,77 @@ function updateLandlordMenuActive(pageName){
    ★資料結構相依警告：本功能與安全規則共同相依於
      DB.tenants[房間].tenantEmail 與 .status（'occupied'／'vacant'）。
      ★若日後更改這兩個欄位名稱，安全規則會同步失效，改名前必須一併更新規則。 */
+/* ★08162155 新增：待指派房間清單
+   資料來源＝登入紀錄（loginLog），不需要另建資料結構。
+   規則：登入成功過、且不是房東、且尚未被指派到任何房間者，即為待指派。 */
+window.renderUnassigned = async function(){
+  const box=document.getElementById('unassigned-list'); if(!box) return;
+  box.innerHTML='<div class="txt-m">讀取登入紀錄中…</div>';
+  let log=DB.loginLog||[];
+  try{
+    await initFBAuth();
+    const lp=window._doc(window._db,'artifacts',window._APP_ID,'loginLog','data');
+    const snap=await window._getDoc(lp);
+    if(snap.exists() && snap.data().log) { log=snap.data().log; DB.loginLog=log; }
+  }catch(e){}
+  const assigned=new Set();
+  ROOMS.forEach(r=>{ const e=((DB.tenants[r]||{}).tenantEmail||'').trim().toLowerCase();
+    if(e) assigned.add(e); });
+  const seen={}, order=[];
+  log.filter(x=>x&&x.email&&x.result&&x.result.indexOf('✅')===0).forEach(x=>{
+    const e=String(x.email).trim().toLowerCase();
+    if(!e) return;
+    if(typeof LANDLORD_EMAILS!=='undefined' && LANDLORD_EMAILS.includes(e)) return;
+    if(assigned.has(e)) return;
+    if(!seen[e]){ seen[e]={email:e,last:x.time||'',count:1}; order.push(e); }
+    else seen[e].count++;
+  });
+  if(!order.length){
+    box.innerHTML='<div class="alert-box a-ok" style="font-size:.85rem;">'
+      +'✅ 目前沒有「已登入但未指派房間」的人。<br>'
+      +'<span style="font-size:.78rem;color:var(--muted);">'
+      +'（若新房客剛登入卻沒出現在這裡，請按上方「🔄 重新整理清單」再試一次）</span></div>';
+    return;
+  }
+  const vacant=ROOMS.filter(r=>((DB.tenants[r]||{}).status!=='occupied'));
+  let h='';
+  order.forEach((e,i)=>{
+    const d=seen[e];
+    const opts=vacant.length
+      ? vacant.map(r=>'<option value="'+r+'">'+(RL[r]||r)+'</option>').join('')
+      : '';
+    h+='<div class="list-item" style="padding:.55rem .7rem;">'
+      +'<div style="font-weight:700;color:var(--primary);word-break:break-all;">'+e+'</div>'
+      +'<div style="font-size:.76rem;color:var(--muted);margin:.15rem 0 .4rem;">'
+      +'登入 '+d.count+' 次　最後登入：'+(d.last||'—')+'</div>'
+      +(vacant.length
+        ? '<div class="gap" style="align-items:center;flex-wrap:wrap;">'
+          +'<select id="ua-room-'+i+'" style="padding:.3rem .5rem;font-size:.82rem;">'+opts+'</select>'
+          +'<button class="btn bs sm" onclick="assignRoomByLandlord('+i+',\''+e+'\')">指派到這間房</button>'
+          +'</div>'
+        : '<div style="font-size:.8rem;color:#C0392B;font-weight:700;">'
+          +'⚠️ 目前沒有空房可指派。請先把某一間房的狀態改成「空房」，或直接到該房間「編輯」填入此 email。</div>')
+      +'</div>';
+  });
+  box.innerHTML=h;
+};
+window.assignRoomByLandlord = async function(i, email){
+  const sel=document.getElementById('ua-room-'+i); if(!sel) return;
+  const r=sel.value; if(!r) return;
+  const t=DB.tenants[r]||{};
+  if(t.status==='occupied' && (t.tenantEmail||'').trim()){
+    alert('⚠️ 「'+(RL[r]||r)+'」已經有房客了，請改選其他房間。'); return;
+  }
+  if(!confirm('要把這個人指派到「'+(RL[r]||r)+'」嗎？\n\n'
+    +email+'\n\n'
+    +'指派後他登入就會看到該房間的帳單。\n'
+    +'（房間的姓名、月租、押金等資料，仍請另外到「編輯」補齊）')) return;
+  DB.tenants[r]=Object.assign({}, t, {tenantEmail:email, status:'occupied'});
+  await saveLandlordData();
+  renderTenants(); renderUnassigned();
+  toast('✅ 已指派到「'+(RL[r]||r)+'」');
+  notifyWhitelistChanged('房東指派房間：'+(RL[r]||r));
+};
 window.getTenantEmails = function(){
   const out=[];
   ROOMS.forEach(r=>{
@@ -7637,8 +7754,10 @@ window.showRuleWhitelist = function(){
   if(noMail.length){
     h+='<div class="alert-box a-warn"><b>⚠️ 以下 '+noMail.length+' 間房是「入住中」但<u>沒有填 email</u>，因此不會列入名單：</b><br>'
       + noMail.map(x=>'　・'+x).join('<br>')
-      + '<br><br>★這些房客<b>目前無法登入網頁版</b>（登入要用 email）。'
-      + '若日後要讓他們使用，請到該房間按「編輯」填入 email，再回來重新產生名單。</div>';
+      + '<br><br>★<b>房東不需要去問房客的 email</b>。'
+      + '請房客自己到網頁版登入一次（輸入自己的 email 收 OTP），'
+      + '登入時可自行選房間；若他當下不確定，也可以按「我還不確定」跳過，'
+      + '之後由房東在上方<b>「👥 已登入但尚未指派房間的人」</b>一鍵指派即可。</div>';
   }
   h+='<div class="alert-box a-info" style="font-size:.82rem;">'
     + '★<b>使用方式</b>：把下方框內的內容，貼到安全規則中<b>標示為房客名單</b>的位置，'
