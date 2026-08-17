@@ -286,7 +286,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08162217</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
+    <span class="version-tag" id="ver-tag">v08170927</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -2412,7 +2412,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08162217'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08170927'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[] };
 let _ejsOk = false;
@@ -6494,7 +6494,12 @@ window.estIssueDate = function(kind, endDate, month){
     x.setDate(x.getDate()+addDays);
     return x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(x.getDate()); };
   if(kind==='water') return fromEnd(endDate,0);
-  if(kind==='elec')  return fromEnd(endDate,1);
+  /* ★08170927 修正：原本預估「計費迄日次日（＝抄表日）」＝ 8/07，
+     ★但主帥實測 202608 電費帳單是【8/13】才產出，預估值是錯的。
+     ★過往期別由弟弟負責，主帥無法確認是否也都是 13 號，
+       因此【不再自動填入猜測值】——寧可留白讓主帥手動填，
+       也不要填一個看起來很像真的、實際卻錯誤的日期（ＡＫ６）。 */
+  if(kind==='elec')  return '';
   if(kind==='gas'){
     if(!endDate) return '';
     const x=new Date(endDate+'T00:00:00'); if(isNaN(x)) return '';
@@ -6833,7 +6838,15 @@ window.renderUtilHistory = function(){
 };
 
 // ── 產出帳單文字（單期/多期，從已儲存歷史 DB.utilBills）──────────
-const BILL_FOOTER_POST='●各項費用請以【郵局】轉帳給余科蓁。郵局帳號在此群組的【相簿】裡面，有郵局存摺照片檔。\n●請於每期帳單的2/19、4/19、6/19、8/19、10/19、12/19『最後應繳日』之前，完成【郵局】轉帳，避免逾期被台電、台水、瓦斯公司處罰併入下期帳單，謝謝。';
+/* ★08170927 方案1（主帥 2026/08/17 決定）：
+   房客的繳款期限改以【收到本帳單後 7 天內】為基準，
+   不再綁定台電／台水／瓦斯的 2/19、4/19… 最後應繳日。
+   ★原因：每期統計完成日不固定（本期電費帳單 8/13 才產出，8/17 才統計完），
+     若仍寫「8/19 之前」等於只給房客 2 天，強人所難；
+     改為相對天數後，主帥沒有時間壓力，房客一律有 7 天緩衝。
+   ★台電等公司的最後應繳日改列為第二句「提醒」，資訊保留但不再是房客的期限。
+   ★引號一律用「」，不用『』（主帥引述對話時慣用『』，避免互相干擾）。 */
+const BILL_FOOTER_POST='●各項費用請以【郵局】轉帳給余科蓁。郵局帳號在此群組的【相簿】裡面，有郵局存摺照片檔。\n●請於收到本帳單後【7 天內】，完成【郵局】轉帳，謝謝。\n●台電、台水、瓦斯公司的「最後應繳日」為每期的 2/19、4/19、6/19、8/19、10/19、12/19，逾期將被處罰併入下期帳單。';
 const BILL_DEFER='●此次費用合併計算，費用較多，若房客當月生活費預算卡住，可延到下個月6號前，再轉帳。\n（若您的公司是每個月１０號發薪日，可順延到下個月１１號再轉帳，謝謝您）\n（學生房客：若本月生活費預算卡住，可順延到下個月１１號再轉帳，謝謝您）';
 window.genSingleBillFull = function(b){ const z=genSingleBillText(b); return z? z+'\n'+BILL_FOOTER_POST : ''; };
 window.genSingleBillText = function(b){
@@ -6870,7 +6883,10 @@ window.genMultiBillText = function(periods){
   if(!bills.length) return '';
   const yr=(bills[0].period||'').slice(0,4);
   const moList=bills.map(b=>String(+(b.period||'').slice(4,6)).padStart(2,'0')+'月').join('+');
-  let t=`●${yr}年${moList}水、電、瓦斯、冷氣帳單\n『\n`;
+  /* ★08170913：合併小計的框改用「」，不用『』。
+     原因：主帥在對話中引述文字時慣用『』，若帳單內也用『』會變成『『』』互相干擾。
+     ★其餘格式（第1行的 ●、▲▲▲ 前後空行、各期的 ●）一律維持原樣，未做任何更動。 */
+  let t=`●${yr}年${moList}水、電、瓦斯、冷氣帳單\n「\n`;
   ROOMS.forEach(r=>{
     const vals=bills.map(b=>((b.rooms||{})[r]||{}).total||0);
     const sum=vals.reduce((sm,v)=>sm+v,0);
@@ -6878,7 +6894,7 @@ window.genMultiBillText = function(periods){
     const parts=vals.map(v=>'$'+v.toLocaleString()).join('　＋　');
     t+=`　　${RL[r]||r}　${parts}　＝　$${sum.toLocaleString()}\n`;
   });
-  t+=`』\n\n`;
+  t+=`」\n\n`;
   t+=`▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲\n\n`;
   t+=bills.map(b=>genSingleBillText(b)).join('\n');
   t+=`\n${BILL_FOOTER_POST}\n${BILL_DEFER}`;
