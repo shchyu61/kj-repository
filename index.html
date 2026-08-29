@@ -318,7 +318,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08300156</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
+    <span class="version-tag" id="ver-tag">v08300718</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -2256,6 +2256,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <button class="btn bs sm" onclick="renderLoginLog('success')">✅ 成功</button>
       <button class="btn bd sm" onclick="renderLoginLog('fail')">❌ 失敗/封鎖</button>
       <button class="btn bo sm" onclick="clearLoginLog()">🗑️ 清除紀錄</button>
+      <button class="btn bo sm" onclick="showMailErrors()">📪 寄信失敗紀錄</button>
     </div>
     <div id="login-log-list"><div class="txt-m">讀取中...</div></div>
   </div>
@@ -2407,7 +2408,9 @@ const EXTRA_KNOWLEDGE = `
 `; // ← 在此行之前新增知識，格式不限
 
 // ── 【1-3】EmailJS 寄信金鑰（更換請到 https://dashboard.emailjs.com）──
-const EJS_SVC  = 'service_knhvcfj';
+const EJS_SVC  = 'service_q711s3u';  // ★08300718：舊 service_knhvcfj 的 Gmail OAuth 已失效
+                                     // ★股票PRO 早於 v06090756 換掉，房租版未同步，
+                                     // ★★導致本專案【所有】對外寄信靜默失敗約 3 個月
 const EJS_TPL  = 'template_oqm4kw9';
 const EJS_KEY  = '5dk4HoCBYIS7ypwiw';
 
@@ -2478,7 +2481,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08300156'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08300718'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[] };
 let _ejsOk = false;
@@ -2527,7 +2530,52 @@ if(document.readyState==='loading'){
 // 【6. 登入與驗證邏輯】（引用第1章 EmailJS / LANDLORD_EMAILS）
 // ============================================================
 
-function initEJS(){ if(_ejsOk)return; try{emailjs.init(EJS_KEY);_ejsOk=true;}catch(e){} }
+// ══ ★08300718【寄信失敗必須看得見】═══════════════════════════
+// ★根因：全檔 33 處 emailjs.send 都包在 catch(e){} 空吞，
+// ★★所以 Service ID 失效三個月完全沒人發現。
+// ★作法：只在此處攔截一次，★不動任何一個呼叫點（33 處行為完全不變）。
+window._mailErrors = [];          // 最近 50 筆寄信失敗，供房東查看
+let _mailToastAt = 0;
+function _mailFail(params, e){
+  const rec = {
+    to: (params && params.to_email) ? params.to_email : '(未知)',
+    err: (e && (e.text || e.message || e.status)) || String(e),
+    time: new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei'})
+  };
+  window._mailErrors.unshift(rec);
+  if(window._mailErrors.length > 50) window._mailErrors.length = 50;
+  console.error('[寄信失敗]', rec);
+  const now = Date.now();
+  if(now - _mailToastAt > 8000){    // 節流：8 秒內只提示一次
+    _mailToastAt = now;
+    try{ toast('📪 寄信失敗（'+rec.to+'）：'+rec.err, 4200); }catch(_){}
+  }
+}
+window.showMailErrors = function(){
+  if(!window._mailErrors.length){ toast('✅ 本次開啟後沒有寄信失敗紀錄'); return; }
+  alert('📪 最近寄信失敗紀錄（'+window._mailErrors.length+' 筆）\n\n'
+    + window._mailErrors.map(r=>`${r.time}\n→ ${r.to}\n→ ${r.err}`).join('\n\n'));
+};
+let _ejsPatched = false;
+function initEJS(){
+  if(_ejsOk)return;
+  try{
+    emailjs.init(EJS_KEY);
+    if(!_ejsPatched && typeof emailjs.send === 'function'){
+      const _rawSend = emailjs.send.bind(emailjs);
+      emailjs.send = async function(svc, tpl, params, ...rest){
+        try{
+          return await _rawSend(svc, tpl, params, ...rest);
+        }catch(e){
+          _mailFail(params, e);
+          throw e;              // ★原樣往外丟，★呼叫端既有 catch 行為完全不變
+        }
+      };
+      _ejsPatched = true;
+    }
+    _ejsOk=true;
+  }catch(e){ console.error('initEJS 失敗:', e); }
+}
 
 // ══ 登入紀錄寫入 Firebase ════════════════════════════
 
@@ -2644,7 +2692,8 @@ window.sendOTP = async function(){
     document.getElementById('otp-step2').style.display='block';
     startOTPTimer(); lucide.createIcons();
   }catch(e){
-    showAuthErr('六碼發送失敗，請確認信箱後再試。');
+    const _m=(e&&(e.text||e.message))?(' 原因：'+(e.text||e.message)):'';
+    showAuthErr('六碼發送失敗。'+_m+'（可改用方式A密碼登入）');
     btn.disabled=false;
   }
 };
