@@ -11,7 +11,9 @@
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInAnonymously,
+         createUserWithEmailAndPassword, signInWithEmailAndPassword,
+         onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -30,6 +32,11 @@ const APP_ID = 'kj-rental'; // 獨立路徑，與理財管家分開
 window._db = db; window._auth = auth; window._APP_ID = APP_ID;
 window._doc = doc; window._setDoc = setDoc; window._getDoc = getDoc;
 window._signInAnonymously = signInAnonymously;
+// ★08300156 登入改造：module 頂層宣告不進全域，必須逐一掛 window（本專案 08051523 已踩過此坑）
+window._createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+window._signInWithEmailAndPassword     = signInWithEmailAndPassword;
+window._onAuthStateChanged             = onAuthStateChanged;
+window._signOut                        = signOut;
 window._fbReady = true;
 document.dispatchEvent(new Event('fbReady'));
 </script>
@@ -211,7 +218,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div style="margin-bottom:.5rem;">
         <div style="font-family:'Noto Sans TC',sans-serif;font-weight:900;font-size:1.22rem;color:#1e293b;letter-spacing:.04em;line-height:1.3;">科蓁<span style="color:#c8973a;">房租</span>智能AI系統</div>
       </div>
-    <p>請輸入信箱帳號，選擇任一方式登入。</p>
+    <p>已設定密碼者請用方式 A；★第一次使用或換新裝置請用方式 B 驗證信箱後設定密碼。</p>
 
     <!-- 帳號輸入 -->
     <div style="text-align:left;margin-bottom:.75rem;">
@@ -224,11 +231,11 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <p style="font-size:.72rem;color:#94a3b8;margin-top:.25rem;font-style:italic;">※ Yahoo 或其他信箱請輸入完整地址</p>
     </div>
 
-    <!-- 方式A：每日密碼 -->
+    <!-- 方式A：Firebase 密碼登入 -->
     <div style="text-align:left;margin-bottom:.75rem;">
-      <div class="auth-divider">方式 A：每日密碼</div>
-      <label style="font-size:.78rem;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.35rem;">Daily Key / 每日密碼</label>
-      <input type="password" id="access-key-input" placeholder="輸入每日密碼"
+      <div class="auth-divider">方式 A：密碼登入（已設定過密碼者）</div>
+      <label style="font-size:.78rem;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.35rem;">Password / 登入密碼</label>
+      <input type="password" id="access-key-input" placeholder="輸入您的登入密碼"
              style="letter-spacing:.15em;margin-bottom:.5rem;"
              onfocus="this.style.boxShadow='0 0 0 3px rgba(251,191,36,.5)'" onblur="this.style.boxShadow=''"
              onkeydown="if(event.key==='Enter')verifyDailyKey()">
@@ -242,7 +249,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
     <!-- 方式B：OTP -->
     <div style="text-align:left;">
-      <div class="auth-divider">方式 B：一次性密碼（OTP）</div>
+      <div class="auth-divider">方式 B：信箱驗證（第一次使用／換新裝置）</div>
       <div id="otp-step1">
         <button id="btn-send-otp" onclick="sendOTP()"
                 style="width:100%;background:#2563eb;color:white;border:none;border-radius:.75rem;font-family:inherit;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:background .18s;box-shadow:0 4px 14px rgba(37,99,235,.3);"
@@ -272,6 +279,31 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           </button>
         </div>
       </div>
+
+      <!-- ★08300156 新增：信箱驗證成功後設定密碼（自助註冊） -->
+      <div id="otp-step3" style="display:none;">
+        <div style="background:#ecfdf5;border-radius:.75rem;padding:.5rem .75rem;text-align:center;margin-bottom:.5rem;">
+          <p style="font-size:.78rem;font-weight:900;color:#065f46;">✅ 信箱驗證成功！請設定您的登入密碼</p>
+          <p style="font-size:.68rem;color:#059669;margin-top:.15rem;word-break:break-all;"><span id="otp-verified-mail"></span></p>
+        </div>
+        <input type="password" id="newpw-1" placeholder="設定密碼（至少 6 碼）"
+               style="margin-bottom:.5rem;"
+               onfocus="this.style.boxShadow='0 0 0 3px rgba(251,191,36,.5)'" onblur="this.style.boxShadow=''">
+        <input type="password" id="newpw-2" placeholder="再輸入一次密碼"
+               style="margin-bottom:.5rem;"
+               onfocus="this.style.boxShadow='0 0 0 3px rgba(251,191,36,.5)'" onblur="this.style.boxShadow=''"
+               onkeydown="if(event.key==='Enter')finishAuth()">
+        <button id="btn-finish-auth" onclick="finishAuth()"
+                style="width:100%;background:#059669;color:white;border:none;border-radius:.75rem;font-family:inherit;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:background .18s;box-shadow:0 4px 14px rgba(5,150,105,.3);"
+                onmouseover="this.style.background='#047857'" onmouseout="this.style.background='#059669'">
+          <i data-lucide="key-round" style="width:1rem;height:1rem;"></i>
+          <span>完成並進入</span>
+        </button>
+        <p style="font-size:.68rem;color:#94a3b8;margin-top:.4rem;line-height:1.5;">
+          ※ 此密碼由 Firebase 後端保管，下次可直接用方式 A 登入。<br>
+          ※ 忘記密碼請聯絡房東重設（純靜態網頁不寄任何連結）。
+        </p>
+      </div>
     </div>
     <div id="auth-error" style="color:#e11d48;font-size:.78rem;font-weight:700;margin-top:.75rem;min-height:1.1rem;"></div>
   </div>
@@ -286,7 +318,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div style="display:flex;align-items:center;gap:.5rem;">
     <span id="user-badge"></span>
     <button id="btn-logout" onclick="doLogout()">登出</button>
-    <span class="version-tag" id="ver-tag">v08230218</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
+    <span class="version-tag" id="ver-tag">v08300156</span><span id="cloud-status" style="margin-left:.35rem;font-size:.7rem;padding:.12rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap;">☁️ 雲端：尚未存檔</span>
   </div>
 </header>
 <nav class="tab-nav" id="main-tab-nav">
@@ -2187,7 +2219,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
   <div class="card">
     <div class="card-title">🔑 登入密碼管理</div>
-    <div class="txt-m mb">每日密碼格式：<strong>601 + 月月日日 + 信箱帳號</strong>（如 60103shchyu61）<br>首次登入須先完成 OTP 信箱驗證，之後可改用每日密碼。</div>
+    <div class="txt-m mb">★08300156 起改用 <strong>Firebase 電子郵件/密碼</strong>：第一次使用先以方式 B 收六碼驗證信箱，再自行設定密碼；之後用方式 A 直接登入。<br>★舊「每日密碼（601+月日+帳號）」為公開可推算公式（R-17 已否決），已移除。<br>★忘記密碼：房東於 Firebase Console → Authentication → 使用者 → 重設密碼，再告知本人。</div>
     <div class="gap">
       <button class="btn bo sm" onclick="doLogout()">🚪 登出</button>
     </div>
@@ -2405,19 +2437,38 @@ let currentEmail = '';
 let isLandlord   = false;
 // ── 【待辦N】權限防呆：主帳號(哥)全權；其他人只能編輯/刪除自己輸入的資料 ──
 const OWNER_EMAIL = LANDLORD_EMAILS[0];                 // 主帳號＝哥
-window.isOwnerAcct = ()=> currentEmail===OWNER_EMAIL;
+
+// ══ ★08300156【身分唯一真實來源】═══════════════════════════════
+// ★舊版用前端變數 currentEmail 判定身分，該變數可被竄改 →「自稱是誰就是誰」。
+// ★新版一律以 Firebase Auth 後端驗證過的 email 為準。
+const AUTH_EMAIL = () => {
+  const u = window._auth && window._auth.currentUser;
+  return (u && u.email) ? u.email.toLowerCase() : '';
+};
+const requireAuthEmail = () => {
+  const a = AUTH_EMAIL();
+  if(!a) throw new Error('尚未登入，無法存取雲端資料');
+  return a;
+};
+// ★房東判定改用 Auth 身分；★LANDLORD_EMAILS 白名單內容一字未動
+const isLandlordAuth = () => LANDLORD_EMAILS.includes(AUTH_EMAIL());
+window.AUTH_EMAIL = AUTH_EMAIL;
+window.isLandlordAuth = isLandlordAuth;
+
+// ★缺陷②（對方未提及、我方查出）：isOwnerAcct 原本讀 currentEmail，同型缺陷
+window.isOwnerAcct = ()=> AUTH_EMAIL()===OWNER_EMAIL;
 window.stampRec = function(o){
   if(o && typeof o==='object' && !o.createdBy){
-    o.createdBy = currentEmail||'';
+    o.createdBy = AUTH_EMAIL()||currentEmail||'';
     if(!o.createdAt) o.createdAt = new Date().toISOString().slice(0,19);
   }
   return o;
 };
 window.canEditRec = function(o){
-  if(currentEmail===OWNER_EMAIL) return true;            // 哥：全權
+  if(AUTH_EMAIL()===OWNER_EMAIL) return true;            // 哥：全權（★改用 Auth 身分）
   if(!o || typeof o!=='object') return false;
   const owner = o.createdBy || OWNER_EMAIL;              // 舊資料視為哥建立
-  return owner === currentEmail;
+  return owner === (AUTH_EMAIL()||currentEmail);
 };
 window.guardRec = function(o, what){
   if(window.canEditRec(o)) return true;
@@ -2427,7 +2478,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v08230218'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v08300156'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[] };
 let _ejsOk = false;
@@ -2442,9 +2493,17 @@ const waitFB = () => new Promise(res => {
   else document.addEventListener('fbReady', res, {once:true});
 });
 const safeId = (email) => email.toLowerCase().replace(/[@.]/g,'_');
-const landlordPath = () => window._doc(window._db,'artifacts',window._APP_ID,'landlord','data');
+// ★08300156 缺陷③：路徑一律由 Auth 身分推導，未登入即丟例外拒絕
+const landlordPath = () => { requireAuthEmail();
+  return window._doc(window._db,'artifacts',window._APP_ID,'landlord','data'); };
 const tenantBillPath = (email) => window._doc(window._db,'artifacts',window._APP_ID,'tenants',safeId(email),'bills','latest');
-const settingsPath = (email) => window._doc(window._db,'artifacts',window._APP_ID,'users',safeId(email),'settings','auth');
+// ★settingsPath 只能存取自己；房東可存取任何人（用於協助排除問題）
+const settingsPath = (email) => {
+  const me = requireAuthEmail();
+  const target = (email||'').toLowerCase();
+  if(target !== me && !isLandlordAuth()) throw new Error('只能存取自己的設定');
+  return window._doc(window._db,'artifacts',window._APP_ID,'users',safeId(target),'settings','auth');
+};
 
 const initFBAuth = async () => {
   await waitFB();
@@ -2511,44 +2570,45 @@ function getEmailInput(){
   return v.includes('@')?v:v+'@gmail.com';
 }
 
-// ══ 每日密碼 ═══════════════════════════════
-function getDailyKey(email){
-  const acc=email.split('@')[0];
-  const n=new Date();
-  const fmt=new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'2-digit',day:'2-digit'});
-  const parts=fmt.formatToParts(n);
-  const mm=parts.find(p=>p.type==='month').value;
-  const dd=parts.find(p=>p.type==='day').value;
-  return '601'+mm+dd+acc.toLowerCase();
+// ══ ★08300156 Firebase 錯誤碼中文對應 ══════════════
+function authErrMsg(e){
+  const c=(e&&e.code)?e.code:'';
+  switch(c){
+    case 'auth/weak-password':          return '密碼太短，請至少 6 碼。';
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':         return '此信箱已註冊過，但密碼不正確。忘記密碼請聯絡房東重設。';
+    case 'auth/user-not-found':         return '查無此帳號，請先用下方 OTP 完成信箱驗證並設定密碼。';
+    case 'auth/too-many-requests':      return '嘗試次數過多，請稍後再試。';
+    case 'auth/user-disabled':          return '此帳號已被停用，請聯絡房東。';
+    case 'auth/invalid-email':          return '信箱格式不正確。';
+    case 'auth/network-request-failed': return '網路連線失敗，請檢查網路後再試。';
+    default: return '登入失敗：'+(c||(e&&e.message)||'未知錯誤');
+  }
 }
 
-// ══ 方式A：每日密碼登入 ════════════════════
+// ══ ★方式A：Firebase 電子郵件/密碼登入（★已註冊者）═══════════
+// ★舊版是「每日密碼」601+月日+帳號，屬公開可推算公式（R-17 已否決），本輪移除。
 window.verifyDailyKey = async function(){
   const email=getEmailInput();
   if(!email.includes('@')){ showAuthErr('請先輸入帳號'); return; }
   const input=(document.getElementById('access-key-input')?.value||'').trim();
+  if(!input){ showAuthErr('請輸入登入密碼'); return; }
   // ── 黑名單檢查 ──
   if(BLACKLIST_EMAILS.map(e=>e.toLowerCase()).includes(email.toLowerCase())){
     showAuthErr('此帳號已停用，請聯繫房東。');
-    await writeLoginLog(email,'❌ 封鎖（黑名單）','嘗試使用每日密碼登入');
-    // 立即寄 Gmail 通知房東
-    notifyBlacklist(email,'每日密碼');
+    await writeLoginLog(email,'❌ 封鎖（黑名單）','嘗試使用密碼登入');
+    notifyBlacklist(email,'密碼登入');
     return;
   }
-  await initFBAuth();
-  const snap = await window._getDoc(settingsPath(email));
-  const verified = snap.exists() && snap.data().emailVerified===true;
-  if(!verified){ showAuthErr('首次登入請先使用下方 OTP 信箱驗證！'); return; }
-  const daily=getDailyKey(email);
-  const customPw=snap.data().customPw||'';
-  const ok=(customPw&&input===atob(customPw))||(input.toLowerCase()===daily);
-  if(ok){
-    await completeLogin(email,'每日密碼');
-  } else {
-    showAuthErr('密碼錯誤，請重試。');
-    await writeLoginLog(email,'❌ 失敗','每日密碼錯誤');
+  await waitFB();
+  try{
+    await window._signInWithEmailAndPassword(window._auth, email, input);
+    await completeLogin(AUTH_EMAIL(),'密碼登入');
+  }catch(e){
+    showAuthErr(authErrMsg(e));
+    await writeLoginLog(email,'❌ 失敗','密碼登入：'+((e&&e.code)||''));
     const card=document.getElementById('auth-card');
-    card.classList.add('shake'); setTimeout(()=>card.classList.remove('shake'),500);
+    if(card){ card.classList.add('shake'); setTimeout(()=>card.classList.remove('shake'),500); }
   }
 };
 
@@ -2571,7 +2631,7 @@ window.sendOTP = async function(){
   const stored=JSON.parse(sessionStorage.getItem(key)||'{"c":0,"h":-1}');
   const nowH=new Date().getHours();
   if(stored.h!==nowH){stored.c=0;stored.h=nowH;}
-  if(stored.c>=3){ showAuthErr('本小時已發送3次，請改用每日密碼登入'); return; }
+  if(stored.c>=3){ showAuthErr('本小時已發送3次，請稍後再試或改用方式A密碼登入'); return; }
   if(now-_otpLast<60000){ showAuthErr('請稍候 '+Math.ceil((60000-(now-_otpLast))/1000)+' 秒再發送'); return; }
   initEJS();
   const btn=document.getElementById('btn-send-otp'); btn.disabled=true;
@@ -2584,7 +2644,7 @@ window.sendOTP = async function(){
     document.getElementById('otp-step2').style.display='block';
     startOTPTimer(); lucide.createIcons();
   }catch(e){
-    showAuthErr('OTP 發送失敗，請改用每日密碼。');
+    showAuthErr('六碼發送失敗，請確認信箱後再試。');
     btn.disabled=false;
   }
 };
@@ -2599,15 +2659,56 @@ window.verifyOTP = async function(){
     if(_otpFail>=5) await writeLoginLog(_otpMail,'❌ 失敗','OTP錯誤超過5次');
     return;
   }
-  // OTP成功→標記此email已驗證
-  await initFBAuth();
-  await window._setDoc(settingsPath(_otpMail),{emailVerified:true},{merge:true});
-  await completeLogin(_otpMail,'OTP一次性密碼');
+  // ★08300156：★六碼對了【不再直接放行】（舊版可被繞過）。
+  // ★只做兩件事：記住 email、顯示「設定密碼」區塊。
+  // ★★並移除舊版在此處寫 emailVerified 的那一行——當下尚無 Firebase 身分，
+  //   ★該寫入在新架構下必然失敗。
+  document.getElementById('otp-step2').style.display='none';
+  const s3=document.getElementById('otp-step3');
+  if(s3) s3.style.display='block';
+  const shown=document.getElementById('otp-verified-mail');
+  if(shown) shown.textContent=_otpMail;
+  if(_otpTmr)clearInterval(_otpTmr);
+  if(typeof lucide!=='undefined')lucide.createIcons();
+};
+
+// ══ ★08300156【設定密碼並進入】先建立、失敗再登入（同一顆按鈕處理兩種情況）══
+window.finishAuth = async function(){
+  const p1=(document.getElementById('newpw-1')?.value||'').trim();
+  const p2=(document.getElementById('newpw-2')?.value||'').trim();
+  if(p1.length<6){ showAuthErr('密碼至少 6 碼'); return; }
+  if(p1!==p2){ showAuthErr('兩次輸入的密碼不一致'); return; }
+  if(!_otpMail){ showAuthErr('請先完成六碼信箱驗證'); return; }
+  const btn=document.getElementById('btn-finish-auth');
+  if(btn) btn.disabled=true;
+  await waitFB();
+  let how='';
+  try{
+    try{
+      await window._createUserWithEmailAndPassword(window._auth,_otpMail,p1);
+      how='新建帳號';
+    }catch(e){
+      const c=(e&&e.code)?e.code:'';
+      if(c==='auth/email-already-in-use'){
+        await window._signInWithEmailAndPassword(window._auth,_otpMail,p1);
+        how='沿用既有密碼登入';
+      } else { throw e; }
+    }
+    await completeLogin(AUTH_EMAIL(),'OTP驗信＋密碼（'+how+'）');
+  }catch(e){
+    showAuthErr(authErrMsg(e));
+    await writeLoginLog(_otpMail,'❌ 失敗','設定密碼：'+((e&&e.code)||''));
+    if(btn) btn.disabled=false;
+  }
 };
 
 window.resetOTP = function(){
   document.getElementById('otp-step1').style.display='block';
   document.getElementById('otp-step2').style.display='none';
+  const _s3=document.getElementById('otp-step3'); if(_s3)_s3.style.display='none';
+  const _b3=document.getElementById('btn-finish-auth'); if(_b3)_b3.disabled=false;
+  const _p1=document.getElementById('newpw-1'); if(_p1)_p1.value='';
+  const _p2=document.getElementById('newpw-2'); if(_p2)_p2.value='';
   document.getElementById('btn-send-otp').disabled=false;
   if(_otpTmr)clearInterval(_otpTmr);
 };
@@ -2629,9 +2730,13 @@ function showAuthErr(msg){
 
 // ══ 登入完成 ═══════════════════════════════
 const completeLogin = async (email, method=null) => {
-  currentEmail = email;
-  isLandlord   = LANDLORD_EMAILS.includes(email);
-  localStorage.setItem('kj_rental_email', email);
+  // ★08300156 缺陷①：isLandlord 不再由前端變數推導，改用 Firebase Auth 身分
+  const _authMail = AUTH_EMAIL();
+  if(!_authMail){ showAuthErr('尚未完成身分驗證，請重新登入'); return; }
+  currentEmail = _authMail;
+  isLandlord   = isLandlordAuth();
+  email        = _authMail;
+  localStorage.setItem('kj_rental_email', email); // ★僅供顯示，★不再作為登入依據
   // 自動登入記錄為「自動登入」，手動登入記錄實際方式
   await writeLoginLog(email,'✅ 成功', method||'自動登入（沿用上次）');
 
@@ -2772,7 +2877,9 @@ function skipRoomSelect(){
 }
 
 // ══ 登出 ═══════════════════════════════════
-window.doLogout = function(){
+window.doLogout = async function(){
+  // ★08300156 3-7：舊版只清 localStorage，Firebase 身分仍留著
+  try{ if(window._signOut && window._auth) await window._signOut(window._auth); }catch(e){}
   localStorage.removeItem('kj_rental_email');
   currentEmail=''; isLandlord=false; myRoom=null;
   document.getElementById('security-overlay').style.display='flex';
@@ -2847,7 +2954,8 @@ const loadLandlordData = async () => {
 };
 
 const saveLandlordData = async () => {
-  if(!isLandlord){ toast('⚠️ 無權限儲存'); return; }
+  // ★08300156 缺陷③：權限改由 Auth 身分判定，不再信任前端變數
+  if(!isLandlordAuth()){ toast('⚠️ 無權限儲存'); return; }
   await initFBAuth();
   if(window.setCloudStatus) setCloudStatus('saving');
   try{
@@ -5282,7 +5390,7 @@ function _renderLoginLogUI(filter, log){
   if(!el)return;
   if(!log.length){el.innerHTML='<div class="txt-m">尚無登入紀錄</div>';return;}
   // ✅ v05242232：各帳號登入次數統計（200筆內成功，同股票系統邏輯）
-  const _me = window._currentUserEmail||'';
+  const _me = (typeof AUTH_EMAIL==='function' ? AUTH_EMAIL() : '') || window._currentUserEmail || '';
   const _isLL = (typeof LANDLORD_EMAILS!=='undefined') && LANDLORD_EMAILS.includes(_me);
   const _cntMap={}, _lastMap={};
   log.filter(r=>r.email&&r.result&&r.result.startsWith('✅')).forEach(r=>{
@@ -6757,6 +6865,8 @@ window.clearLandlordDraft = function(){
 };
 
 window.clearLoginLog = async function(){
+  // ★08300156 缺陷④：補上函式層檢查（舊版任何登入者都能清空整份登入紀錄）
+  if(!isLandlordAuth()){ toast('⚠️ 僅限房東操作'); return; }
   if(!confirm('確定清除所有登入紀錄？'))return;
   DB.loginLog=[];
   // 同時清除獨立路徑的登入紀錄（與 writeLoginLog 同一路徑）
@@ -7249,23 +7359,24 @@ async function checkSession(){
     setTimeout(()=>lucide.createIcons(),100);
     return;
   }
-  const email=localStorage.getItem('kj_rental_email');
-  if(!email){
-    document.getElementById('security-overlay').style.display='flex';
-    setTimeout(()=>lucide.createIcons(),100);
-    return;
-  }
-  // 驗證Firebase是否確實已驗證過
-  try{
-    await initFBAuth();
-    const snap=await window._getDoc(settingsPath(email));
-    if(snap.exists()&&snap.data().emailVerified===true){
-      await completeLogin(email); return;
+  // ★08300156 3-6：★自動登入改由 onAuthStateChanged 決定。
+  // ★舊版只看 localStorage 的 kj_rental_email，★那是使用者自己可以改的值，
+  //   ★等於「自稱是誰就是誰」。
+  await waitFB();
+  let _handled=false;
+  window._onAuthStateChanged(window._auth, async (u)=>{
+    if(u && u.email){
+      if(_handled) return; _handled=true;
+      await completeLogin(u.email);            // ★已通過後端驗證的身分
+    } else {
+      // ★匿名或未登入：清掉本機殘留，顯示登入畫面
+      localStorage.removeItem('kj_rental_email');
+      currentEmail=''; isLandlord=false; myRoom=null;
+      const ov=document.getElementById('security-overlay');
+      if(ov) ov.style.display='flex';
+      setTimeout(()=>lucide.createIcons(),100);
     }
-  }catch(e){}
-  localStorage.removeItem('kj_rental_email');
-  document.getElementById('security-overlay').style.display='flex';
-  setTimeout(()=>lucide.createIcons(),100);
+  });
 }
 
 // ============================================================
