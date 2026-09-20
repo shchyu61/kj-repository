@@ -1,37 +1,22 @@
-<!-- ═══════════════════════════════════════════════════════════
-★★★【自我舉證表】index(09210142)　★依鐵律ＡＭ１７／自檢(14)
-　本輪修補 13 項，逐項列出【改了什麼／怎麼驗證／推定或實證】：
-　① 房缺-01　刪除第 5375 行重複的 renderMailHistory（讀錯欄位 mailNotices）
-　　　驗證：grep -c "renderMailHistory = function" → 由 2 降為 1　★實證
-　② 房缺-01b sendMailNotice 寫入改 DB.mailRecords + stampRec
-　　　驗證：grep mailNotices → 0 命中　★實證
-　③ 房缺-02　sendLockBatteryNotice 寫入改 DB.lockBatteryRecords + stampRec
-　　　驗證：grep batteryNotices → 0 命中　★實證
-　④ 房缺-03　AI 問答改為誠實告知，不再發出必然失敗的 fetch
-　　　驗證：grep api.anthropic.com → 0 命中　★實證
-　⑤ 房缺-04　三處 toISOString 改 window._ymd()（本地日期）
-　　　驗證：grep "toISOString().slice(0,10)|split('T')" → 僅剩註解 1 行　★實證
-　⑥ 房缺-05　逾期防重寄改存雲端 DB.rentOverdueSent；並補齊 DB 初始化／save／load 三處
-　　　驗證：grep rentOverdueSent → 5 命中（宣告1＋save1＋load1＋使用2）　★實證
-　⑦ 房缺-06　importData 改泛用迴圈 Object.keys(d).forEach
-　　　驗證：node --check 通過；★★實際還原正確性【須主帥匯入一次備份檔驗證】　★推定
-　⑧ 房缺-07　clearAll 改只清業務資料＋強制輸入「確定清除」＋自動匯出
-　　　驗證：★★【須主帥實測】——本項會刪資料，AI 無法自行驗證　★推定
-　⑨ 房缺-08　initFBAuth 不再 signInAnonymously
-　　　驗證：grep signInAnonymously → 僅剩 import 與 window 掛載　★實證
-　⑩ 房缺-11　3F後自住改讀 DB.landlordStay.room
-　　　驗證：grep "r==='3F後'" → 0 命中　★實證
-　⑪ 前端修補一　清除登入紀錄守門改 isOwnerAuth()（新增該函式）
-　　　驗證：★★【須主帥以弟的帳號實測】按下清除應顯示「僅限主帥操作」　★推定
-　⑫ 前端修補二　全檔 31 處空 catch 改 window._silentFail()
-　　　驗證：正則 catch(x){} → 由 31 降為 0　★實證
-　⑬ 版本識別　APP_VER 由 v08300718 改為 v09210142（唯一版本來源）
-　　　驗證：grep APP_VER → 1 處　★實證
-★★★【推定清單（★AI 無法自行驗證，須主帥實測）】
-　・⑦ 匯入備份還原的正確性　・⑧ 清除所有資料的行為　・⑪ 弟的帳號被擋
-　・★★房缺-09（loginLog merge:false）與房缺-10（報修上雲）★本輪未動，
+<!-- ★★★【自我舉證表】index(09210142)　★依鐵律ＡＭ１７／自檢(14)
+　本輪修補 13 項，逐項【改了什麼／怎麼驗證／實證或推定】：
+　① 房缺-01 刪除第 5375 行重複的 renderMailHistory → grep 計數 2→1　★實證
+　② 房缺-01b sendMailNotice 改寫 DB.mailRecords → grep mailNotices 0 命中　★實證
+　③ 房缺-02 sendLockBatteryNotice 改寫 DB.lockBatteryRecords → grep batteryNotices 0 命中　★實證
+　④ 房缺-03 AI問答改誠實告知 → grep api.anthropic.com 0 命中　★實證
+　⑤ 房缺-04 三處 toISOString 改 window._ymd() → grep 僅剩註解　★實證
+　⑥ 房缺-05 逾期防重寄改雲端 DB.rentOverdueSent；補齊初始化／save／load 三處 → grep 5 命中　★實證
+　⑦ 房缺-06 importData 改泛用迴圈 → node --check 通過；★★還原正確性【須主帥匯入實測】★推定
+　⑧ 房缺-07 clearAll 改只清業務資料＋強制輸入「確定清除」＋自動匯出 → ★★【須主帥實測】★推定
+　⑨ 房缺-08 initFBAuth 不再 signInAnonymously → grep 僅剩 import 與掛載　★實證
+　⑩ 房缺-11 3F後改讀 DB.landlordStay.room → grep "r==='3F後'" 0 命中　★實證
+　⑪ 前端修補一 清除守門改 isOwnerAuth() → ★★【須主帥以弟的帳號實測】★推定
+　⑫ 前端修補二 全檔 31 處空 catch 改 _silentFail → 正則計數 31→0　★實證
+　⑬ APP_VER 改 v09210142（唯一版本來源） → grep 1 處　★實證
+★★★【推定清單．AI 無法自行驗證，須主帥實測】⑦匯入還原　⑧清除資料　⑪弟被擋
+★★房缺-09（loginLog merge:false）與房缺-10（報修上雲）★本輪未動——
 　　理由：兩者均須 W-2 安全規則部署後才有權限，★改了也無法驗證。
-═══════════════════════════════════════════════════════════ -->
+-->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
