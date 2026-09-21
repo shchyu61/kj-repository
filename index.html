@@ -1,4 +1,18 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09212117)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：主帥 2026/09/21 21:17 第5f點授權修網頁（收租紀錄查詢與誤刪疑慮、第5e點用途說明）＋待辦 P1-1、P1-3、P1-4
+　① P1-4 收租歷史「🔍 查詢」與六個快捷鈕無效 → 補 window.renderRentHistory（轉呼叫 module 內函式）
+　② P1-4 日期篩選套用到「併收結清」；篩選中顯示「顯示／隱藏幾筆」，並註明被隱藏的沒有刪除
+　③ P1-4 刪除確認寫出期別與金額，並註明只刪這一期
+　④ 第5e點 本期收租登記、入帳紀錄簿、收租歷史三張卡片加註用途與注意事項
+　⑤ P1-1 入帳紀錄簿新增／修改 → 自動同步到本期收租登記（結算只認本期收租登記）；重複入帳先提醒
+　⑥ 已結算範圍保護：新增期別若在最近結算單涵蓋月份以內，先詢問是否已結算；本期收租登記覆蓋時保留「已與弟結算」
+　⑦ P1-3 新結算單改記期別與 id；撤銷依期別還原；舊格式結算單拒絕自動撤銷
+　　驗證：收租歷史重現、9 月結算流程、撤銷、事故重現 1～7、四封實寄信　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・入帳紀錄簿補登 8 月入帳時會跳出「是否已結算」詢問 → 8 月房租已在 8/23 結算，請按「確定」
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(09211845)　★依鐵律ＡＭ１７／自檢(14)
 　本輪性質：09/21 資料事故修補（取代從未交付的 index(09211533)(09211649)，依ＡＨ８作廢重出；09211734 僅改版號與還原檔可選 .txt；09211845 另修⑥結算標記範圍，並取代從未交付的 09211734）
 　事故根因：v09210142 的 loadLandlordData 漏讀 25 個欄位，saveLandlordData 以 merge:false 整份覆寫，
@@ -1093,6 +1107,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
   <div class="card mt">
     <div class="card-title">💰 本期收租登記</div>
+    <div class="alert-box a-info" style="font-size:.85rem;">★<b>用途</b>：登記每一期（月）各房間房租有沒有收齊，<b>一期一筆</b>；同一期再按儲存會覆蓋。<br>★<b>會計入【哥弟結算】</b>的自動套入與雲端結算通知信（給弟的錢從這裡算）。<br>★在下方「💵 房客租金入帳紀錄簿」新增入帳時，<b>會自動同步到這裡</b>，不必再輸入一次；已與弟結算過的期別會先詢問，避免重複計算。</div>
     <div class="form-row">
       <div><label>年月期別（如 202503）</label><input type="text" id="r-period" placeholder="202503"></div>
     </div>
@@ -1110,6 +1125,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div class="card landlord-only" id="rent-pay-card">
     <div class="card-title">💵 房客租金入帳紀錄簿（實際收到錢就記這裡）</div>
     <div class="alert-box a-info" style="font-size:.85rem;">
+      ★<b>用途</b>：流水帳，每收到一筆錢記一筆（哪天進帳、屬於哪一期）。<b>新增或修改會自動同步到上方「💰 本期收租登記」</b>（因此會計入哥弟結算）；在這裡刪除<b>不會</b>刪除本期收租登記。<br>
       ★<b>「入帳日」與「所屬租期」是兩件事，必須分開記。</b>
       台灣房租是<b>先付款後享受</b>，房客常提前幾天付款。<br>
       例：8/5 收到 4,500 元，<b>入帳日＝8/5</b>，但<b>所屬租期＝8/8～9/7</b>。
@@ -1163,6 +1179,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
   <div class="card">
     <div class="card-title">📋 收租歷史</div>
+    <div class="txt-m mb">★顯示「💰 本期收租登記」與「併收結清」的資料；日期篩選依收款日。<b>被篩選隱藏的紀錄沒有刪除</b>，按「全部」即可顯示。</div>
     <div style="margin-bottom:.6rem;padding-bottom:.5rem;border-bottom:2px solid var(--border2);">
       <div class="form-row c2">
         <div><label>收款日起</label><input type="date" id="rh-from"></div>
@@ -2541,7 +2558,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09211845'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09212117'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -4715,7 +4732,8 @@ window.saveRent = async function(sendEmail=true){
   const rec={period,payments,savedAt:new Date().toISOString()};
   const idx=DB.rentRecords.findIndex(x=>x.period===period);
   window.stampRec(rec);
-  if(idx>=0){ if(!window.guardRec(DB.rentRecords[idx],'覆蓋'))return; DB.rentRecords[idx]=rec; } else DB.rentRecords.unshift(rec);
+  if(idx>=0){ if(!window.guardRec(DB.rentRecords[idx],'覆蓋'))return; if(DB.rentRecords[idx].bxSettled) rec.bxSettled=true; DB.rentRecords[idx]=rec; }   // ★09212117：覆蓋時保留「已與弟結算」，否則已結算期別下次會被重算
+  else { if(window.rrSettledCheck(period,null)) rec.bxSettled=true; DB.rentRecords.unshift(rec); }   // ★09212117：新增期別若在已結算範圍內，先詢問
   await saveLandlordData(); renderRentHistory(); toast('收租紀錄已儲存 ✓');
   // ⑥ 收訖通知：收租後寄收訖信給「已全額繳清且非緩收」之房客（受 notifyTenant 開關控管，預設關＝暫不寄發給房客）
   if(DB.notifyTenant){
@@ -4770,7 +4788,11 @@ window.bsEditSettle = async function(key){
 };
 function renderRentHistory(){
   const el=document.getElementById('rent-history');
-  const _settled=Object.entries(DB.rentPause||{}).filter(([k,p])=>p.settledTo);
+  // ★09212117 P1-4：日期篩選一併套用到「併收結清」（依結清收款日），並統計隱藏筆數
+  const _from=(document.getElementById('rh-from')||{}).value||'', _to=(document.getElementById('rh-to')||{}).value||'';
+  const _inR=function(d){ d=String(d||''); if(!_from&&!_to) return true; if(!d) return false; return (!_from||d>=_from)&&(!_to||d<=_to); };
+  const _settledAll=Object.entries(DB.rentPause||{}).filter(([k,p])=>p.settledTo);
+  const _settled=_settledAll.filter(([k,p])=>_inR(p.settledAt));
   let _settleHtml='';
   if(_settled.length){
     _settleHtml='<div style="font-weight:900;font-size:.85rem;color:var(--success);margin:.2rem 0 .4rem;">💰 併收結清紀錄</div>'
@@ -4785,9 +4807,9 @@ function renderRentHistory(){
   const _rhList = DB.rentRecords.filter(r=>(typeof window.rentHistInRange==='function')?window.rentHistInRange(r):true);
   const _rhOn = !!((document.getElementById('rh-from')||{}).value || (document.getElementById('rh-to')||{}).value);
   if(_rhOn){
-    _settleHtml += '<div class="result-box" style="font-weight:700;margin:.3rem 0;">🔍 篩選後共 '+_rhList.length+' 期（依各房間收款日）</div>';
+    _settleHtml += '<div class="result-box" style="font-weight:700;margin:.3rem 0;">🔍 篩選中（收款日 '+(_from||'不限')+' ～ '+(_to||'不限')+'）：各期收租顯示 '+_rhList.length+' 期、隱藏 '+((DB.rentRecords||[]).length-_rhList.length)+' 期；併收結清顯示 '+_settled.length+' 筆、隱藏 '+(_settledAll.length-_settled.length)+' 筆。<br>★被隱藏的紀錄沒有刪除，按「全部」即可顯示。</div>';
   }
-  if(!_rhList.length){el.innerHTML=(_settleHtml||'')+'<div class="txt-m">此區間沒有收租紀錄</div>';return;}
+  if(!_rhList.length){el.innerHTML=(_settleHtml||'')+'<div class="txt-m">此區間沒有收租紀錄'+(_rhOn?'（★沒有被刪除，只是不在篩選區間內）':'')+'</div>';return;}
   el.innerHTML=_settleHtml;
   _rhList.slice(0,24).forEach((rec,_fi)=>{
     // ★08051435 修正：篩選後不可用篩選清單的索引，必須換回 DB.rentRecords 的真實索引，
@@ -4842,9 +4864,42 @@ function renderRentHistory(){
     </div>`;
   });
 }
+// ★09212117 P1-4：inline onclick 在全域執行，module 內的函式看不到 → 以 window 轉呼叫（掛勾改寫後也會轉到新繫結）
+window.renderRentHistory = function(){ return renderRentHistory.apply(this, arguments); };
 window.deleteRent = async function(i){
-  if(!window.guardRec((DB.rentRecords||[])[i],'刪除'))return;
-  if(confirm('確定刪除？')){DB.rentRecords.splice(i,1);await saveLandlordData();renderRentHistory();toast('已刪除');}
+  const rec=(DB.rentRecords||[])[i]; if(!rec) return;
+  if(!window.guardRec(rec,'刪除'))return;
+  const _tot=ROOMS.reduce((s,r)=>s+(+((rec.payments||{})[r]||{}).paid||0),0);
+  if(confirm('確定刪除【'+rec.period+' 期】收租紀錄（實收 NT$'+_tot.toLocaleString()+'）？\n\n★只會刪除這一期，其他期別不受影響。'+(rec.bxSettled?'\n★注意：這一期已與弟結算過。':''))){
+    DB.rentRecords.splice(i,1); await saveLandlordData(); renderRentHistory();
+    toast('已刪除 '+rec.period+' 期（其他期別未刪除；若畫面變少，是日期篩選中）');
+  }
+};
+// ★09212117：已結算範圍保護——期別若在最近一張結算單涵蓋的月份以內，先問主帥這一期是否已算進那次結算
+window.rrSettledCheck = function(per, rec){
+  if(rec && rec.bxSettled) return true;
+  let cov='', at='';
+  (DB.settlements||[]).forEach(function(s){ (s.netMonths||[]).forEach(function(m){ m=String(m); if(m>cov){ cov=m; at=String(s.at||'').slice(0,10); } }); });
+  if(!cov || String(per)>cov) return false;
+  return confirm('【'+per+' 期】落在 '+at+' 結算單的涵蓋範圍內（涵蓋至 '+cov.slice(0,4)+'年'+(+cov.slice(4,6))+'月）。\n\n'
+    +'這一期的房租如果【已經在那次結算給過弟】→ 按「確定」，標為已結算，不會重複計算。\n'
+    +'如果是結算之後才收到、那次沒算到 → 按「取消」，會列入下次結算。');
+};
+// ★09212117 P1-1：入帳紀錄簿 → 同步到本期收租登記（結算只認 rentRecords）
+window.rrSyncPayment = function(per, room, amount, date){
+  per=String(per||''); if(!/^\d{6}$/.test(per)) return '';
+  DB.rentRecords=DB.rentRecords||[];
+  let rec=DB.rentRecords.find(function(x){ return String(x.period)===per; });
+  const isNew=!rec, st=window.rrSettledCheck(per, rec||null);
+  if(isNew){ rec={period:per, payments:{}, savedAt:new Date().toISOString()};
+    ROOMS.forEach(function(r){ rec.payments[r]={amount:0,paid:0,date:'',note:''}; });
+    if(window.stampRec) window.stampRec(rec);
+    const k=DB.rentRecords.findIndex(function(x){ return String(x.period)<per; });
+    if(k<0) DB.rentRecords.push(rec); else DB.rentRecords.splice(k,0,rec); }
+  const p=rec.payments[room]||(rec.payments[room]={amount:0,paid:0,date:'',note:''});
+  p.amount=Math.max(+p.amount||0, +amount||0); p.paid=+amount||0; p.date=date||p.date||'';
+  if(st) rec.bxSettled=true;
+  return rec.bxSettled?'settled':'open';
 };
 
 // ── 標記已繳租 ─────────────────────────────
@@ -6065,6 +6120,9 @@ window.bsMarkSettledNow = async function(){
   DB.settlements.push(window.stampRec({ id:_sid, at:now.toISOString().slice(0,19),
     transfer:Math.round(c.transfer), rent:c.rent, adv:c.adv, net:c.net,
     netMonths:nm, billIdx:billIdx, comIdx:comIdx, pauseKeys:pauseKeys, recIdx:recIdx,
+    // ★09212117 P1-3：另記期別與 id，撤銷改依期別還原（陣列位置在資料順序變動後會指錯）
+    billPeriods:billIdx.map(function(i){ return String(DB.utilBills[i].period||''); }), recPeriods:recIdx.map(function(i){ return String(DB.rentRecords[i].period||''); }),
+    comIds:comIdx.map(function(i){ const x=DB.bsCommonCosts[i]; return (x.id!=null&&x.id!==''?String(x.id):(String(x.date||'')+'|'+String(x.desc||'')+'|'+String(x.amount||''))); }),
     btIds:btIds, confirmed:true, by:'網頁' }));
   try{
     if(window.saveLandlordData) await saveLandlordData();
@@ -6083,11 +6141,15 @@ window.bsRevokeSettle = async function(id){
   if(i<0) return;
   const s=list[i];
   if(!window.guardRec(s,'撤銷'))return;
+  // ★09212117 P1-3：舊格式（只有陣列位置）在資料順序變動後會標錯帳單 → 一律拒絕自動撤銷
+  if(((s.billIdx||[]).length && !s.billPeriods) || ((s.recIdx||[]).length && !s.recPeriods) || ((s.comIdx||[]).length && !s.comIds)){
+    alert('⚠️ 這張結算單是舊格式（以資料位置記錄涵蓋的帳單），資料順序已變動過，自動撤銷可能標錯帳單，已停止。\n\n如需更正，請把結算單日期告訴 AI 處理。'); return; }
   if(!confirm('撤銷這張結算單？\n\n將把涵蓋的帳單／共同費用／併收結清／網路費月份全部還原為「未結算」，下次自動套入會重新計入。')) return;
-  (s.billIdx||[]).forEach(k=>{ if(DB.utilBills&&DB.utilBills[k]) DB.utilBills[k].bxSettled=false; });
-  (s.comIdx||[]).forEach(k=>{ if(DB.bsCommonCosts&&DB.bsCommonCosts[k]) DB.bsCommonCosts[k].settled=false; });
+  const _bp=new Set((s.billPeriods||[]).map(String)), _rp=new Set((s.recPeriods||[]).map(String)), _ci=new Set((s.comIds||[]).map(String));
+  (DB.utilBills||[]).forEach(b=>{ if(_bp.has(String(b.period||''))) b.bxSettled=false; });
+  (DB.bsCommonCosts||[]).forEach(x=>{ if(_ci.has((x.id!=null&&x.id!==''?String(x.id):(String(x.date||'')+'|'+String(x.desc||'')+'|'+String(x.amount||''))))) x.settled=false; });
   (s.pauseKeys||[]).forEach(k=>{ if(DB.rentPause&&DB.rentPause[k]) DB.rentPause[k].bxSettled=false; });
-  (s.recIdx||[]).forEach(k=>{ if(DB.rentRecords&&DB.rentRecords[k]) DB.rentRecords[k].bxSettled=false; });
+  (DB.rentRecords||[]).forEach(r=>{ if(_rp.has(String(r.period||''))) r.bxSettled=false; });
   DB.broTransfers=(DB.broTransfers||[]).filter(function(t){ return String(t.autoFrom||'')!==String(s.id); });
   (s.btIds||[]).forEach(function(id){ const t=(DB.broTransfers||[]).find(function(x){ return String(x.id)===String(id); }); if(t) t.settled=false; });
   const rm=new Set((s.netMonths||[]).map(String));
@@ -8538,13 +8600,19 @@ checkSession();
       periodStart:ps, periodEnd:pe,
       method:document.getElementById('rpay-method').value,
       note:document.getElementById('rpay-note').value.trim() };
+    if(!eid && DB.rentPayments.some(function(x){ return x.room===room && x.date===d && (+x.amount||0)===a; })
+       && !confirm('⚠️ 已有一筆相同的入帳紀錄（'+room+'　'+d+'　NT$'+N(a)+'）。\n確定要再新增一筆嗎？')) return;   // ★09212117 重複入帳提醒
     if(window.stampRec) window.stampRec(rec);
     if(eid){
       var i=DB.rentPayments.findIndex(function(x){ return x.id===eid; });
       if(i>=0){ if(window.guardRec && !window.guardRec(DB.rentPayments[i],'修改')) return;
                 rec.createdBy=DB.rentPayments[i].createdBy||rec.createdBy; DB.rentPayments[i]=rec; }
     } else DB.rentPayments.push(rec);
-    await saveLandlordData(); rpClear(); rpRender(); toast('入帳紀錄已儲存 ✓');
+    var _per=String(ps).slice(0,4)+String(ps).slice(5,7);   // ★09212117 P1-1：同步到本期收租登記（依所屬租期起日的年月）
+    var _sy=window.rrSyncPayment ? window.rrSyncPayment(_per, room, a, d) : '';
+    await saveLandlordData(); rpClear(); rpRender();
+    if(typeof renderRentHistory==='function') renderRentHistory();
+    toast('入帳紀錄已儲存 ✓　已同步到「本期收租登記」'+_per+' 期'+(_sy==='settled'?'（已與弟結算）':''));
   };
 
   window.rpEdit=function(id){
@@ -8563,7 +8631,7 @@ checkSession();
     var i=(DB.rentPayments||[]).findIndex(function(x){ return x.id===id; }); if(i<0) return;
     if(window.guardRec && !window.guardRec(DB.rentPayments[i],'刪除')) return;
     if(!confirm('確定刪除這筆入帳紀錄？')) return;
-    DB.rentPayments.splice(i,1); await saveLandlordData(); rpRender(); toast('已刪除');
+    DB.rentPayments.splice(i,1); await saveLandlordData(); rpRender(); toast('已刪除入帳紀錄（★本期收租登記不會跟著刪除，如需更正請到上方「💰 本期收租登記」）');
   };
 
   window.rpRender=function(){
