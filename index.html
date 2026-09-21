@@ -1,22 +1,58 @@
-<!-- ★★★【自我舉證表】index(09210142)　★依鐵律ＡＭ１７／自檢(14)
-　本輪修補 13 項，逐項【改了什麼／怎麼驗證／實證或推定】：
-　① 房缺-01 刪除第 5375 行重複的 renderMailHistory → grep 計數 2→1　★實證
-　② 房缺-01b sendMailNotice 改寫 DB.mailRecords → grep mailNotices 0 命中　★實證
-　③ 房缺-02 sendLockBatteryNotice 改寫 DB.lockBatteryRecords → grep batteryNotices 0 命中　★實證
-　④ 房缺-03 AI問答改誠實告知 → grep api.anthropic.com 0 命中　★實證
-　⑤ 房缺-04 三處 toISOString 改 window._ymd() → grep 僅剩註解　★實證
-　⑥ 房缺-05 逾期防重寄改雲端 DB.rentOverdueSent；補齊初始化／save／load 三處 → grep 5 命中　★實證
-　⑦ 房缺-06 importData 改泛用迴圈 → node --check 通過；★★還原正確性【須主帥匯入實測】★推定
-　⑧ 房缺-07 clearAll 改只清業務資料＋強制輸入「確定清除」＋自動匯出 → ★★【須主帥實測】★推定
-　⑨ 房缺-08 initFBAuth 不再 signInAnonymously → grep 僅剩 import 與掛載　★實證
-　⑩ 房缺-11 3F後改讀 DB.landlordStay.room → grep "r==='3F後'" 0 命中　★實證
-　⑪ 前端修補一 清除守門改 isOwnerAuth() → ★★【須主帥以弟的帳號實測】★推定
-　⑫ 前端修補二 全檔 31 處空 catch 改 _silentFail → 正則計數 31→0　★實證
-　⑬ APP_VER 改 v09210142（唯一版本來源） → grep 1 處　★實證
-★★★【推定清單．AI 無法自行驗證，須主帥實測】⑦匯入還原　⑧清除資料　⑪弟被擋
-★★房缺-09（loginLog merge:false）與房缺-10（報修上雲）★本輪未動——
+<!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09211845)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：09/21 資料事故修補（取代從未交付的 index(09211533)(09211649)，依ＡＨ８作廢重出；09211734 僅改版號與還原檔可選 .txt；09211845 另修⑥結算標記範圍，並取代從未交付的 09211734）
+　事故根因：v09210142 的 loadLandlordData 漏讀 25 個欄位，saveLandlordData 以 merge:false 整份覆寫，
+　　　　　　開網頁後任一存檔動作即把 utilBills、rentRecords、broTransfers 等 9 個有資料的欄位寫成空值。
+　① 防線一　載入改「雲端有什麼就讀回什麼」＋存檔時把清單外的欄位照原樣帶回
+　　　驗證：事故重現模擬（舊版清空 9 欄；新版 9 欄筆數全等）　★實證（見交付訊息原始輸出）
+　② 防線二　只有讀取成功才允許存檔；讀取失敗對房東大聲提示並禁止存檔（拋錯，不再假成功）
+　　　驗證：模擬「讀取失敗後存檔」→ 拋錯且未寫入　★實證
+　③ 防線三　雲端原本有資料、本次卻是空的 → 攔下列出欄位，須主帥確認；清除所有資料時例外
+　　　驗證：壓力測試（故意拿掉防線一）→ 被攔下且未寫入　★實證
+　④ 新增「🛟 資料事故還原：只補空欄位」＋ _append 追加機制（結算單依期別換算位置）
+　　　驗證：以雲端現況模擬還原 → 補回欄位、追加 3,098 結算單與 202608 網路費月份　★實證
+　⑤ 版本識別　APP_VER 由 v09210142 改為 v09211845（唯一版本來源）；還原檔選檔接受 .json 與 .txt
+　⑥ 結算標記範圍（09211845）「✅已轉帳給弟→標記本次結算」原本只標【當月】收租紀錄，自動套入加總的卻是【所有未結算、≥起算月】，
+　　　兩者不一致 → 8/4 結算含 202607 房租 3,300（7月實寄信第1塊）卻未標記，下次會重複計算。改為與自動套入、雲端 mark_settled 同一範圍。
+　　　驗證：8/4 當天重產並重新標記 → 結算單收租紀錄由 [] 變為含 202607；8 月給弟信逐字 0 差異　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・防線三的確認視窗在「刻意刪光最後一筆」時會出現——屬預期，按確定即可
+　・實際雲端還原結果：請按房東專區「☁️ 驗證雲端」核對筆數
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09210142)　★依鐵律ＡＭ１７／自檢(14)
+　本輪修補 13 項，逐項列出【改了什麼／怎麼驗證／推定或實證】：
+　① 房缺-01　刪除第 5375 行重複的 renderMailHistory（讀錯欄位 mailNotices）
+　　　驗證：grep -c "renderMailHistory = function" → 由 2 降為 1　★實證
+　② 房缺-01b sendMailNotice 寫入改 DB.mailRecords + stampRec
+　　　驗證：grep mailNotices → 0 命中　★實證
+　③ 房缺-02　sendLockBatteryNotice 寫入改 DB.lockBatteryRecords + stampRec
+　　　驗證：grep batteryNotices → 0 命中　★實證
+　④ 房缺-03　AI 問答改為誠實告知，不再發出必然失敗的 fetch
+　　　驗證：grep api.anthropic.com → 0 命中　★實證
+　⑤ 房缺-04　三處 toISOString 改 window._ymd()（本地日期）
+　　　驗證：grep "toISOString().slice(0,10)|split('T')" → 僅剩註解 1 行　★實證
+　⑥ 房缺-05　逾期防重寄改存雲端 DB.rentOverdueSent；並補齊 DB 初始化／save／load 三處
+　　　驗證：grep rentOverdueSent → 5 命中（宣告1＋save1＋load1＋使用2）　★實證
+　⑦ 房缺-06　importData 改泛用迴圈 Object.keys(d).forEach
+　　　驗證：node --check 通過；★★實際還原正確性【須主帥匯入一次備份檔驗證】　★推定
+　⑧ 房缺-07　clearAll 改只清業務資料＋強制輸入「確定清除」＋自動匯出
+　　　驗證：★★【須主帥實測】——本項會刪資料，AI 無法自行驗證　★推定
+　⑨ 房缺-08　initFBAuth 不再 signInAnonymously
+　　　驗證：grep signInAnonymously → 僅剩 import 與 window 掛載　★實證
+　⑩ 房缺-11　3F後自住改讀 DB.landlordStay.room
+　　　驗證：grep "r==='3F後'" → 0 命中　★實證
+　⑪ 前端修補一　清除登入紀錄守門改 isOwnerAuth()（新增該函式）
+　　　驗證：★★【須主帥以弟的帳號實測】按下清除應顯示「僅限主帥操作」　★推定
+　⑫ 前端修補二　全檔 31 處空 catch 改 window._silentFail()
+　　　驗證：正則 catch(x){} → 由 31 降為 0　★實證
+　⑬ 版本識別　APP_VER 由 v08300718 改為 v09210142（唯一版本來源）
+　　　驗證：grep APP_VER → 1 處　★實證
+★★★【推定清單（★AI 無法自行驗證，須主帥實測）】
+　・⑦ 匯入備份還原的正確性　・⑧ 清除所有資料的行為　・⑪ 弟的帳號被擋
+　・★★房缺-09（loginLog merge:false）與房缺-10（報修上雲）★本輪未動，
 　　理由：兩者均須 W-2 安全規則部署後才有權限，★改了也無法驗證。
--->
+═══════════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -2221,6 +2257,11 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="gap">
       <button class="btn bp" onclick="exportData()">⬇ 匯出完整備份（JSON）</button>
       <label class="btn bs" style="cursor:pointer;">⬆ 匯入備份還原<input type="file" accept=".json" class="hidden" onchange="importData(event)"></label>
+      <div style="margin-top:.6rem;padding:.6rem .8rem;border:2px solid #C0392B;border-radius:.7rem;background:#fff5f5;">
+        <div style="font-weight:900;color:#C0392B;font-size:.88rem;">🛟 資料事故還原：只補空欄位（09/21 事故專用）</div>
+        <div style="font-size:.78rem;color:#555;margin:.25rem 0;">只把【目前是空的】欄位補回，並追加還原檔指定的缺漏筆數（依 id 去重）；雲端現有資料一律不動。執行前會列出清單讓您確認。</div>
+        <label class="btn bp" style="cursor:pointer;">🛟 選擇還原檔<input type="file" accept=".json,.txt" class="hidden" onchange="restoreEmptyFields(this)"></label>
+      </div>
     </div>
     <div style="margin-top:.75rem;border-top:1px solid var(--border2);padding-top:.75rem;">
       <button class="btn bd sm" onclick="if(confirm('⚠️ 確定清除所有資料？此操作無法復原，建議先匯出備份！'))clearAll()">🗑️ 清除所有資料</button>
@@ -2500,7 +2541,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09210142'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09211845'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -2999,10 +3040,17 @@ window.doLogout = async function(){
 // ══ Firebase 資料存取 ════════════════════════
 const loadLandlordData = async () => {
   await initFBAuth();
+  window._cloudLoadOK=false;   // ★09211649 防線二：讀取成功前一律視為「未載入」，禁止存檔
+  window._cloudCounts={};
   try{
     const snap=await window._getDoc(landlordPath());
     if(snap.exists()){
       const d=snap.data();
+      // ★★★09211649 防線一：雲端有什麼就讀回什麼（根治 09/21 事故：本函式漏讀 25 個欄位，
+      //   存檔時整份覆寫把 utilBills、rentRecords、broTransfers…等清空）。下方逐欄寫法保留不刪。
+      Object.keys(d).forEach(function(k){ if(d[k]!==undefined && d[k]!==null) DB[k]=d[k]; });
+      // ★★★09211649 防線三（前半）：記下雲端各欄位原始筆數，存檔時比對
+      Object.keys(d).forEach(function(k){ window._cloudCounts[k]=window._fieldSize(d[k]); });
       if(d.tenants)DB.tenants=d.tenants;
       if(d.bsPaidBack!=null)DB.bsPaidBack=d.bsPaidBack;
       if(d.netSettledMonths)DB.netSettledMonths=d.netSettledMonths;
@@ -3031,16 +3079,28 @@ const loadLandlordData = async () => {
       if(d.billWorkingState!==undefined)DB.billWorkingState=d.billWorkingState;
     }
     ROOMS.forEach(r=>{if(!DB.tenants[r])DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',renewalIntent:'unknown',id:'',note:'',status:'vacant'};});
-  }catch(e){ console.error('loadLandlordData:',e); }
+    window._cloudLoadOK=true;   // ★09211649 防線二：只有走到這裡才算讀取成功
+  }catch(e){
+    console.error('loadLandlordData:',e);
+    window._cloudLoadOK=false;
+    // ★房客讀不到房東資料屬正常，只對房東大聲提示（ＡＭ６０：失敗要送到使用者看得到的地方）
+    if(typeof isLandlordAuth==='function' && isLandlordAuth()){
+      if(window.setCloudStatus) setCloudStatus('fail');
+      toast('⛔ 雲端資料讀取失敗，為保護資料已暫停存檔。請重新整理網頁。');
+    }
+  }
 };
 
+// ★09211649：欄位「筆數」——陣列看長度、物件看鍵數、字串看是否有字；數字與布林一律視為 1（不參與縮水判定）
+window._fieldSize=function(v){ if(v==null) return 0; if(Array.isArray(v)) return v.length;
+  if(typeof v==='object') return Object.keys(v).length; if(typeof v==='string') return v.trim().length?1:0; return 1; };
 const saveLandlordData = async () => {
   // ★08300156 缺陷③：權限改由 Auth 身分判定，不再信任前端變數
   if(!isLandlordAuth()){ toast('⚠️ 無權限儲存'); return; }
   await initFBAuth();
   if(window.setCloudStatus) setCloudStatus('saving');
   try{
-  await window._setDoc(landlordPath(),{
+  const _p={
     tenants:DB.tenants,
     utilBills:DB.utilBills,
     rentRecords:DB.rentRecords,
@@ -3092,7 +3152,25 @@ const saveLandlordData = async () => {
     rentOverdueSent:DB.rentOverdueSent||{}, /* ★09210142 房缺-05：不加這行就存不進雲端，★同房缺-02 之覆轍 */
     rentContracts:DB.rentContracts||[],
     rentPayments:DB.rentPayments||[],
-  });
+  };
+  // ★09211649 防線一補強：雲端讀回、但上方清單沒列的欄位，照原樣帶回，不讓整份覆寫把它刪掉
+  Object.keys(DB).forEach(function(k){ if(!(k in _p) && k.charAt(0)!=='_' && DB[k]!==undefined) _p[k]=DB[k]; });
+  // ★09211649 防線二：雲端尚未成功讀取 → 一律禁止存檔（拋錯，呼叫端不會再顯示假成功）
+  if(window._cloudLoadOK!==true){
+    toast('⛔ 雲端資料尚未成功讀取，為保護資料已禁止存檔。請重新整理網頁後再操作。');
+    throw new Error('存檔已阻止：雲端資料尚未成功讀取');
+  }
+  // ★09211649 防線三（後半）：雲端原本有資料、本次卻是空的 → 攔下並列出欄位
+  const _shr=Object.keys(window._cloudCounts||{}).filter(function(k){
+    return (window._cloudCounts[k]||0)>0 && (k in _p) && window._fieldSize(_p[k])===0; });
+  if(_shr.length && !window._allowShrink){
+    const _ok=confirm('⛔ 存檔前安全檢查\n\n以下欄位雲端原本有資料，這次存檔卻是空的：\n'+_shr.join('、')+
+      '\n\n・如果是您剛剛【刻意刪光】這些欄位的最後一筆 → 按「確定」繼續存檔。'+
+      '\n・如果不是 → 請按「取消」，然後重新整理網頁（資料仍在雲端，不會遺失）。');
+    if(!_ok){ toast('⛔ 已阻止存檔：'+_shr.join('、')); throw new Error('存檔已阻止：'+_shr.join('、')); }
+  }
+  await window._setDoc(landlordPath(),_p);
+  Object.keys(_p).forEach(function(k){ window._cloudCounts[k]=window._fieldSize(_p[k]); });
   }catch(e){ if(window.setCloudStatus) setCloudStatus('fail'); throw e; }
   if(window.setCloudStatus) setCloudStatus('ok');
 };
@@ -5954,8 +6032,9 @@ window.bsMarkSettledNow = async function(){
   });
   (DB.bsCommonCosts||[]).forEach(function(x,i){ if(!x.settled) comIdx.push(i); });
   Object.entries(DB.rentPause||{}).forEach(function([k,p]){ if(p.settledTo && !p.bxSettled) pauseKeys.push(k); });
+  const _rbase=window.settleBase();   // ★09211845：收租紀錄標記範圍改為與 bsAutoFill3、雲端 mark_settled 相同（所有未結算且 ≥ 起算月）
   (DB.rentRecords||[]).forEach(function(rec,i){
-    if(String(rec.period)!==ym || rec.bxSettled) return;
+    if(rec.bxSettled || String(rec.period||'') < _rbase) return;   // ★舊寫法只標當月：8/4 結算含 202607 卻未標，下次會重複計算
     const any=Object.values(rec.payments||{}).some(p=>(+p.amount||0)>0 && p.paid);
     if(any) recIdx.push(i);
   });
@@ -7453,7 +7532,67 @@ window.clearAll = async function(){
   DB.settlements=[]; DB.landlordSettlements=[]; DB.preBills=[]; DB.draftBills=[];
   DB.maintenanceRecords=[]; DB.maintenanceLog=[]; DB.rentContracts=[]; DB.rentPayments=[];
   ROOMS.forEach(r=>{DB.tenants[r]={name:'',phone:'',tenantEmail:'',rent:0,deposit:0,movein:'',expiry:'',renewalIntent:'unknown',id:'',note:'',status:'vacant'};});
-  await saveLandlordData();renderTenants();renderBK();toast('業務資料已清除（設定與稅務紀錄保留）');
+  window._allowShrink=true;   // ★09211649：主帥明確執行清除，才允許欄位變空
+  try{ await saveLandlordData(); }finally{ window._allowShrink=false; }
+  renderTenants();renderBK();toast('業務資料已清除（設定與稅務紀錄保留）');
+};
+
+// ══ ★09211649 資料事故還原：只補空欄位 ═══════════════════
+//  規則：①檔內欄位若雲端目前為空 → 補回；雲端已有資料 → 不動（列入「不動」清單）
+//        ②檔內 _append 區：逐筆追加雲端沒有的項目（物件依 id、字串依值去重）
+//        ③結算單若帶 _billPeriods，於還原當下換算成帳單位置（billIdx），不寫死位置
+//  ★執行前一律列清單確認；★執行後自動重新整理，從雲端重讀驗證。
+window.restoreEmptyFields = async function(inp){
+  const f=inp && inp.files && inp.files[0]; if(!f) return;
+  if(!isOwnerAuth()){ toast('⚠️ 僅限主帥操作'); inp.value=''; return; }
+  if(window._cloudLoadOK!==true){ toast('⛔ 雲端資料尚未成功讀取，請重新整理網頁後再還原'); inp.value=''; return; }
+  const rd=new FileReader();
+  rd.onload=async function(e){
+    try{
+      const d=JSON.parse(e.target.result);
+      const fill=[], skip=[], add=[], plan=[];
+      Object.keys(d).forEach(function(k){
+        if(k.charAt(0)==='_') return;
+        if(window._fieldSize(d[k])===0) return;
+        if(window._fieldSize(DB[k])===0) fill.push(k); else skip.push(k);
+      });
+      const ap=d._append||{};
+      Object.keys(ap).forEach(function(k){
+        const src=ap[k]; if(!Array.isArray(src)) return;
+        const base=(fill.indexOf(k)>=0)?(d[k]||[]):(Array.isArray(DB[k])?DB[k]:[]);
+        const idOf=function(x){ return (x&&typeof x==='object')?String(x.id):String(x); };
+        const has=new Set(base.map(idOf));
+        const items=src.filter(function(x){ return !has.has(idOf(x)); });
+        if(items.length){ plan.push([k,items]); add.push(k+' ＋'+items.length+' 筆'); }
+      });
+      if(!fill.length && !plan.length){ toast('ℹ️ 沒有需要補回的欄位（雲端現有資料一律不動）'); inp.value=''; return; }
+      const msg='🛟 只補空欄位還原\n\n【將補回】（目前是空的）：\n'+(fill.join('、')||'（無）')+
+        '\n\n【將追加】（雲端沒有的筆數）：\n'+(add.join('、')||'（無）')+
+        '\n\n【不動】（雲端已有資料）：\n'+(skip.join('、')||'（無）')+'\n\n確定執行？';
+      if(!confirm(msg)){ inp.value=''; return; }
+      fill.forEach(function(k){ DB[k]=JSON.parse(JSON.stringify(d[k])); });
+      plan.forEach(function(pk){
+        const k=pk[0], items=JSON.parse(JSON.stringify(pk[1]));
+        if(k==='settlements'){
+          items.forEach(function(st){
+            if(Array.isArray(st._billPeriods)){
+              st.billIdx=st._billPeriods.map(function(pd){
+                return (DB.utilBills||[]).findIndex(function(b){ return String(b.period)===String(pd); }); })
+                .filter(function(i){ return i>=0; });
+              st.billIdx.forEach(function(i){ DB.utilBills[i].bxSettled=true; });
+              delete st._billPeriods;
+            }
+          });
+        }
+        DB[k]=(Array.isArray(DB[k])?DB[k]:[]).concat(items);
+      });
+      await saveLandlordData();
+      toast('✅ 還原完成：補回 '+fill.length+' 欄、追加 '+plan.length+' 欄。3 秒後重新整理，從雲端重讀驗證。');
+      setTimeout(function(){ location.reload(); },3000);
+    }catch(err){ toast('❌ 還原失敗：'+(err&&err.message?err.message:err)); }
+    inp.value='';
+  };
+  rd.readAsText(f);
 };
 
 // ══ 自動還原 Session ═══════════════════════
