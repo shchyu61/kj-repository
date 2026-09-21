@@ -1,4 +1,43 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09220137)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：主帥 2026/09/22 01:37 第3點「通知信文不對題」；裁示：通知模板請股票PRO 改共用、房客信結尾維持「收到後 7 天內」
+　① 唯一寄信入口：既有 emailjs.send 包裝層加轉接——驗證碼（__otp）走驗證碼模板；其餘通知在 EJS_TPL_NOTICE 設定後改走共用通知模板（主旨＋保留換行）
+　② 載入即初始化 initEJS，29 處寄信一律經過該入口（原本部分呼叫點未先初始化）
+　③ EJS_TPL_NOTICE 暫為空字串＝沿用舊寫法；股票PRO 回覆 template_notify_buy 改好後只需填入一行
+　④ 「📨 寄給弟」在通知模板生效前，改開啟主帥自己的 Gmail 撰寫視窗（主旨與內文自動帶入），按鈕改名「📨 用我的 Gmail 寄給弟」
+　⑤ 預存月報：分潤改讀本期收租登記本月實收（舊寫法讀已移除的舊月結算紀錄，永遠顯示「暫停收租」）；內文改為分行
+　⑥ 內含 09220107 全部修改（移除舊月結算、選單與收租頁重排、移除空卡片、標題註明用途）
+　　驗證：寄信入口三情境、寄給弟 Gmail 連結解碼比對、預存月報、元素與函式引用前後比對、事故重現 1～7、收租與 9 月結算、四封實寄信　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・按「📨 用我的 Gmail 寄給弟」會開新分頁的 Gmail 撰寫視窗；手機可能跳到 Gmail App（依手機設定）
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09220107)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：主帥 2026/09/22 01:07 第5點授權——房東專區頁面順序與區塊整併（接續 09220048 移除舊月結算）
+　① 房東專區選單依每月作業順序重排：房客管理→收租紀錄→水電帳單→房東課（哥弟結算）→稅務預存→定期維護→退租點交→舊房客→照片→監控→備份
+　② 選單「房東課（月結算）」改名「房東課（哥弟結算）」（月結算為已移除的舊功能）
+　③ 收租紀錄頁卡片重排：入帳紀錄簿（主要輸入處）→本期收租登記（自動同步）→收租歷史→暫停收租→租賃契約；上下方用語同步更正
+　④ 備份設定頁移除空卡片「💾 資料備份與還原」（只有標題、無內容；功能都在「資料匯出 / 匯入」）
+　⑤ 水電帳單頁兩張卡片標題註明用途與關係（哥弟結算資料、填填樂→家人入住日）
+　　驗證：元素與函式引用前後比對、事故重現 1～7、收租與 9 月結算、四封實寄信　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・房東專區下拉選單順序與名稱、收租紀錄頁卡片順序符合上列①～③
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09220048)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：主帥 2026/09/22 00:48 第4點——已停用的「房東課｜每月收支結算」整區移除
+　① 移除舊月結算卡片（結算月份、網路費、新帳單勾選、水電瓦斯欄、本月結算明細、稅務備用金提示、儲存並寄信按鈕）
+　② 移除「📁 歷月結算紀錄」卡片（只顯示舊區塊存的紀錄；雲端與 8/6 備份皆為空）
+　③ 移除水電帳單頁 5 個「📤 傳房東課」按鈕（只送資料到舊區塊）
+　④ 移除函式 toggleNewBill／calcOwner／saveOwnerCalc／sendOneToOwner／sendDraftBillToOwner／renderOwnerHistory／deleteOwnerRecord，及開頁初始化與網路費同步中對舊欄位的引用
+　⑤ 「📧 弟弟 Gmail 通知設定」搬到三桶最上方（雲端通知程式與「📨 寄給弟」都讀這兩個設定，不可刪）
+　⑥ 三桶說明改為「本區是唯一的哥弟結算」，並寫入公式原則「房客已付給哥的水電瓦斯不與弟分攤」（取自舊區塊紅框停用說明）
+　⑦ 資料欄位 landlordSettlements、lastUtilBills 仍照常載入與存檔，★不刪任何資料
+　　驗證：元素與函式引用前後比對、事故重現 1～7、收租與 9 月結算、四封實寄信　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・房東課頁面最上方直接是「🔑 哥弟進階結算（三桶）」，弟弟 Gmail 與通知開關在三桶說明下方
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(09212117)　★依鐵律ＡＭ１７／自檢(14)
 　本輪性質：主帥 2026/09/21 21:17 第5f點授權修網頁（收租紀錄查詢與誤刪疑慮、第5e點用途說明）＋待辦 P1-1、P1-3、P1-4
 　① P1-4 收租歷史「🔍 查詢」與六個快捷鈕無效 → 補 window.renderRentHistory（轉呼叫 module 內函式）
@@ -398,15 +437,15 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </button>
     <div class="dropdown-menu" id="landlord-dropdown-menu">
       <button onclick="ST('tenants');closeLandlordMenu()">🏠 房客管理</button>
-      <button onclick="ST('utility');closeLandlordMenu()">💡 水電帳單</button>
       <button onclick="ST('rent');closeLandlordMenu()">💰 收租紀錄</button>
+      <button onclick="ST('utility');closeLandlordMenu()">💡 水電帳單</button>
+      <button onclick="ST('owner-calc');closeLandlordMenu()">💴 房東課（哥弟結算）</button>
+      <button onclick="ST('taxreserve');closeLandlordMenu()">💰 稅務預存追蹤</button>
+      <button onclick="ST('maintenance');closeLandlordMenu()">🔧 定期維護提醒</button>
       <button onclick="ST('checkout');closeLandlordMenu()">📋 退租點交</button>
       <button onclick="ST('former');closeLandlordMenu()">📁 舊房客存檔</button>
       <button onclick="ST('photos');closeLandlordMenu()">🖼️ 照片存檔</button>
       <button onclick="ST('monitor-cam');closeLandlordMenu()">📷 智慧監控</button>
-      <button onclick="ST('owner-calc');closeLandlordMenu()">💴 房東課（月結算）</button>
-      <button onclick="ST('taxreserve');closeLandlordMenu()">💰 稅務預存追蹤</button>
-      <button onclick="ST('maintenance');closeLandlordMenu()">🔧 定期維護提醒</button>
       <button onclick="ST('backup');closeLandlordMenu()">💾 備份設定</button>
     </div>
   </div>
@@ -508,7 +547,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
       <div><label>💧 水費金額（元）</label>
         <input type="number" id="draft-water" placeholder="如：310" oninput="saveDraft()">
-        <button class="btn bp sm" onclick="sendOneToOwner('water')" style="font-size:.72rem;padding:2px 8px;margin-top:.25rem;">📤 傳房東課</button>
+        
         <label style="font-size:.74rem;color:var(--muted);margin-top:.25rem;display:block;">計費起迄（自動預估，可改）</label>
         <div style="display:flex;gap:.25rem;">
           <input type="date" id="draft-water-start" onchange="saveDraft()" title="計費起日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
@@ -549,7 +588,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
       <div><label>⚡ 電費金額（元）</label>
         <input type="number" id="draft-elec" placeholder="如：2000" oninput="saveDraft()">
-        <button class="btn bp sm" onclick="sendOneToOwner('elec')" style="font-size:.72rem;padding:2px 8px;margin-top:.25rem;">📤 傳房東課</button>
+        
         <label style="font-size:.74rem;color:var(--muted);margin-top:.25rem;display:block;">計費起迄（自動預估，可改）</label>
         <div style="display:flex;gap:.25rem;">
           <input type="date" id="draft-elec-start" onchange="saveDraft()" title="計費起日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
@@ -592,7 +631,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
       <div><label>🔥 瓦斯費金額（元）</label>
         <input type="number" id="draft-gas" placeholder="如：1000" oninput="saveDraft()">
-        <button class="btn bp sm" onclick="sendOneToOwner('gas')" style="font-size:.72rem;padding:2px 8px;margin-top:.25rem;">📤 傳房東課</button>
+        
         <label style="font-size:.74rem;color:var(--muted);margin-top:.25rem;display:block;">計費起迄（自動預估，可改）</label>
         <div style="display:flex;gap:.25rem;">
           <input type="date" id="draft-gas-start" onchange="saveDraft()" title="計費起日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
@@ -633,7 +672,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
       <div><label>🌐 網路費金額（元）</label>
         <input type="number" id="draft-net" placeholder="1409" oninput="saveDraft()">
-        <button class="btn bp sm" onclick="sendOneToOwner('net')" style="font-size:.72rem;padding:2px 8px;margin-top:.25rem;">📤 傳房東課</button>
+        
         <div style="font-size:.78rem;color:var(--muted);margin-top:.3rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;">
           📌 預設 <strong id="default-net-fee-display">1,409</strong>元（每月13日帳單，25日到期，兄弟各半）
           <span style="display:inline-flex;align-items:center;gap:.3rem;margin-top:.15rem;">
@@ -671,7 +710,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div class="card" style="border:1.5px solid #2980b9;background:#f0f7fc;">
     <div class="card-title">📋 已暫存帳單清單（多期、可個別編輯）</div>
     <div class="alert-box a-info" style="font-size:.82rem;">
-      填好各類帳單後按「💾 存入暫存清單」，即可分「類別×月份」永久保存（存雲端）。每筆可個別 ✏️編輯、🗑️刪除、📤傳房東課、📤傳本期帳單。<br>💡 要正式向房客收取：用下方「📥 整期帶入正式帳單」選好期別帶入 → 確認各房電表度數與分攤 → 按計算器的「💾 儲存」即<strong>寫入正式帳單歷史</strong>。
+      填好各類帳單後按「💾 存入暫存清單」，即可分「類別×月份」永久保存（存雲端）。每筆可個別 ✏️編輯、🗑️刪除、📤傳本期帳單。<br>💡 要正式向房客收取：用下方「📥 整期帶入正式帳單」選好期別帶入 → 確認各房電表度數與分攤 → 按計算器的「💾 儲存」即<strong>寫入正式帳單歷史</strong>。
     </div>
     <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;margin-bottom:.5rem;">
       <span style="font-size:.82rem;font-weight:700;">📥 整期寫入正式帳單：</span>
@@ -683,7 +722,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
   <!-- ── 房東回嘉義填填樂（暫存區，純文字輸入）── -->
   <div class="card" style="background:#f5fff0;border:1.5px solid #90d890;">
-    <div class="card-title">🏠 房東回嘉義填填樂（暫存區）</div>
+    <div class="card-title">🏠 房東回嘉義填填樂（帳單還沒來時先記；按「⬆ 帶入帳單計算」→ 帶到下方「房東家人入住日」）</div>
     <div class="alert-box a-info" style="font-size:.85rem;line-height:1.9;">
       <strong>支援格式（以下任一格式均可辨識，可混用）：</strong><br>
       ✅ 空格分隔：<code>5 6 7 8 9</code>（7/5~7/9 共5天，只打日期數字）<br>
@@ -931,7 +970,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <!-- N4~N15 說明欄 -->
     <div id="u-n-summary" style="margin-top:.85rem;"></div>
     <div class="card" id="bs-key-card" style="border:3px solid var(--danger);background:#fffaf5;margin-top:.6rem;box-shadow:0 0 0 4px rgba(192,57,43,.08);">
-      <div class="card-title" style="font-size:1rem;color:var(--danger);">🔑 哥弟結算用（★必填，本期，房客看不到）</div>
+      <div class="card-title" style="font-size:1rem;color:var(--danger);">🔑 本期帳單由誰付＋1樓公共電費（★必填；會自動帶入「房東課（哥弟結算）」；房客看不到）</div>
       <div class="alert-box a-warn" style="font-size:.82rem;">
         <b>★ 這一區沒填，「哥弟進階結算」就會算錯！</b><br>
         1 樓大廳電費（電號…14-5）只有哥弟各半、<b>房客完全不分攤</b>，一定要填在這裡。<br>
@@ -1054,78 +1093,11 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 </div>
 
 <div id="page-rent" class="page">
-  <!-- 暫停收租設定 -->
-  <div class="card landlord-only" id="rent-pause-card">
-    <div class="card-title">⏸️ 暫停收租設定（沿用至指定期別）</div>
-    <div class="alert-box a-warn" style="font-size:.85rem;">
-      設定後，指定期別內該房間自動帶入「應收0、實收0」，備註自動沿用暫停原因。<br>
-      到期後自動恢復正常收租。
-    </div>
-    <div id="rent-pause-list"><div class="txt-m">讀取中...</div></div>
-    <button class="btn ba sm mt" onclick="openRentPauseModal()">＋ 新增暫停收租</button>
-  </div>
-
-
-  <!-- ===== 房租-3：租賃契約管理（08051435 新增） ===== -->
-  <div class="card mt landlord-only" id="rent-contract-card">
-    <div class="card-title">📜 租賃契約管理（多本契約・自動處理重疊期）</div>
-    <div class="alert-box a-warn" style="font-size:.85rem;">
-      每簽一本（含續約）就登記一筆。系統會<b>自動依起日排序</b>，
-      若下一本的起日落在上一本期間內（例如死亡當日重簽），
-      <b>上一本會自動截止於下一本起日的前一天</b>，避免同一段期間被重複計算。<br>
-      ★<b>到期日一律以實際契約為準</b>，系統<b>不會</b>用「起日＋12個月」自動推算。<br>
-      ★半價期、不同月租的契約，請各自填「該期月租」，歷史統計才會正確。
-    </div>
-    <div class="form-row c2">
-      <div><label>房間</label><select id="rc-room"></select></div>
-      <div><label>契約本別（顏色／版本）</label>
-        <select id="rc-color">
-          <option value="yellow">📒 7-11版（黃）</option>
-          <option value="red">📕 書局版（紅）</option>
-          <option value="other">📄 其他／自訂</option>
-        </select></div>
-    </div>
-    <div class="form-row c2">
-      <div><label>契約起日 <span style="font-size:.72rem;color:var(--muted);">（不可考則留空並勾下方）</span></label>
-        <input type="date" id="rc-start"></div>
-      <div><label>契約訖日（實際契約上的到期日）</label><input type="date" id="rc-end"></div>
-    </div>
-    <div class="form-row c2">
-      <div><label>該期月租（元）</label><input type="number" id="rc-rent" placeholder="如 4500；半價期填實收金額"></div>
-      <div style="display:flex;align-items:flex-end;">
-        <label style="font-size:.85rem;display:flex;align-items:center;gap:.4rem;">
-          <input type="checkbox" id="rc-unknown"> 起日不可考（舊契約已不可考）</label>
-      </div>
-    </div>
-    <div><label>備註（選填）</label><input type="text" id="rc-note" placeholder="如 前2個月沒住只收半價／自媽媽離世當日起重簽"></div>
-    <div class="gap mt">
-      <button class="btn ba" onclick="rcSave()">＋ 新增／更新契約</button>
-      <button class="btn bd sm" onclick="rcClear()">清空表單</button>
-    </div>
-    <div id="rc-list" class="mt"><div class="txt-m">讀取中...</div></div>
-  </div>
-
-  <div class="card mt">
-    <div class="card-title">💰 本期收租登記</div>
-    <div class="alert-box a-info" style="font-size:.85rem;">★<b>用途</b>：登記每一期（月）各房間房租有沒有收齊，<b>一期一筆</b>；同一期再按儲存會覆蓋。<br>★<b>會計入【哥弟結算】</b>的自動套入與雲端結算通知信（給弟的錢從這裡算）。<br>★在下方「💵 房客租金入帳紀錄簿」新增入帳時，<b>會自動同步到這裡</b>，不必再輸入一次；已與弟結算過的期別會先詢問，避免重複計算。</div>
-    <div class="form-row">
-      <div><label>年月期別（如 202503）</label><input type="text" id="r-period" placeholder="202503"></div>
-    </div>
-    <div class="txt-m mb">💡 每間房間各自有備註欄，可記錄特殊情況（如：因故暫不收租、分期補繳等）</div>
-    <div id="rent-rows"></div>
-    <div class="gap mt">
-      <button class="btn bs" style="flex:1;" onclick="saveRent(true)">💾 儲存收租紀錄</button>
-    </div>
-    <div style="margin-top:.6rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
-      <button id="rent-notify-toggle" class="btn bd sm" onclick="toggleNotifyTenant()" style="min-width:210px;">🔕 目前：暫不寄收訖給房客（關）</button>
-      <span style="font-size:.72rem;color:var(--muted);">開啟後，儲存收租時自動寄「收訖通知」給已全額繳清、非緩收且有填 Email 的房客；預設關閉以免打擾。</span>
-    </div>
-  </div>
   <!-- ===== 房租-1＋房租-2：房租入帳紀錄簿（08051435 新增） ===== -->
   <div class="card landlord-only" id="rent-pay-card">
     <div class="card-title">💵 房客租金入帳紀錄簿（實際收到錢就記這裡）</div>
     <div class="alert-box a-info" style="font-size:.85rem;">
-      ★<b>用途</b>：流水帳，每收到一筆錢記一筆（哪天進帳、屬於哪一期）。<b>新增或修改會自動同步到上方「💰 本期收租登記」</b>（因此會計入哥弟結算）；在這裡刪除<b>不會</b>刪除本期收租登記。<br>
+      ★<b>收到房租就記這裡（主要輸入處）</b>：流水帳，每收到一筆錢記一筆（哪天進帳、屬於哪一期）。<b>新增或修改會自動同步到下方「💰 本期收租登記」</b>（因此會計入哥弟結算）；在這裡刪除<b>不會</b>刪除本期收租登記。<br>
       ★<b>「入帳日」與「所屬租期」是兩件事，必須分開記。</b>
       台灣房租是<b>先付款後享受</b>，房客常提前幾天付款。<br>
       例：8/5 收到 4,500 元，<b>入帳日＝8/5</b>，但<b>所屬租期＝8/8～9/7</b>。
@@ -1177,6 +1149,23 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
   </div>
 
+  <div class="card mt">
+    <div class="card-title">💰 本期收租登記</div>
+    <div class="alert-box a-info" style="font-size:.85rem;">★<b>用途</b>：登記每一期（月）各房間房租有沒有收齊，<b>一期一筆</b>；同一期再按儲存會覆蓋。<br>★<b>會計入【哥弟結算】</b>的自動套入與雲端結算通知信（給弟的錢從這裡算）。<br>★<b>通常不必手動輸入</b>：在上方「💵 房客租金入帳紀錄簿」新增入帳時，<b>會自動同步到這裡</b>；已與弟結算過的期別會先詢問，避免重複計算。</div>
+    <div class="form-row">
+      <div><label>年月期別（如 202503）</label><input type="text" id="r-period" placeholder="202503"></div>
+    </div>
+    <div class="txt-m mb">💡 每間房間各自有備註欄，可記錄特殊情況（如：因故暫不收租、分期補繳等）</div>
+    <div id="rent-rows"></div>
+    <div class="gap mt">
+      <button class="btn bs" style="flex:1;" onclick="saveRent(true)">💾 儲存收租紀錄</button>
+    </div>
+    <div style="margin-top:.6rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+      <button id="rent-notify-toggle" class="btn bd sm" onclick="toggleNotifyTenant()" style="min-width:210px;">🔕 目前：暫不寄收訖給房客（關）</button>
+      <span style="font-size:.72rem;color:var(--muted);">開啟後，儲存收租時自動寄「收訖通知」給已全額繳清、非緩收且有填 Email 的房客；預設關閉以免打擾。</span>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-title">📋 收租歷史</div>
     <div class="txt-m mb">★顯示「💰 本期收租登記」與「併收結清」的資料；日期篩選依收款日。<b>被篩選隱藏的紀錄沒有刪除</b>，按「全部」即可顯示。</div>
@@ -1196,6 +1185,56 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
     </div>
     <div id="rent-history"></div>
+  </div>
+  <!-- 暫停收租設定 -->
+  <div class="card landlord-only" id="rent-pause-card">
+    <div class="card-title">⏸️ 暫停收租設定（沿用至指定期別）</div>
+    <div class="alert-box a-warn" style="font-size:.85rem;">
+      設定後，指定期別內該房間自動帶入「應收0、實收0」，備註自動沿用暫停原因。<br>
+      到期後自動恢復正常收租。
+    </div>
+    <div id="rent-pause-list"><div class="txt-m">讀取中...</div></div>
+    <button class="btn ba sm mt" onclick="openRentPauseModal()">＋ 新增暫停收租</button>
+  </div>
+
+
+  <!-- ===== 房租-3：租賃契約管理（08051435 新增） ===== -->
+  <div class="card mt landlord-only" id="rent-contract-card">
+    <div class="card-title">📜 租賃契約管理（多本契約・自動處理重疊期）</div>
+    <div class="alert-box a-warn" style="font-size:.85rem;">
+      每簽一本（含續約）就登記一筆。系統會<b>自動依起日排序</b>，
+      若下一本的起日落在上一本期間內（例如死亡當日重簽），
+      <b>上一本會自動截止於下一本起日的前一天</b>，避免同一段期間被重複計算。<br>
+      ★<b>到期日一律以實際契約為準</b>，系統<b>不會</b>用「起日＋12個月」自動推算。<br>
+      ★半價期、不同月租的契約，請各自填「該期月租」，歷史統計才會正確。
+    </div>
+    <div class="form-row c2">
+      <div><label>房間</label><select id="rc-room"></select></div>
+      <div><label>契約本別（顏色／版本）</label>
+        <select id="rc-color">
+          <option value="yellow">📒 7-11版（黃）</option>
+          <option value="red">📕 書局版（紅）</option>
+          <option value="other">📄 其他／自訂</option>
+        </select></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>契約起日 <span style="font-size:.72rem;color:var(--muted);">（不可考則留空並勾下方）</span></label>
+        <input type="date" id="rc-start"></div>
+      <div><label>契約訖日（實際契約上的到期日）</label><input type="date" id="rc-end"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>該期月租（元）</label><input type="number" id="rc-rent" placeholder="如 4500；半價期填實收金額"></div>
+      <div style="display:flex;align-items:flex-end;">
+        <label style="font-size:.85rem;display:flex;align-items:center;gap:.4rem;">
+          <input type="checkbox" id="rc-unknown"> 起日不可考（舊契約已不可考）</label>
+      </div>
+    </div>
+    <div><label>備註（選填）</label><input type="text" id="rc-note" placeholder="如 前2個月沒住只收半價／自媽媽離世當日起重簽"></div>
+    <div class="gap mt">
+      <button class="btn ba" onclick="rcSave()">＋ 新增／更新契約</button>
+      <button class="btn bd sm" onclick="rcClear()">清空表單</button>
+    </div>
+    <div id="rc-list" class="mt"><div class="txt-m">讀取中...</div></div>
   </div>
 </div>
 
@@ -1890,83 +1929,14 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 </div>
 <!-- ══ 房東課：每月結算 ══ -->
 <div id="page-owner-calc" class="page">
-  <div class="card mt">
-    <div class="card-title">💴 房東課｜每月收支結算　<span style="font-size:.8rem;color:#C0392B;">（已停用）</span></div>
-    <!-- ★08230218 停用：本區公式錯誤，會把【房客已付的水電瓦斯】也拿來與弟對分。
-         實測 202608：本區算出「哥轉弟 2,143」，正確應為 3,098（差 955 元）。
-         主帥 2026/08/23 裁示「不保留兩套」，故本區計算與寄信一律停用，
-         改用下方【🔑 哥弟進階結算（三桶）】，該區公式正確且已有自動帶入。 -->
-    <div class="alert-box a-warn" style="font-size:.88rem;border:2px solid #C0392B;">
-      <b style="color:#C0392B;font-size:1.05em;">⛔ 本區已停用，請勿使用</b><br><br>
-      <b>停用原因：</b>本區的公式會把【房客已經付掉的水電瓦斯】也拿來和弟弟對分，
-      但那些錢房客已經付給你了，弟弟不該再分攤。<br>
-      實測 202608 期：本區算出「哥轉弟 <b>2,143</b>」，
-      正確金額應為 <b>3,098</b>，<b style="color:#C0392B;">少給弟弟 955 元</b>。<br><br>
-      <b>★請改用本頁下方的【🔑 哥弟進階結算（三桶：房租／水電／網路）】</b><br>
-      那一區的公式正確，而且<b>已經有「自動帶入」按鈕</b>，
-      不需要你一筆一筆輸入水費、電費、瓦斯費。
-      <div class="gap mt">
-        <button class="btn bs" onclick="document.getElementById('bs-rent')?.scrollIntoView({behavior:'smooth',block:'center'});">
-          ⬇ 跳到「哥弟進階結算（三桶）」</button>
-      </div>
+  <!-- ══ 哥弟三桶進階結算 ══ -->
+  <div class="card mt" style="border:2px solid var(--accent);">
+    <div class="card-title">🔑 哥弟進階結算（三桶：房租／水電／網路）</div>
+    <div class="alert-box a-info" style="font-size:.82rem;">
+      ★<b>本區是唯一的哥弟結算</b>（舊的「房東課｜每月收支結算」已移除）。按「🔄 從帳單／收租自動套入」即可帶入所有數字，再產生給弟的 Gmail 明細。<br>
+      ★公式原則：<b>房客已經付給哥的水電瓦斯，不與弟分攤</b>；只計算弟代墊的水電瓦斯、房東贊助零頭與公共電費。各項奇數一律哥多 1 元（兄長多出）。
     </div>
-    <div class="form-row c2">
-      <div><label>結算月份（如 202604）</label>
-        <input type="text" id="oc-period" placeholder="YYYYMM" oninput="calcOwner()"></div>
-      <div><label>🌐 網路費（元，每月）</label>
-        <input type="number" id="oc-net" placeholder="1409" oninput="calcOwner()"></div>
-    </div>
-
-    <!-- 水電瓦斯：偶數月有新帳單 -->
-    <div class="form-row" style="margin-bottom:.3rem;">
-      <div>
-        <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:700;">
-          <input type="checkbox" id="oc-new-bill" onchange="toggleNewBill();calcOwner()" style="width:16px;height:16px;accent-color:var(--accent);">
-          本月收到水電瓦斯新帳單（偶數月：2、4、6、8、10、12月）
-        </label>
-      </div>
-    </div>
-    <div id="oc-new-bill-section" style="display:none;">
-      <div class="form-row c3">
-        <div><label>💧 水費帳單（元）</label>
-          <input type="number" id="oc-water" placeholder="如 500" oninput="calcOwner()"></div>
-        <div><label>⚡ 電費帳單（元）</label>
-          <input type="number" id="oc-elec" placeholder="如 2000" oninput="calcOwner()"></div>
-        <div><label>🔥 瓦斯費帳單（元）</label>
-          <input type="number" id="oc-gas" placeholder="如 1000" oninput="calcOwner()"></div>
-      </div>
-    </div>
-    <div id="oc-last-bill-info" class="alert-box a-info" style="font-size:.82rem;display:none;">
-      📋 使用上期帳單：水費 <strong id="oc-last-water">—</strong> 元 ／ 電費 <strong id="oc-last-elec">—</strong> 元 ／ 瓦斯 <strong id="oc-last-gas">—</strong> 元
-    </div>
-
-    <!-- 計算結果 -->
-    <div id="oc-result" class="card" style="margin-top:.75rem;display:none;background:#fffdf0;border:2px solid var(--gold);">
-      <div class="card-title">📊 本月結算明細</div>
-      <div id="oc-detail"></div>
-      <div style="margin-top:.75rem;padding-top:.6rem;border-top:2px solid var(--border2);">
-        <div style="font-size:.95rem;font-weight:900;color:var(--primary);margin-bottom:.4rem;">
-          我（哥哥）應得：<span id="oc-my-share" style="color:var(--danger);font-size:1.1rem;"></span> 元<br>
-          弟弟應得：<span id="oc-brother-share" style="color:var(--danger);font-size:1.1rem;"></span> 元
-          <div id="oc-odd-note" style="display:none;font-size:.78rem;color:var(--muted);font-weight:400;margin-top:.2rem;">（淨收入為奇數，差1元由哥哥多承擔）</div>
-          <span id="oc-per-person" style="display:none;"></span>
-        </div>
-        <div class="alert-box a-warn" style="font-size:.88rem;">
-          📧 點「儲存並通知」後，系統將寄 Gmail 提醒您本月須轉帳給您弟。
-        </div>
-      </div>
-    </div>
-
-    <!-- 稅務每月預留提示 -->
-    <div class="alert-box a-warn" style="font-size:.83rem;margin-top:.6rem;">
-      📋 <strong>每月另需預留稅務備用金：</strong>
-      房屋稅 4292÷2÷12＝<strong>179元</strong>／月　地價稅 500÷2÷12≈<strong>21元</strong>／月　共約 <strong>200元</strong>／月
-    </div>
-    <div class="gap mt">
-      <div style="font-size:.78rem;color:var(--muted);">💡 各項費用請至「💡 水電帳單」頁的暫存區，點「📤 傳送到房東課」帶入（不再自動抓舊帳單）。</div>
-    </div>
-    <div id="oc-bill-source" style="font-size:.78rem;color:var(--success);margin-top:.3rem;"></div>
-    <!-- 弟弟 Gmail 通知設定（點1）-->
+    <!-- 弟弟 Gmail 通知設定（★09220048 由已移除的舊月結算區搬入；雲端通知程式與「📨 寄給弟」都讀這兩個設定）-->
     <div class="card mt" style="background:#f0f8ff;border:1px solid #90c0e8;">
       <div style="font-size:.85rem;font-weight:700;margin-bottom:.4rem;">📧 弟弟 Gmail 通知設定</div>
       <div class="form-row">
@@ -1977,18 +1947,6 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         <button id="oc-notify-toggle" class="btn bd sm" onclick="toggleBrotherNotify()" style="min-width:160px;">🔕 目前：不通知弟弟</button>
         <span style="font-size:.76rem;color:var(--muted);">預設不通知；切到「通知」後固定保存，下次登入仍維持上次狀態。</span>
       </div>
-    </div>
-    <div class="gap mt">
-      <button class="btn bs" onclick="saveOwnerCalc(true)">💾 儲存並寄 Gmail 通知</button>
-      <button class="btn bo" onclick="saveOwnerCalc(false)">💾 只儲存（不寄信）</button>
-    </div>
-  </div>
-
-  <!-- ══ 哥弟三桶進階結算 ══ -->
-  <div class="card mt" style="border:2px solid var(--accent);">
-    <div class="card-title">🔑 哥弟進階結算（三桶：房租／水電／網路）</div>
-    <div class="alert-box a-info" style="font-size:.82rem;">
-      特殊情況用（例如某期水電由弟先代墊）。輸入實際數字，系統自動算「哥應轉弟」淨額並產生給弟的 Gmail 明細。各項奇數一律哥多 1 元（兄長多出）。
     </div>
     <div class="form-row c2">
       <div><label>① 本期房租收入（要分配，元）<span style="color:var(--gold);font-weight:700;">（AI建議各房合併 1 筆計算）</span></label><input type="number" id="bs-rent" placeholder="如 22500" oninput="calcBroSettle()"></div>
@@ -2108,11 +2066,6 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
   </div>
 
-  <!-- 歷史紀錄 -->
-  <div class="card">
-    <div class="card-title">📁 歷月結算紀錄</div>
-    <div id="oc-history"><div class="txt-m">讀取中...</div></div>
-  </div>
 </div>
 
 <!-- ══ 房東：定期維護提醒 ══ -->
@@ -2222,9 +2175,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 
 <!-- ══ 房東：備份 ══ -->
 <div id="page-backup" class="page">
-  <div class="card mt">
-    <div class="card-title">💾 資料備份與還原</div>
-  </div>
+  
   <div class="card">
     <div class="card-title">🤖 AI 知識庫（房東專用）</div>
     <div class="alert-box a-info" style="font-size:.85rem;">每則知識分類儲存，帶有時間戳記。AI 問答時會自動整合所有分類內容。留空分類則不使用。</div>
@@ -2489,6 +2440,14 @@ const EJS_SVC  = 'service_q711s3u';  // ★08300718：舊 service_knhvcfj 的 Gm
                                      // ★股票PRO 早於 v06090756 換掉，房租版未同步，
                                      // ★★導致本專案【所有】對外寄信靜默失敗約 3 個月
 const EJS_TPL  = 'template_oqm4kw9';
+// ★09220137：通用通知模板（主帥 2026/09/22 裁示：請股票PRO 把 template_notify_buy 改為共用通知模板，變數 {{to_email}}／{{subject}}／{{message}}）
+//   ★股票PRO 回覆已改好後，把下一行填入 'template_notify_buy' 即全面生效；空字串＝沿用舊寫法（借用驗證碼模板）
+const EJS_TPL_NOTICE = '';
+window._noticeSubject = function(msg){
+  let s=String(msg||'').split('\n').map(function(x){ return x.trim(); }).filter(Boolean)[0]||'通知';
+  s=s.replace(/^主旨[:：]\s*/,''); if(s.length>40) s=s.slice(0,40)+'…';
+  return '科蓁房租｜'+s;
+};
 const EJS_KEY  = '5dk4HoCBYIS7ypwiw';
 
 // ── 【1-2】房間設定 ────────────────────────────────────────────
@@ -2558,7 +2517,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09212117'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09220137'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -2647,8 +2606,15 @@ function initEJS(){
     if(!_ejsPatched && typeof emailjs.send === 'function'){
       const _rawSend = emailjs.send.bind(emailjs);
       emailjs.send = async function(svc, tpl, params, ...rest){
+        // ★09220137：唯一寄信入口——驗證碼（__otp）走驗證碼模板；其餘通知在 EJS_TPL_NOTICE 設定後改走共用通知模板（有主旨、保留換行）
+        let _tpl=tpl, _p=params;
+        if(params && params.__otp){ _p=Object.assign({},params); delete _p.__otp; }
+        else if(EJS_TPL_NOTICE && params && String(tpl)===EJS_TPL){
+          const _msg=String(params.otp||params.message||'');
+          _tpl=EJS_TPL_NOTICE; _p={to_email:params.to_email, subject:window._noticeSubject(_msg), message:_msg};
+        }
         try{
-          return await _rawSend(svc, tpl, params, ...rest);
+          return await _rawSend(svc, _tpl, _p, ...rest);
         }catch(e){
           _mailFail(params, e);
           throw e;              // ★原樣往外丟，★呼叫端既有 catch 行為完全不變
@@ -2659,6 +2625,7 @@ function initEJS(){
     _ejsOk=true;
   }catch(e){ console.error('initEJS 失敗:', e); }
 }
+try{ if(typeof emailjs!=='undefined') initEJS(); }catch(e){ console.error(e); }   // ★09220137：載入即初始化，29 處寄信一律經過上方唯一入口
 
 // ══ 登入紀錄寫入 Firebase ════════════════════════════
 
@@ -2800,7 +2767,7 @@ window.sendOTP = async function(){
   _otp=String(Math.floor(100000+Math.random()*900000));
   _otpExp=now+5*60*1000; _otpMail=email; _otpLast=now; _otpFail=0;
   try{
-    await emailjs.send(EJS_SVC,EJS_TPL,{to_email:email,otp:_otp});
+    await emailjs.send(EJS_SVC,EJS_TPL,{to_email:email,otp:_otp,__otp:true});
     stored.c++; sessionStorage.setItem(key,JSON.stringify(stored));
     document.getElementById('otp-step1').style.display='none';
     document.getElementById('otp-step2').style.display='block';
@@ -3277,7 +3244,7 @@ window.renderDraftBills = function(){
       <div style="font-weight:700;">${m.icon} ${m.label}　📅${b.period||b.month||'—'}　$${(+b.amount||0).toLocaleString()}</div>
       <div style="font-size:.8rem;color:var(--muted);">${det.join('　')}</div>
       <div class="gap" style="margin-top:.4rem;">
-        <button class="btn bp sm" onclick="sendDraftBillToOwner('${b.id}')">📤 傳房東課</button>
+        
         ${netNote}
         <button class="btn ba sm" onclick="editDraftBill('${b.id}')">✏️ 編輯</button>
         <button class="btn bd sm" onclick="deleteDraftBill('${b.id}')">🗑️ 刪除</button>
@@ -3306,17 +3273,6 @@ window.deleteDraftBill = async function(id){
   await saveLandlordData();
   renderDraftBills();
   toast('已刪除');
-};
-window.sendDraftBillToOwner = function(id){
-  const b=(DB.draftBills||[]).find(x=>x.id===id); if(!b) return;
-  if(window.ST) ST('owner-calc');
-  setTimeout(function(){
-    const ck=document.getElementById('oc-new-bill'); if(ck){ck.checked=true; if(window.toggleNewBill)toggleNewBill();}
-    const oc=document.getElementById('oc-'+b.kind); if(oc) oc.value=b.amount;
-    const ocp=document.getElementById('oc-period'); if(ocp && b.period) ocp.value=b.period;
-    if(window.calcOwner) calcOwner();
-    toast('✅ 已將 '+(DRAFTBILL_META[b.kind]?.label||b.kind)+' $'+b.amount+' 傳到房東課');
-  },120);
 };
 window.sendDraftBillToCurrent = function(id){
   const b=(DB.draftBills||[]).find(x=>x.id===id); if(!b) return;
@@ -3450,13 +3406,17 @@ window.reserveReportText=function(who){
   const items=reserveMonthly();
   const ov=(DB.reserveProfile&&DB.reserveProfile[who])||{};
   const valOf=it=>((ov[it.key]!=null)?+ov[it.key]:it.half)||0;
-  const lines=items.map(it=>it.name+' '+valOf(it));
   const total=items.reduce((sm,it)=>sm+valOf(it),0);
-  const sx=(DB.landlordSettlements||[])[0];
-  const inc=sx?(who==='me'?(+sx.myShare||0):(+sx.brotherShare||0)):0;
-  const d=new Date(); const ymStr=d.getFullYear()+'年'+(d.getMonth()+1)+'月';
+  const d=new Date(); const ym=''+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0'); const ymStr=d.getFullYear()+'年'+(d.getMonth()+1)+'月';
+  // ★09220137：分潤改讀「本期收租登記」本月實收；舊寫法讀已移除的舊月結算紀錄（永遠為空），所以永遠顯示「暫停收租」
+  const rec=(DB.rentRecords||[]).find(r=>String(r.period)===ym);
+  const rent=rec?ROOMS.reduce((s,r)=>s+(+((rec.payments||{})[r]||{}).paid||0),0):0;
+  const bro=Math.floor(rent/2), me=rent-bro;   // ★與三桶 rentBro 同一分法
+  const inc=(who==='me')?me:bro;
   const title=(who==='me')?'【我（哥）】':'【弟弟（AI 建議）】';
-  return title+ymStr+' 月度預存：'+lines.join('、')+' ＝ 每月預留 '+total+' 元。'+(inc?('本月分潤 '+inc+' − 預留 '+total+' = 本月實得 '+(inc-total)+' 元'):'（目前暫停收租、暫無分潤資料）');
+  return title+ymStr+' 月度預存報告\n\n'+items.map(it=>'・'+it.name+' '+valOf(it)+' 元').join('\n')+'\n＝ 每月預留 '+total+' 元\n\n'
+    +(rent?('本月房租實收 '+rent.toLocaleString()+' 元（本期收租登記 '+ym+' 期），你的一半 '+inc.toLocaleString()+' 元 － 預留 '+total+' 元 ＝ 本月實得 '+(inc-total).toLocaleString()+' 元')
+          :('本月（'+ym+' 期）尚未登記收租；登記後按「📧 立即寄本月月報＋登記預存」即可算出本月實得'));
 };
 window.sendReserveReport=async function(manual){
   const d=new Date(); const key=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0');
@@ -3599,7 +3559,7 @@ window.ST = function(n){
   if(n==='rent'){ initRent(); try{ if(window.rcRender)rcRender(); if(window.rpRender)rpRender(); }catch(e){ console.error(e); } }
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
-  if(n==='owner-calc'){renderOwnerHistory(); if(window.updateBrotherToggleUI)updateBrotherToggleUI(); const _on=document.getElementById('oc-net'); if(_on&&!_on.value){_on.value=DB.defaultNetFee||1409; calcOwner();} if(window.updateOddOwnerUI)updateOddOwnerUI(); if(window.bsRenderCommon)bsRenderCommon(); if(window.bsRenderSettlements)bsRenderSettlements(); if(window.btRender)btRender(); const _bp=document.getElementById('bs-paid'); if(_bp&&!_bp.value&&(+DB.bsPaidBack||0)) _bp.value=+DB.bsPaidBack;
+  if(n==='owner-calc'){if(window.updateBrotherToggleUI)updateBrotherToggleUI(); if(window.updateOddOwnerUI)updateOddOwnerUI(); if(window.bsRenderCommon)bsRenderCommon(); if(window.bsRenderSettlements)bsRenderSettlements(); if(window.btRender)btRender(); const _bp=document.getElementById('bs-paid'); if(_bp&&!_bp.value&&(+DB.bsPaidBack||0)) _bp.value=+DB.bsPaidBack;
     if(window.backfillBillNums) backfillBillNums(true);
     const _br=document.getElementById('bs-rent'); if(window.bsAutoFill3&&_br&&!_br.value){ bsAutoFill3(true); } else if(window.calcBroSettle){calcBroSettle();}}
   if(n==='maintenance'){renderMaintenanceHistory();loadMaintenanceState();renderMaintenanceLog(); checkMaintenanceDue();}
@@ -5657,159 +5617,7 @@ function _renderLoginLogUI(filter, log){
     </div>`;
   }).join('');
 };
-// ============================================================
-// 【22. 房東課：每月收支結算】
-// ============================================================
-window.toggleNewBill = function(){
-  const hasNew = document.getElementById('oc-new-bill')?.checked;
-  const newSec = document.getElementById('oc-new-bill-section');
-  const lastInfo = document.getElementById('oc-last-bill-info');
-  if(newSec) newSec.style.display = hasNew ? 'block' : 'none';
-  if(lastInfo) lastInfo.style.display = hasNew ? 'none' : 'block';
-  // 顯示上期帳單金額
-  if(!hasNew){
-    const lb = DB.lastUtilBills||{};
-    const lw=document.getElementById('oc-last-water');
-    const le=document.getElementById('oc-last-elec');
-    const lg=document.getElementById('oc-last-gas');
-    if(lw) lw.textContent=lb.water||'（尚無記錄）';
-    if(le) le.textContent=lb.elec||'（尚無記錄）';
-    if(lg) lg.textContent=lb.gas||'（尚無記錄）';
-  }
-};
-
-window.calcOwner = function(){
-  const period = document.getElementById('oc-period')?.value.trim();
-  const netFee = +document.getElementById('oc-net')?.value||0;
-  const hasNew = document.getElementById('oc-new-bill')?.checked;
-  const lb = DB.lastUtilBills||{};
-
-  // 本期帳單（有新帳單用新的，沒有用上期）
-  const water = hasNew ? +document.getElementById('oc-water')?.value||0 : lb.water||0;
-  const elec  = hasNew ? +document.getElementById('oc-elec')?.value||0  : lb.elec||0;
-  const gas   = hasNew ? +document.getElementById('oc-gas')?.value||0   : lb.gas||0;
-
-  // 租金合計（從DB.tenants讀取有租客的房間）
-  let totalRent=0;
-  const rentDetail=[];
-  ROOMS.forEach(r=>{
-    const t=DB.tenants[r]||{};
-    if(t.status==='occupied' && t.rent){
-      totalRent += +t.rent;
-      rentDetail.push(`${RL[r]}（${t.name||'—'}）$${(+t.rent).toLocaleString()}`);
-    }
-  });
-
-  // 支出（各帳單取一半）
-  const halfWater = Math.round(water/2);
-  const halfElec  = Math.round(elec/2);
-  const halfGas   = Math.round(gas/2);
-  const totalDed  = halfWater + halfElec + halfGas + netFee;
-  const net       = totalRent - totalDed;
-  // 奇數金額拆半規則：弟弟取ceil（多拿1元），哥哥取floor（少拿1元，差1元由哥哥承擔）
-  const brotherShare = Math.ceil(net/2);
-  const myShare      = net - brotherShare;
-
-  // 顯示結果
-  const resultDiv = document.getElementById('oc-result');
-  const detailDiv = document.getElementById('oc-detail');
-  const perEl     = document.getElementById('oc-per-person');
-  if(!resultDiv||!detailDiv||!perEl) return;
-
-  if(totalRent===0 && netFee===0){ resultDiv.style.display='none'; return; }
-
-  detailDiv.innerHTML=`
-    <div style="font-size:.88rem;line-height:2;padding:.3rem 0;">
-      <div style="font-weight:700;color:var(--muted);margin-bottom:.25rem;">💰 租金收入</div>
-      ${rentDetail.map(r=>`<div>　${r}</div>`).join('')}
-      <div style="font-weight:900;border-top:1px solid var(--border2);margin:.2rem 0;padding-top:.2rem;">
-        租金合計：$${totalRent.toLocaleString()}</div>
-      <div style="font-weight:700;color:var(--muted);margin-top:.5rem;margin-bottom:.25rem;">🧾 支出扣除</div>
-      <div>　水費帳單一半：$${halfWater.toLocaleString()} （帳單$${water.toLocaleString()}）</div>
-      <div>　電費帳單一半：$${halfElec.toLocaleString()} （帳單$${elec.toLocaleString()}）</div>
-      <div>　瓦斯費帳單一半：$${halfGas.toLocaleString()} （帳單$${gas.toLocaleString()}）</div>
-      <div>　網路費：$${netFee.toLocaleString()}</div>
-      <div style="font-weight:900;border-top:1px solid var(--border2);margin:.2rem 0;padding-top:.2rem;">
-        支出合計：$${totalDed.toLocaleString()}</div>
-      <div style="font-weight:900;margin-top:.4rem;font-size:.95rem;">
-        淨收入：$${totalRent.toLocaleString()} - $${totalDed.toLocaleString()} = $${net.toLocaleString()}</div>
-    </div>`;
-  const myShareEl      = document.getElementById('oc-my-share');
-  const brotherShareEl = document.getElementById('oc-brother-share');
-  const oddNoteEl      = document.getElementById('oc-odd-note');
-  if(myShareEl)      myShareEl.textContent      = myShare.toLocaleString();
-  if(brotherShareEl) brotherShareEl.textContent = brotherShare.toLocaleString();
-  if(oddNoteEl)      oddNoteEl.style.display    = (net%2!==0)?'block':'none';
-  if(perEl)          perEl.textContent          = myShare.toLocaleString(); // 相容性保留
-  resultDiv.style.display='block';
-
-  // 暫存計算結果給儲存使用
-  window._ownerCalcResult = {period, totalRent, water, elec, gas, netFee,
-    halfWater, halfElec, halfGas, totalDed, net, perPerson:myShare, myShare, brotherShare, hasNew};
-};
-
-window.saveOwnerCalc = async function(sendEmail=true){
-  /* ★08230218：本區公式錯誤（會把房客已付的水電瓦斯拿來與弟對分），已停用。
-     保留函式本體僅為相容既有呼叫，實際不再執行任何儲存或寄信。 */
-  alert('⛔ 「房東課｜每月收支結算」已停用。\n\n'
-    +'原因：本區公式會把【房客已經付掉的水電瓦斯】也拿來和弟弟對分，\n'
-    +'　　　但那些錢房客已經付給你了，弟弟不該再分攤。\n\n'
-    +'實測 202608 期：本區算 2,143，正確應為 3,098，少給弟弟 955 元。\n\n'
-    +'★請改用本頁下方的【🔑 哥弟進階結算（三桶：房租／水電／網路）】，\n'
-    +'　該區公式正確，且已有「自動帶入」按鈕，不必手動輸入水電瓦斯。');
-  return;
-  /* eslint-disable no-unreachable */
-  const r = window._ownerCalcResult;
-  if(!r||!r.period){toast('請先填寫月份並完成計算');return;}
-  const now = new Date().toLocaleString('zh-TW');
-  const record = {...r, savedAt:now};
-
-  // 若有新帳單，更新 lastUtilBills
-  if(r.hasNew){
-    DB.lastUtilBills = {water:r.water, elec:r.elec, gas:r.gas};
-  }
-  if(!DB.landlordSettlements) DB.landlordSettlements=[];
-  const idx = DB.landlordSettlements.findIndex(s=>s.period===r.period);
-  if(idx>=0) DB.landlordSettlements[idx]=record;
-  else DB.landlordSettlements.unshift(window.stampRec(record));
-
-  await saveLandlordData();
-
-  if(sendEmail){
-    initEJS();
-    try{
-      await emailjs.send(EJS_SVC,EJS_TPL,{
-        to_email: LANDLORD_EMAIL,
-        otp:`💴【${r.period} 房東課月結算 ${now}】\n租金總收入：$${r.totalRent.toLocaleString()}\n扣除支出：$${r.totalDed.toLocaleString()}（水$${r.halfWater}+電$${r.halfElec}+瓦斯$${r.halfGas}+網路$${r.netFee}）\n淨收入：$${r.net.toLocaleString()}\n我（哥哥）應得：$${r.myShare.toLocaleString()}\n弟弟應得：$${r.brotherShare.toLocaleString()}\n\n👉 請轉帳 $${r.brotherShare.toLocaleString()} 元給弟弟。`
-      });
-      toast(`✅ 已儲存並寄出通知！${r.period} 哥哥$${r.myShare.toLocaleString()}、弟弟$${r.brotherShare.toLocaleString()}`);
-    }catch(e){toast('已儲存，但寄信失敗：'+e.message);}
-    if(DB.notifyBrother && (DB.brotherEmail||'').trim()){
-      try{
-        await emailjs.send(EJS_SVC,EJS_TPL,{
-          to_email: DB.brotherEmail,
-          otp:`💴【${r.period} 房東課月結算 ${now}】\n弟弟您好，本月結算：\n租金總收入：$${r.totalRent.toLocaleString()}\n扣除支出：$${r.totalDed.toLocaleString()}（水$${r.halfWater}+電$${r.halfElec}+瓦斯$${r.halfGas}+網路$${r.netFee}）\n淨收入：$${r.net.toLocaleString()}\n您（弟弟）應得：$${r.brotherShare.toLocaleString()}\n哥哥應得：$${r.myShare.toLocaleString()}\n\n👉 哥哥將轉帳 $${r.brotherShare.toLocaleString()} 元給您。`
-        });
-        toast('📧 已同時通知弟弟');
-      }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
-    }
-  } else {
-    toast(`✅ 已儲存！${r.period} 哥哥$${r.myShare.toLocaleString()}、弟弟$${r.brotherShare.toLocaleString()}`);
-  }
-  renderOwnerHistory();
-};
-
-// ── 房東課：自動讀取最近水電帳單 ──────────────────────────
-// 點4：各帳單獨立傳送到房東課（只送自己那一項、不影響其他項、不切頁）
-window.sendOneToOwner = function(kind){
-  const val = document.getElementById('draft-'+kind)?.value;
-  if(val===''||val==null){ toast('請先輸入金額再傳送'); return; }
-  const ck=document.getElementById('oc-new-bill'); if(ck){ ck.checked=true; if(window.toggleNewBill) toggleNewBill(); }
-  const oc=document.getElementById('oc-'+kind); if(oc) oc.value=val;
-  if(window.calcOwner) calcOwner();
-  const label={water:'水費',elec:'電費',gas:'瓦斯費',net:'網路費'}[kind]||kind;
-  toast('✅ 已將'+label+' $'+val+' 傳到房東課（其他項不受影響）');
-};
+// ★09220048：舊「房東課｜每月收支結算」（toggleNewBill／calcOwner／saveOwnerCalc／sendOneToOwner）依主帥 2026/09/22 00:48 指示整區移除；哥弟結算只用下方三桶
 // 點3：依帳單月份自動預估計費起迄與繳費期限（依真實帳單規律，可手動改）
 window.estimateBillDates = function(kind, mm){
   if(!mm) return {start:'',end:'',due:''};
@@ -6573,7 +6381,7 @@ ${f(c.rentBro)}（房租）＋ ${f(c.utilToBro)}（水電補你）－ ${f(c.netB
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-wrap:wrap;gap:.4rem;">'+
       '<strong style="color:var(--primary);font-size:.9rem;">📧 給弟的 Gmail 明細</strong>'+
       '<span style="display:flex;gap:.4rem;"><button class="btn bs sm" onclick="copyBroGmail()">📋 複製</button>'+
-      '<button class="btn bp sm" onclick="sendBroGmail()">📨 寄給弟</button></span></div>'+
+      '<button class="btn bp sm" onclick="sendBroGmail()">'+(EJS_TPL_NOTICE?'📨 寄給弟':'📨 用我的 Gmail 寄給弟')+'</button></span></div>'+
       '<pre style="white-space:pre-wrap;font-family:inherit;font-size:.85rem;line-height:1.7;color:var(--primary);margin:0;">'+esc+'</pre></div>';
     out.scrollIntoView({behavior:'smooth',block:'nearest'});
   }
@@ -6587,6 +6395,13 @@ window.sendBroGmail = async function(){
   const t=window._bsGmailText||''; if(!t){toast('請先產生明細');return;}
   const to=(DB.brotherEmail||'').trim();
   if(!to){ toast('請先在上方填弟弟 Gmail'); return; }
+  // ★09220137：共用通知模板生效前，改開啟主帥自己的 Gmail 撰寫視窗（主旨與內文自動帶入），避免弟弟收到「一次性登入密碼」信
+  if(!EJS_TPL_NOTICE){
+    const _ls=t.split('\n'); let _su='房租和水、電、瓦斯、網路費結算明細', _body=t;
+    if(/^主旨[:：]/.test(_ls[0]||'')){ _su=_ls[0].replace(/^主旨[:：]\s*/,''); _body=_ls.slice(1).join('\n').replace(/^\n+/,''); }
+    window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(to)+'&su='+encodeURIComponent(_su)+'&body='+encodeURIComponent(_body),'_blank');
+    toast('📨 已開啟您的 Gmail 撰寫視窗（主旨與內文已帶入），確認後按「傳送」'); return;
+  }
   if(!DB.notifyBrother){ toast('🔕 目前設定不通知弟弟；請先切到通知，或用複製'); return; }
   if(typeof initEJS==='function') initEJS();
   try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:to,otp:t}); toast('✅ 已寄給弟弟'); }
@@ -6772,29 +6587,7 @@ window.deleteMaintenanceLogEvent = async function(id){
   renderMaintenanceLog();
   toast('已刪除一筆歷年紀錄');
 };
-window.renderOwnerHistory = function(){
-  const el=document.getElementById('oc-history');
-  if(!el)return;
-  const list=DB.landlordSettlements||[];
-  if(!list.length){el.innerHTML='<div class="txt-m">尚無結算紀錄</div>';return;}
-  el.innerHTML=list.slice(0,24).map((r,i)=>`
-    <div class="hist-item">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.3rem;">
-        <div>
-          <div style="font-weight:900;">💴 ${r.period} 月結算</div>
-          <div class="txt-m">租金$${(r.totalRent||0).toLocaleString()} ／ 支出$${(r.totalDed||0).toLocaleString()} ／ 哥哥 <strong style="color:var(--danger);">$${(r.myShare||r.perPerson||0).toLocaleString()}</strong>、弟弟 <strong style="color:var(--danger);">$${(r.brotherShare||r.perPerson||0).toLocaleString()}</strong></div>
-          <div style="font-size:.72rem;color:var(--muted);">${r.savedAt||''}</div>
-        </div>
-        <button class="btn bd sm" onclick="deleteOwnerRecord(${i})">刪除</button>
-      </div>
-    </div>`).join('');
-};
-window.deleteOwnerRecord = async function(i){
-  if(!window.guardRec((DB.landlordSettlements||[])[i],'刪除'))return;
-  if(!confirm('確定刪除？'))return;
-  DB.landlordSettlements.splice(i,1);
-  await saveLandlordData(); renderOwnerHistory(); toast('已刪除');
-};
+// ★09220048：舊月結算紀錄（renderOwnerHistory／deleteOwnerRecord）隨舊區塊移除；資料欄位 landlordSettlements 仍照常載入與存檔，不刪資料
 
 // ── 水電帳單暫存區 ─────────────────────────────────────────
 // 修改並儲存網路費預設金額
@@ -6807,11 +6600,9 @@ window.saveDefaultNetFee = async function(){
   // 更新顯示
   const disp = document.getElementById('default-net-fee-display');
   if(disp) disp.textContent = val.toLocaleString();
-  // 同步更新兩個欄位
+  // 同步更新暫存區的網路費欄位（★09220048 舊月結算區已移除）
   const dn = document.getElementById('draft-net');
   if(dn && (!dn.value || dn.value === (DB.defaultNetFee).toString())) dn.value = val;
-  const on = document.getElementById('oc-net');
-  if(on && (!on.value || on.value === (DB.defaultNetFee).toString())) on.value = val;
   if(inp) inp.value = '';
   toast('✅ 網路費預設金額已更新為 $' + val.toLocaleString() + ' 元');
 };
