@@ -1,15 +1,14 @@
 <!-- ═══════════════════════════════════════════════════════════
-★★★【自我舉證表】index(09220137)　★依鐵律ＡＭ１７／自檢(14)
-　本輪性質：主帥 2026/09/22 01:37 第3點「通知信文不對題」；裁示：通知模板請股票PRO 改共用、房客信結尾維持「收到後 7 天內」
-　① 唯一寄信入口：既有 emailjs.send 包裝層加轉接——驗證碼（__otp）走驗證碼模板；其餘通知在 EJS_TPL_NOTICE 設定後改走共用通知模板（主旨＋保留換行）
-　② 載入即初始化 initEJS，29 處寄信一律經過該入口（原本部分呼叫點未先初始化）
-　③ EJS_TPL_NOTICE 暫為空字串＝沿用舊寫法；股票PRO 回覆 template_notify_buy 改好後只需填入一行
-　④ 「📨 寄給弟」在通知模板生效前，改開啟主帥自己的 Gmail 撰寫視窗（主旨與內文自動帶入），按鈕改名「📨 用我的 Gmail 寄給弟」
-　⑤ 預存月報：分潤改讀本期收租登記本月實收（舊寫法讀已移除的舊月結算紀錄，永遠顯示「暫停收租」）；內文改為分行
-　⑥ 內含 09220107 全部修改（移除舊月結算、選單與收租頁重排、移除空卡片、標題註明用途）
-　　驗證：寄信入口三情境、寄給弟 Gmail 連結解碼比對、預存月報、元素與函式引用前後比對、事故重現 1～7、收租與 9 月結算、四封實寄信　★實證（見交付訊息原始輸出）
+★★★【自我舉證表】index(09220320)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：主帥 2026/09/22 03:20 第2點截圖【09220216_建議在旁邊備註步驟】：網頁按鈕旁加步驟備註
+　① 收租紀錄：入帳紀錄簿按鈕旁（主帥紅框原文四步＋結算詢問）、本期收租登記下方
+　② 水電帳單：帳單暫存區、計費人數按鈕列、計算結果按鈕列（1～9 步）
+　③ 房東課（哥弟結算）：自動套入按鈕下方（1～4 步）、結算結果按鈕列（5～7 步）
+　④ EJS_TPL_NOTICE 填入 template_notify_buy（股票PRO 回函 09220248 第四節、共用資產清冊 S7 已改登）
+　⑤「🏠 前往房東課」按鈕的 if(window.ST) 保護寫法改為直接呼叫 ST（鐵律Ｘ；新版自檢 (154) 亦把 if 誤判為函式名）
+　　驗證：語法、元素與函式引用前後比對、新版自檢 (154)(156)、事故重現 1～7、收租與 9 月結算、四封實寄信　★實證（見交付訊息原始輸出）
 ★★★【推定清單（★須主帥實測）】
-　・按「📨 用我的 Gmail 寄給弟」會開新分頁的 Gmail 撰寫視窗；手機可能跳到 Gmail App（依手機設定）
+　・主帥須先到 EmailJS 後台把 template_notify_buy 改為通用模板（共用資產清冊 S7 步驟）；未改前，房租通知會套到股票買進通知的舊版面
 ═══════════════════════════════════════════════════════════ -->
 <!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(09220107)　★依鐵律ＡＭ１７／自檢(14)
@@ -315,6 +314,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
 .tab-nav>.tab-btn{padding:.55rem .75rem;border:none;background:transparent;color:rgba(255,230,180,.55);font-family:'Noto Sans TC',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap;}
 .tab-nav>.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
 .tab-nav>.tab-btn:hover{color:#ffe8b8;}
+.step-note{flex:1 1 260px;min-width:0;align-self:center;font-size:.78rem;line-height:1.6;font-weight:700;color:#8e24aa;background:rgba(142,36,170,.07);border:1.5px dashed rgba(142,36,170,.45);border-radius:.55rem;padding:.35rem .6rem;}
 </style>
 </head>
 <body>
@@ -700,9 +700,10 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
         <button class="btn bs sm" onclick="saveDraftBills()">💾 存入暫存清單</button>
         <button class="btn ba sm" onclick="loadDraftToMain()">⬆ 帶入正式帳單計算</button>
-        <button class="btn bp sm" onclick="if(window.ST)ST('owner-calc')">🏠 前往房東課</button>
+        <button class="btn bp sm" onclick="ST('owner-calc')">🏠 前往房東課</button>
         <button class="btn bd sm" onclick="clearDraft()">🗑️ 清除暫存</button>
       </div>
+<div class="step-note" style="flex-basis:100%;">每兩個月水電帳單：1.台電、台水、瓦斯帳單陸續寄來時，每收到一張就填入上方並按【💾 存入暫存清單】。　2.三張都到齊後按【⬆ 帶入正式帳單計算】。　3.往下填「🔌 各房冷氣電表抄錶」「👥 各房計費人數與天數」；家人有回嘉義住，填「🏠 房東家人入住日」。　4.到「📊 計算結果」依那裡的步驟儲存與通知房客。</div>
     </div>
   </div>
 
@@ -834,11 +835,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       期別在上方「📋 本期帳單資訊」設定（目前：<strong id="ws-period-echo">—</strong>）。確認後按下方儲存即寫入正式帳單。
     </div>
     <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;font-weight:700;color:var(--accent);margin:.5rem 0;cursor:pointer;"><input type="checkbox" id="u-deferred" style="width:1.1rem;height:1.1rem;">⏸️ 本期緩收（房客尚未繳費）— 勾選後此帳單在歷史標「緩收中」，待實際收款再按「標記已收」</label>
-    <div class="gap" style="margin-top:.4rem;">
+    <div class="gap" style="flex-wrap:wrap;margin-top:.4rem;">
       <button class="btn bs sm" onclick="saveUtilBill(false)">💾 儲存此期帳單（不寄信）</button>
       <button class="btn bp sm" onclick="saveUtilBill(true)">💾 儲存並推送給房客</button>
       <button class="btn bd sm" onclick="clearWorkingState()">🧹 清空重填</button>
-    </div>
+    <div class="step-note">建議先往下填「🏠 房東家人入住日」、核對「📊 計算結果」、填「🔑 本期帳單由誰付＋1樓公共電費」後，再按計算結果區的儲存按鈕（該區有同樣的按鈕與後續步驟）。</div>
+</div>
   </div>
 
   <!-- ── 房東家人入住日（問題9） ── -->
@@ -988,11 +990,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         <div style="display:flex;align-items:flex-end;font-size:.75rem;color:var(--muted);">※1樓公共電費只哥弟分，不進房客帳單</div>
       </div>
     </div>
-    <div class="gap mt">
+    <div class="gap mt" style="flex-wrap:wrap;">
       <button class="btn bs sm" onclick="saveUtilBill(true)">💾 儲存並推送給各房客</button>
       <button class="btn bo sm" onclick="saveUtilBill(false)">💾 只儲存（不寄信）</button>
       <button class="btn bp sm" onclick="showAllBills()">📄 產生帳單通知單</button>
-    </div>
+    <div class="step-note" style="flex-basis:100%;">5.核對上方各房應付金額。　6.填上方「🔑 本期帳單由誰付＋1樓公共電費」（儲存時會一起存，★沒填會影響哥弟結算）。　7.按【💾 儲存並推送給各房客】（只存不寄按【💾 只儲存（不寄信）】）。　8.按【📄 產生帳單通知單】→【📋 複製此帳單文字】貼給房客。　9.房客轉帳後，到最下方「📁 已儲存水電帳單歷史」按該房【未收款】登記收款日。</div>
+</div>
   </div>
   <!-- 水電帳單歷史（房東可查看所有已儲存帳單）-->
   <div class="card landlord-only">
@@ -1126,11 +1129,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div id="rpay-hint" style="display:none;margin:.4rem 0 .2rem;padding:.45rem .7rem;
          border-radius:6px;font-size:.85rem;font-weight:700;"></div>
     <div><label>備註（選填）</label><input type="text" id="rpay-note" placeholder="有特殊情況才填，例如：分期補繳、代收代付"></div>
-    <div class="gap mt">
+    <div class="gap mt" style="flex-wrap:wrap;">
       <button class="btn ba" onclick="rpAuto()">🔄 自動帶入租期</button>
       <button class="btn bs" onclick="rpSave()">＋ 新增入帳紀錄</button>
       <button class="btn bd sm" onclick="rpClear()">清空表單</button>
-    </div>
+    <div class="step-note">1.先選房間。　2.依序填上房客實際郵局轉帳日、租金、房客轉帳方式。　3.按左邊的【🔄 自動帶入租期】。　4.按左邊的【＋ 新增入帳紀錄】。<br>★若跳出「落在結算單涵蓋範圍內」詢問：已給弟結算過的月份按「確定」。</div>
+</div>
     <div style="margin-top:.8rem;padding-top:.6rem;border-top:2px solid var(--border2);">
       <div class="form-row c2">
         <div><label>查詢起日</label><input type="date" id="rpay-from"></div>
@@ -1160,6 +1164,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="gap mt">
       <button class="btn bs" style="flex:1;" onclick="saveRent(true)">💾 儲存收租紀錄</button>
     </div>
+<div class="step-note" style="margin-top:.45rem;">通常不用在這裡輸入：在上方「💵 房客租金入帳紀錄簿」新增後會自動同步到這裡。<br>要補登或修改時：1.確認期別。　2.填各房實收金額與收款日。　3.按【💾 儲存收租紀錄】。</div>
     <div style="margin-top:.6rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
       <button id="rent-notify-toggle" class="btn bd sm" onclick="toggleNotifyTenant()" style="min-width:210px;">🔕 目前：暫不寄收訖給房客（關）</button>
       <span style="font-size:.72rem;color:var(--muted);">開啟後，儲存收租時自動寄「收訖通知」給已全額繳清、非緩收且有填 Email 的房客；預設關閉以免打擾。</span>
@@ -1974,6 +1979,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div class="gap" style="margin-top:.35rem;">
       <button class="btn bp" onclick="bsAutoFill3()" style="width:100%;">🔄 從帳單／收租自動套入（弟代墊·零頭·公共電費·房租）</button>
     </div>
+<div class="step-note" style="margin-top:.45rem;">每月給弟結算：1.先到「💰 收租紀錄」的入帳紀錄簿補登本月房租。　2.偶數月先完成「💡 水電帳單」本期儲存與房客收款登記。　3.按上方【🔄 從帳單／收租自動套入】。　4.往下核對「📊 結算結果」的轉帳金額，再依那裡的步驟寄信、轉帳、標記。</div>
     <div class="card" style="border:1.5px solid var(--accent);margin-top:.5rem;padding:.7rem;">
       <div style="font-weight:800;font-size:.88rem;margin-bottom:.35rem;">⑤ 其他共同費用（哥弟各半，哥ceil多1；如排水器、插座、電話費）</div>
       <div class="form-row c2">
@@ -1994,11 +2000,12 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         哥應轉弟淨額：<span id="bs-net-amt" style="color:var(--danger);font-size:1.2rem;">—</span> 元
       </div>
     </div>
-    <div class="gap mt">
+    <div class="gap mt" style="flex-wrap:wrap;">
       <button class="btn bp" onclick="genBroGmail()">📧 產生給弟的 Gmail 明細（預覽／複製／寄出）</button>
       <button class="btn ba" onclick="backfillBillNums(false)">🔧 補算舊帳單的結算欄位（N14／N9）</button>
       <button class="btn bs" onclick="bsMarkSettledNow()">✅ 已轉帳給弟 → 標記本次結算</button>
-    </div>
+    <div class="step-note" style="flex-basis:100%;">5.按【📧 產生給弟的 Gmail 明細】→ 核對內容後按【📨 寄給弟】（第一次使用請先在最上方「📧 弟弟 Gmail 通知設定」填弟弟的 Gmail 並切到通知；或按【📋 複製】貼到自己的 Gmail 寄出）。　6.轉帳給弟（金額同上方結算結果）。　7.按【✅ 已轉帳給弟 → 標記本次結算】，這幾期就不會被重算。<br>（【🔧 補算舊帳單的結算欄位】平常不用按，只在舊帳單缺欄位時使用。）</div>
+</div>
     <div class="form-row c2" style="margin-top:.5rem;">
       <div><label style="font-size:.75rem;">★房租／網路 起算月（YYYYMM）</label>
         <input type="text" id="bs-net-base" placeholder="202603" onchange="bsSetNetBase()"></div>
@@ -2232,7 +2239,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
     </div>
     <div style="margin-top:.75rem;border-top:1px solid var(--border2);padding-top:.75rem;">
-      <button class="btn bd sm" onclick="if(confirm('⚠️ 確定清除所有資料？此操作無法復原，建議先匯出備份！'))clearAll()">🗑️ 清除所有資料</button>
+      <button class="btn bd sm" onclick="askClearAll()">🗑️ 清除所有資料</button>
     </div>
   </div>
   <div class="card">
@@ -2442,7 +2449,7 @@ const EJS_SVC  = 'service_q711s3u';  // ★08300718：舊 service_knhvcfj 的 Gm
 const EJS_TPL  = 'template_oqm4kw9';
 // ★09220137：通用通知模板（主帥 2026/09/22 裁示：請股票PRO 把 template_notify_buy 改為共用通知模板，變數 {{to_email}}／{{subject}}／{{message}}）
 //   ★股票PRO 回覆已改好後，把下一行填入 'template_notify_buy' 即全面生效；空字串＝沿用舊寫法（借用驗證碼模板）
-const EJS_TPL_NOTICE = '';
+const EJS_TPL_NOTICE = 'template_notify_buy';   // ★09220320：股票PRO(09220248) 回函已改登共用資產清冊 S7；主帥於 EmailJS 後台改好模板即生效
 window._noticeSubject = function(msg){
   let s=String(msg||'').split('\n').map(function(x){ return x.trim(); }).filter(Boolean)[0]||'通知';
   s=s.replace(/^主旨[:：]\s*/,''); if(s.length>40) s=s.slice(0,40)+'…';
@@ -2517,7 +2524,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09220137'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09220320'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -7369,6 +7376,7 @@ window.importData = async function(evt){
     evt.target.value='';
   };r.readAsText(f);
 };
+window.askClearAll = function(){ if(confirm('⚠️ 確定清除所有資料？此操作無法復原，建議先匯出備份！')) clearAll(); };   // ★09220320：原寫在 onclick 內，新版自檢 (154) 會把 if 誤判為函式名
 window.clearAll = async function(){
   // ★★★09210142 房缺-07 修正：原本只重建 5 個欄位，
   //   其餘 49 個欄位（帳單、結算、稅務、維修、繼承紀錄…）會被 saveLandlordData
