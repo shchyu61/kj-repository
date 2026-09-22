@@ -1,4 +1,15 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09221551)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：主帥 2026/09/22 15:51 第3點「請優先執行待辦事項」；同輪補充「積案待辦可能已是舊規定，依從新從後勿改回」→ 每項先比對最新 SOP(09221217)
+　① 待辦 P2-2（ＡＭ１①③④⑥，最新 SOP 仍為現行條文）：睡眠時段 21:30～07:30 自動提醒一律不寄、不標記，時段外開頁自然補寄
+　　　攔截位置＝各自動觸發函式第一行（其前無任何資料異動）；手動按鈕與驗證碼不受影響
+　② 待辦 P3-10（主帥 09/22 01:07 第5點授權）：「📮 單一房客催收信」由水電帳單頁搬到收租紀錄頁最下方；收租頁開頁時填入房客選單
+　③ 待辦 P3-11：「🛟 資料事故還原」卡片改名「🛟 資料救援還原：只補空欄位（可用任何備份檔）」
+　　驗證：語法、重複 id、onclick 函式前後比對、睡眠時段邊界 8 例、自動提醒實跑（真實程式碼）、事故重現、收租與 9 月結算、四封實寄信　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・晚上 21:30 後到早上 07:30 前開網頁，不會收到預存月報、維護到期、租約到期、逾期催繳等自動信；白天開頁照常收到
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(09220320)　★依鐵律ＡＭ１７／自檢(14)
 　本輪性質：主帥 2026/09/22 03:20 第2點截圖【09220216_建議在旁邊備註步驟】：網頁按鈕旁加步驟備註
 　① 收租紀錄：入帳紀錄簿按鈕旁（主帥紅框原文四步＋結算詢問）、本期收租登記下方
@@ -1008,37 +1019,6 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div id="util-bill-history"><div class="txt-m">讀取中...</div></div>
   </div>
 
-  <!-- ══ 待辦G：單一房客【房租＋水電瓦斯】簡易催收信 ══ -->
-  <div class="card landlord-only" style="border:2px solid var(--accent);">
-    <div class="card-title">📮 單一房客催收信（房租＋水電瓦斯，簡易版）</div>
-    <div class="alert-box a-info" style="font-size:.82rem;">
-      臨時催收單一房客用：選房客、勾要補收的水電期別、填房租暫緩期數，一鍵產出「讓房客一眼看懂要轉多少」的簡易明細（標題用房號、不冠姓名）。此為簡易版，與群組帳單並存。
-    </div>
-    <div class="form-row c2">
-      <div><label>選房客（房號）</label>
-        <select id="tsb-room" onchange="tsbOnRoom()"><option value="">— 請選 —</option></select></div>
-      <div><label>每期房租（自動帶入可改；0＝不催房租）</label>
-        <input type="number" id="tsb-rent" placeholder="如 4500" oninput="genTenantSimpleBill()"></div>
-    </div>
-    <div class="form-row c2">
-      <div><label>房租暫緩期間（自動帶入·可改）</label>
-        <input type="text" id="tsb-rent-range" placeholder="如 3/8～7/8" oninput="genTenantSimpleBill()"></div>
-      <div><label>房租期數 N（自動換算·可改；0=不催房租）</label>
-        <input type="number" id="tsb-rent-n" placeholder="如 5" oninput="genTenantSimpleBill()"></div>
-    </div>
-    <div class="form-row c2">
-      <div><label>水電暫緩起點（自動帶入·可改）</label>
-        <input type="text" id="tsb-util-since" placeholder="如 2025/12" oninput="genTenantSimpleBill()"></div>
-      <div style="display:flex;align-items:flex-end;font-size:.78rem;color:var(--muted);">↓ 勾選下方要補收的水電期別</div>
-    </div>
-    <label style="font-size:.85rem;font-weight:700;">要補收的水電瓦斯期別（預設勾「未收」者）</label>
-    <div id="tsb-bills" style="margin:.4rem 0;font-size:.85rem;">請先選房客。</div>
-    <div class="gap mt">
-      <button class="btn bp" onclick="genTenantSimpleBill()">📋 產生簡易催收明細</button>
-    </div>
-    <div id="tsb-out"></div>
-  </div>
-
   <div id="bills-area"></div>
 </div>
 
@@ -1240,6 +1220,37 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <button class="btn bd sm" onclick="rcClear()">清空表單</button>
     </div>
     <div id="rc-list" class="mt"><div class="txt-m">讀取中...</div></div>
+  </div>
+
+  <!-- ══ 待辦G：單一房客【房租＋水電瓦斯】簡易催收信（★09221551 由水電帳單頁搬來，主帥 09/22 01:07 第5點授權）══ -->
+  <div class="card landlord-only" style="border:2px solid var(--accent);">
+    <div class="card-title">📮 單一房客催收信（房租＋水電瓦斯，簡易版）</div>
+    <div class="alert-box a-info" style="font-size:.82rem;">
+      臨時催收單一房客用：選房客、勾要補收的水電期別、填房租暫緩期數，一鍵產出「讓房客一眼看懂要轉多少」的簡易明細（標題用房號、不冠姓名）。此為簡易版，與群組帳單並存。
+    </div>
+    <div class="form-row c2">
+      <div><label>選房客（房號）</label>
+        <select id="tsb-room" onchange="tsbOnRoom()"><option value="">— 請選 —</option></select></div>
+      <div><label>每期房租（自動帶入可改；0＝不催房租）</label>
+        <input type="number" id="tsb-rent" placeholder="如 4500" oninput="genTenantSimpleBill()"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>房租暫緩期間（自動帶入·可改）</label>
+        <input type="text" id="tsb-rent-range" placeholder="如 3/8～7/8" oninput="genTenantSimpleBill()"></div>
+      <div><label>房租期數 N（自動換算·可改；0=不催房租）</label>
+        <input type="number" id="tsb-rent-n" placeholder="如 5" oninput="genTenantSimpleBill()"></div>
+    </div>
+    <div class="form-row c2">
+      <div><label>水電暫緩起點（自動帶入·可改）</label>
+        <input type="text" id="tsb-util-since" placeholder="如 2025/12" oninput="genTenantSimpleBill()"></div>
+      <div style="display:flex;align-items:flex-end;font-size:.78rem;color:var(--muted);">↓ 勾選下方要補收的水電期別</div>
+    </div>
+    <label style="font-size:.85rem;font-weight:700;">要補收的水電瓦斯期別（預設勾「未收」者）</label>
+    <div id="tsb-bills" style="margin:.4rem 0;font-size:.85rem;">請先選房客。</div>
+    <div class="gap mt">
+      <button class="btn bp" onclick="genTenantSimpleBill()">📋 產生簡易催收明細</button>
+    </div>
+    <div id="tsb-out"></div>
   </div>
 </div>
 
@@ -2233,7 +2244,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <button class="btn bp" onclick="exportData()">⬇ 匯出完整備份（JSON）</button>
       <label class="btn bs" style="cursor:pointer;">⬆ 匯入備份還原<input type="file" accept=".json" class="hidden" onchange="importData(event)"></label>
       <div style="margin-top:.6rem;padding:.6rem .8rem;border:2px solid #C0392B;border-radius:.7rem;background:#fff5f5;">
-        <div style="font-weight:900;color:#C0392B;font-size:.88rem;">🛟 資料事故還原：只補空欄位（09/21 事故專用）</div>
+        <div style="font-weight:900;color:#C0392B;font-size:.88rem;">🛟 資料救援還原：只補空欄位（可用任何備份檔）</div>
         <div style="font-size:.78rem;color:#555;margin:.25rem 0;">只把【目前是空的】欄位補回，並追加還原檔指定的缺漏筆數（依 id 去重）；雲端現有資料一律不動。執行前會列出清單讓您確認。</div>
         <label class="btn bp" style="cursor:pointer;">🛟 選擇還原檔<input type="file" accept=".json,.txt" class="hidden" onchange="restoreEmptyFields(this)"></label>
       </div>
@@ -2524,7 +2535,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09220320'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09221551'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -2604,6 +2615,13 @@ window.showMailErrors = function(){
   if(!window._mailErrors.length){ toast('✅ 本次開啟後沒有寄信失敗紀錄'); return; }
   alert('📪 最近寄信失敗紀錄（'+window._mailErrors.length+' 筆）\n\n'
     + window._mailErrors.map(r=>`${r.time}\n→ ${r.to}\n→ ${r.err}`).join('\n\n'));
+};
+// ★09221551 ＡＭ１①③④⑥（待辦 P2-2）：睡眠時段＝台灣時間 21:30～次日 07:30；非急迫的【自動提醒】在此時段一律不寄、不標記已寄，
+//   下次在時段外開頁時自然補寄（ＡＭ１④：延發不是丟棄）。手動按鈕與登入驗證碼（__otp，屬急迫）不受影響。
+window._inQuietHours = function(d){
+  const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Taipei',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d||new Date());
+  const t=(+p.find(x=>x.type==='hour').value)*60+(+p.find(x=>x.type==='minute').value);
+  return t>=21*60+30 || t<7*60+30;
 };
 let _ejsPatched = false;
 function initEJS(){
@@ -3428,6 +3446,7 @@ window.reserveReportText=function(who){
 window.sendReserveReport=async function(manual){
   const d=new Date(); const key=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0');
   if(!manual){ if(DB.reserveReportSent&&DB.reserveReportSent[key]) return; }
+  if(!manual && window._inQuietHours()) return;   // ★09221551 ＡＭ１：自動寄的月報在睡眠時段不寄也不標記；手動按鈕照常
   if(typeof initEJS==='function') initEJS();
   try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:LANDLORD_EMAIL,otp:'📅 '+reserveReportText('me')}); }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
   if(DB.notifyBrother){ const bro=(DB.brotherEmail||LANDLORD_EMAILS[1]||''); if(bro){ try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:bro,otp:'📅 '+reserveReportText('brother')}); }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); } } }
@@ -3444,6 +3463,7 @@ window.sendReserveReport=async function(manual){
 };
 window.checkMaintenanceDue=async function(){
   const recs=DB.maintenanceRecords||[]; if(!recs.length) return;
+  if(window._inQuietHours()) return;   // ★09221551 ＡＭ１：睡眠時段不寄也不標記，時段外開頁自然補寄
   if(!DB.maintenanceDueSent) DB.maintenanceDueSent={};
   const toSend=[];
   recs.forEach(r=>{
@@ -3469,6 +3489,7 @@ window.checkMaintenanceDue=async function(){
 // ── 契約課：租約到期前45天自動寄Gmail提醒房東（通知部對房東課）──
 window.checkLeaseExpiry = async function(){
   if(!DB.tenants) return;
+  if(window._inQuietHours()) return;   // ★09221551 ＡＭ１：睡眠時段不寄也不標記，時段外開頁自然補寄
   if(!DB.leaseExpirySent) DB.leaseExpirySent={};
   const toSend=[]; const now=new Date();
   ROOMS.forEach(r=>{
@@ -3563,7 +3584,7 @@ window.ST = function(n){
     if(b.getAttribute('onclick')===`ST('${n}')`)b.classList.add('active');
   });
   if(n==='utility'){initU(); renderUtilHistory(); if(window.refreshCalendars)window.refreshCalendars(); loadDraftState(); renderDraftBills(); loadLandlordDraftState(); checkBillReminders(); if(window.tsbInitRooms)tsbInitRooms(); if(window.bsRenderPubHistory)bsRenderPubHistory();}
-  if(n==='rent'){ initRent(); try{ if(window.rcRender)rcRender(); if(window.rpRender)rpRender(); }catch(e){ console.error(e); } }
+  if(n==='rent'){ initRent(); tsbInitRooms(); try{ if(window.rcRender)rcRender(); if(window.rpRender)rpRender(); }catch(e){ console.error(e); } }
   if(n==='checkout')initCO();
   if(n==='backup')renderBK();
   if(n==='owner-calc'){if(window.updateBrotherToggleUI)updateBrotherToggleUI(); if(window.updateOddOwnerUI)updateOddOwnerUI(); if(window.bsRenderCommon)bsRenderCommon(); if(window.bsRenderSettlements)bsRenderSettlements(); if(window.btRender)btRender(); const _bp=document.getElementById('bs-paid'); if(_bp&&!_bp.value&&(+DB.bsPaidBack||0)) _bp.value=+DB.bsPaidBack;
@@ -4986,6 +5007,7 @@ function loadPostalInputs(){
 // 每次登入後檢查是否有逾期未收且尚未通知的月份
 async function checkRentOverdue(){
   if(!isLandlord)return;
+  if(window._inQuietHours()) return;   // ★09221551 ＡＭ１：睡眠時段不寄也不標記，時段外開頁自然補寄
   const now=new Date();
   // ★★★09210142 房缺-05 修正：原本把「已通知過」記在 localStorage，
   //   而 localStorage 是【單一瀏覽器單一裝置】的 → 房東換手機／換電腦／清快取，
@@ -6617,6 +6639,7 @@ window.saveDefaultNetFee = async function(){
 // ── 帳單到期提醒（水費/電費/瓦斯費）────────────────────────
 // 每次開啟水電頁面時自動執行：到期前一天未打勾 → Toast + Gmail
 window.checkBillReminders = async function(){
+  if(window._inQuietHours()) return;   // ★09221551 ＡＭ１：睡眠時段不寄也不標記，時段外開頁自然補寄
   try{
     const d = JSON.parse(localStorage.getItem('utilDraft')||'{}');
     const now = new Date();
@@ -8171,6 +8194,7 @@ window.notifyFloodAlert = async function(){
 
 // ══ 登入後補寄 + 逾期 + 報修角標 ════════════
 async function checkPendingAnnounces(){
+  if(window._inQuietHours()) return;   // ★09221551 ＡＭ１：睡眠時段不寄也不標記，時段外開頁自然補寄
   if(!isLandlord) return;
   const pending = (DB.announces||[]).filter(a=>!a.notified&&!a.testOnly&&a.sendAt&&Date.now()>=a.sendAt);
   for(let i=0;i<pending.length;i++){
