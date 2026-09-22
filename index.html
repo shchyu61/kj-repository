@@ -1,4 +1,15 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09230610)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：待辦 P1-1 存檔假成功（ＡＭ６０ 型一）＋ P3-24 移除被覆蓋的舊定義
+　① 存檔函式 saveLandlordData：非房東帳號時由 return 改為拋錯 → 房東端不再出現「✅ 已儲存」假成功
+　② 房客可觸發者查證：85 個呼叫點中僅 notifyMail、notifyLockBattery 在房客身分下會呼叫存檔（submitRepair 房客分支於存檔前 return；其餘皆有房東守衛或只在房東頁）→ 兩者改為「是房東才存檔」，照常寄信
+　③ notifyMail、notifyLockBattery 各有兩份定義，前一份被後一份覆蓋、從未生效 → 移除前一份
+　④ 待辦 P3-5（主帥 08/23 03:00 原話「在那占版面」「可在歷史紀錄裡查詢過往當期的【其他共同費用】」）：共同費用已結算者收進預設收合區，依結算單分組；只改顯示、不動資料（「一鍵封存」為 AI 當時自加，本輪不做）
+　　驗證：語法、重複 id、onclick 前後比對、房客與房東身分實跑、回歸四項　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・房東登入後各頁存檔照常顯示「✅ 已儲存」；房客在信件通知、電子鎖沒電頁送出後，房東照常收到 Email
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(09230308)　★依鐵律ＡＭ１７／自檢(14)
 　本輪性質：待辦 P3-7 殘留程式整理（主帥 09/22 00:40 截圖「已停用的功能請移除程式碼」；主帥 09/23 03:08 要求執行待辦）
 　① 依據＝GitHub 提交歷史 git log -S：畫面元素移除時間 → 維護預備金 06/15 18:45；Tapo 設定 06/21 00:59；舊電池紀錄與信件／電池通知表單 03/31 05:39
@@ -2556,7 +2567,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09230308'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09230610'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -3147,7 +3158,8 @@ window._fieldSize=function(v){ if(v==null) return 0; if(Array.isArray(v)) return
   if(typeof v==='object') return Object.keys(v).length; if(typeof v==='string') return v.trim().length?1:0; return 1; };
 const saveLandlordData = async () => {
   // ★08300156 缺陷③：權限改由 Auth 身分判定，不再信任前端變數
-  if(!isLandlordAuth()){ toast('⚠️ 無權限儲存'); return; }
+  // ★09230610 P1-1（ＡＭ６０ 型一）：原本 return 會讓呼叫端接著顯示「✅ 已儲存」假成功 → 改拋錯；房客流程已先改為不呼叫本函式
+  if(!isLandlordAuth()){ toast('⚠️ 無權限儲存'); throw new Error('存檔已阻止：非房東帳號，無寫入權限'); }
   await initFBAuth();
   if(window.setCloudStatus) setCloudStatus('saving');
   try{
@@ -5436,32 +5448,6 @@ window.editAnnounce = function(i){
 // 【22. 信件通知 + 電子鎖沒電通知】
 // ============================================================
 
-window.notifyMail = async function(sendEmail=true){
-  const room = document.getElementById('mail-room')?.value;
-  const type = document.getElementById('mail-type')?.value;
-  const note = document.getElementById('mail-note')?.value.trim();
-  if(!room){toast('請選擇收件房客');return;}
-  const t = DB.tenants[room]||{};
-  const now = new Date().toLocaleString('zh-TW');
-  const record = {room, type, note, time:now, savedAt:new Date().toISOString()};
-  if(!DB.mailRecords) DB.mailRecords=[];
-  DB.mailRecords.unshift(window.stampRec(record));
-  await saveLandlordData();
-  if(sendEmail && t.tenantEmail){
-    initEJS();
-    try{
-      await emailjs.send(EJS_SVC, EJS_TPL, {
-        to_email: t.tenantEmail,
-        otp: `📬【信件通知 ${now}】${RL[room]} 收到一封「${type}」${note?'（'+note+'）':''}，請記得至一樓信箱取件。謝謝！`
-      });
-      toast('✅ 已通知 '+RL[room]+' 取件');
-    }catch(e){toast('儲存成功，但寄信失敗：'+e.message);}
-  } else {
-    toast(sendEmail?'儲存成功（該房客未設定email）':'✅ 已儲存（未寄信）');
-  }
-  document.getElementById('mail-note').value='';
-  renderMailHistory();
-};
 
 window.renderMailHistory = function(){
   const el=document.getElementById('mail-history');
@@ -5486,38 +5472,6 @@ window.deleteMailRecord = async function(i){
   await saveLandlordData(); renderMailHistory(); toast('已刪除');
 };
 
-window.notifyLockBattery = async function(sendEmail=true){
-  const note = document.getElementById('lock-battery-note')?.value.trim()||'電量偏低，請盡快更換';
-  const now = new Date().toLocaleString('zh-TW');
-  const record = {note, time:now, savedAt:new Date().toISOString()};
-  if(!DB.lockBatteryRecords) DB.lockBatteryRecords=[];
-  DB.lockBatteryRecords.unshift(window.stampRec(record));
-  await saveLandlordData();
-  if(sendEmail){
-    initEJS();
-    const targets = Object.values(DB.tenants).filter(t=>t.status==='occupied'&&t.tenantEmail);
-    let sent=0;
-    for(const t of targets){
-      try{
-        await emailjs.send(EJS_SVC, EJS_TPL, {
-          to_email: t.tenantEmail,
-          otp: `🔋【電子鎖沒電通知 ${now}】一樓大廳電子鎖電池電量偏低，授權房客自行更換。充電電池+充電器在神明桌右邊置物櫃最上方時鐘下面；磁性十字起子在神明桌左邊桌子上。謝謝配合！`
-        });
-        sent++;
-      }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
-    }
-    // 也通知房東
-    try{
-      await emailjs.send(EJS_SVC, EJS_TPL, {to_email:LANDLORD_EMAIL,
-        otp:`🔋【電子鎖沒電通知 ${now}】已通知房客更換電子鎖電池。備註：${note}`});
-    }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
-    toast(`✅ 已通知房東 + ${sent} 位房客`);
-  } else {
-    toast('✅ 已儲存（未寄信）');
-  }
-  document.getElementById('lock-battery-note').value='';
-  renderLockBatteryHistory();
-};
 
 window.renderLockBatteryHistory = function(){
   const el=document.getElementById('lock-battery-history');
@@ -5753,10 +5707,30 @@ window.bsRenderCommon = function(){
   const box=document.getElementById('bs-cc-list'); if(!box) return;
   const list=DB.bsCommonCosts||[]; const f=n=>Math.round(n).toLocaleString();
   if(!list.length){ box.innerHTML='<span style="color:var(--muted);">尚無共同費用（加入後會自動各半併入結算）。</span>'; return; }
-  box.innerHTML=list.map(function(c,i){
+  const row=function(c,i){
     const share=Math.floor((+c.amount||0)/2);
     return '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--border);padding:.28rem 0;gap:.5rem;'+(c.settled?'opacity:.55;':'')+'"><span>'+(c.date?c.date+'　':'')+c.desc+'　$'+f(c.amount)+'（<b>'+c.payer+'付</b>，各半 '+f(share)+'）'+(c.settled?' <span style="color:var(--muted);font-size:.72rem;">✅已與弟結算</span>':'')+(c.createdBy?' <span style="color:var(--muted);font-size:.68rem;">👤'+String(c.createdBy).split('@')[0]+'</span>':'')+'</span><span style="display:flex;gap:.25rem;white-space:nowrap;"><button class="btn ba sm" style="padding:.1rem .5rem;" onclick="bsEditCommon('+i+')">✏️編輯</button><button class="btn bd sm" style="padding:.1rem .5rem;" onclick="bsDelCommon('+i+')">刪</button></span></div>';
-  }).join('');
+  };
+  // ★09230610 P3-5：主帥 08/23 03:00 原話「在那占版面」「可在歷史紀錄裡查詢過往當期的【其他共同費用】」
+  //   → 未結算照常顯示；已結算收進預設收合區，依結清它的結算單分組（新格式比對 comIds；舊格式依 comIdx 當時位置）。只改顯示，不動資料。
+  const keyOf=function(x){ return (x.id!=null&&x.id!==''?String(x.id):(String(x.date||'')+'|'+String(x.desc||'')+'|'+String(x.amount||''))); };
+  const open=[], groups={}, order=[];
+  list.forEach(function(c,i){
+    if(!c.settled){ open.push(row(c,i)); return; }
+    const st=(DB.settlements||[]).find(function(x){ return x.comIds ? x.comIds.map(String).indexOf(keyOf(c))>=0 : (x.comIdx||[]).indexOf(i)>=0; });
+    const g=st ? (String(st.at||'').slice(0,10)+' 結算（轉帳 '+f(+st.transfer||0)+' 元）'+(st.comIds?'':'｜舊格式結算單，依當時位置對應')) : '其他已結算（找不到對應的結算單）';
+    if(!groups[g]){ groups[g]={rows:[],sum:0}; order.push(g); }
+    groups[g].rows.push(row(c,i)); groups[g].sum+=(+c.amount||0);
+  });
+  order.sort(function(p,q){ const po=p.charAt(0)==='其', qo=q.charAt(0)==='其'; if(po!==qo) return po?1:-1; return p<q?1:-1; });
+  let html=open.length ? open.join('') : '<span style="color:var(--muted);">目前沒有未結算的共同費用。</span>';
+  const nSet=list.length-open.length;
+  if(nSet){
+    html+='<details style="margin-top:.55rem;"><summary style="cursor:pointer;color:var(--muted);font-size:.8rem;">✅ 已與弟結算的共同費用 '+nSet+' 筆（依結算期別分組，點開查詢）</summary>'
+      +order.map(function(g){ return '<div style="margin:.4rem 0 .2rem;font-weight:700;font-size:.8rem;">'+g+'｜'+groups[g].rows.length+' 筆，合計 '+f(groups[g].sum)+' 元</div>'+groups[g].rows.join(''); }).join('')
+      +'</details>';
+  }
+  box.innerHTML=html;
 };
 window.tsbInitRooms = function(){
   const sel=document.getElementById('tsb-room'); if(!sel) return;
@@ -7167,7 +7141,7 @@ window.notifyMail = async function(mode='save'){
   const record = {room:room||'—', type:type||'訊息', note, time:now, sender, savedAt:new Date().toISOString()};
   if(!DB.mailRecords) DB.mailRecords=[];
   DB.mailRecords.unshift(window.stampRec(record));
-  await saveLandlordData();
+  if(isLandlordAuth()) await saveLandlordData();   // ★09230610 P1-1：房客無寫入權限 → 紀錄暫不存雲端（W-2 上線後改存房客區），但照常寄信通知房東
   if(mode==='tenant'){
     const t=DB.tenants[room]||{};
     if(t.tenantEmail){
@@ -7207,7 +7181,7 @@ window.notifyLockBattery = async function(mode='save'){
   const record = {note, time:now, sender, savedAt:new Date().toISOString()};
   if(!DB.lockBatteryRecords) DB.lockBatteryRecords=[];
   DB.lockBatteryRecords.unshift(window.stampRec(record));
-  await saveLandlordData();
+  if(isLandlordAuth()) await saveLandlordData();   // ★09230610 P1-1：房客無寫入權限 → 紀錄暫不存雲端（W-2 上線後改存房客區），但照常寄信通知房東
   if(mode==='all'){
     initEJS();
     const targets=Object.values(DB.tenants).filter(t=>t.status==='occupied'&&t.tenantEmail);
