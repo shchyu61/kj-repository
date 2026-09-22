@@ -1,6 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+★★★【自我舉證表】rental_cloud_notify(09230021).py（ＡＭ２５）
+　關鍵結論｜來源
+　・排程改台灣 20:30｜主帥 2026/08/30 13:23「全面改成當天晚上 20:30」（ＡＭ１④）；本檔搭配 rental_notify(09230021).yml
+　・重複的 4 種提醒交雲端寄｜主帥 2026/09/23 00:0x 題一 A
+　・雲端心跳兩步走｜主帥 2026/09/23 00:0x 題二 A（同意新增心跳）
+　・過渡期重複信標示｜主帥 2026/09/23 00:21 第3點
+　・公開紀錄不印主旨｜鐵律ＡＪ２（kj-repository 為公開倉庫，Actions 紀錄不必登入即可看）
+　・實測｜改版記錄(09230021) 第十一章①～⑥
+★★★【推定清單】
+　・推定 Firestore 服務帳號可寫 artifacts/kj-rental/landlord/heartbeat（與 landlord/data 同集合）
+　　→ 若為假：心跳寫入失敗，GitHub 紀錄印出警告，網頁 26 小時後紅色警示；寄信與結算不受影響
+─────────────────────────────────────────────
 嘉義房租 雲端通知（GitHub Actions 版）
 ─────────────────────────────────────────────
 每日定時讀 Firestore 房東資料，用 Gmail 自動寄提醒給房東（筆電關機也收得到）：
@@ -9,12 +21,14 @@
   ③ 每月預存提醒（每月 1 日，稅務備用金哥哥半額）
   ④ 帳單最後應繳日提醒（偶數月 14、19 日，若仍有緩收帳單）
   ⑤ 哥弟結算通知（動態結算日；同時寄給哥與弟）
+★09230021：排程改每天台灣 20:30（ＡＭ１④）；每次執行寫「雲端心跳」到 landlord/heartbeat（網頁顯示）；
+  過渡期（DUP_TRANSITION=True）①～④ 主旨與內文標示「過渡期重複信・正常」。
 
 依賴：pip install google-auth requests
 Secrets：GMAIL_ACCOUNT / GMAIL_PASSWORD（應用程式密碼）/ FIREBASE_SERVICE_KEY / NOTIFY_TO(可選)
 """
 import os, json, smtplib, calendar
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from email.mime.text import MIMEText
 from email.header import Header
 
@@ -37,6 +51,19 @@ BILL_DUE_DAYS    = {14, 19}   # 偶數月這幾天提醒未收帳單（最後應
 GMAIL_ACCOUNT  = os.environ.get('GMAIL_ACCOUNT', '').strip()
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '').strip()
 NOTIFY_TO      = os.environ.get('NOTIFY_TO', '').strip() or GMAIL_ACCOUNT
+
+SCRIPT_VERSION = '09230021'   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
+HB_PATH = f'artifacts/{APP_ID}/landlord/heartbeat'   # ★雲端心跳：獨立文件，只有本程式寫、網頁只讀
+TW = timezone(timedelta(hours=8))
+DUP_TRANSITION = True   # ★過渡期（網頁與雲端並行）；第二步交付時改 False（改版記錄待辦 P3-19）
+
+
+def dup_head(src):
+    return f'【過渡期重複信・正常｜{src}寄】' if DUP_TRANSITION else ''
+
+
+def dup_foot(src):
+    return ('\n\n──────────\n★這是【過渡期的重複信】，屬正常，不是程式壞掉，不必找 AI 修。\n・原因：2026/09/23 起，雲端通知改為每天 20:30 寄出，並加裝「雲端心跳」（每次執行都在雲端留下紀錄）。依鐵律ＡＭ１２，必須先確認雲端連續 3 天正常，網頁才能停寄，所以驗收期間同一類提醒會收到兩封：一封【網頁寄】、一封【雲端寄】。\n・本信由：【' + src + '】寄出。\n・何時結束：房租網頁「🏠 房客管理」頁最上方顯示「雲端已連續 3 天正常」後，AI 會交付第二步，之後只剩雲端一封（改版記錄待辦 P3-19）。') if DUP_TRANSITION else ''
 
 
 def firestore_decode(v):
@@ -114,7 +141,9 @@ def send_mail(subject, body, to=None):
     with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=30) as s:
         s.login(GMAIL_ACCOUNT, GMAIL_PASSWORD)
         s.sendmail(GMAIL_ACCOUNT, [to or NOTIFY_TO], msg.as_string())
-    print(f'  ✅ 已寄出：{subject}')
+    # ★09230021 待辦 P4-15（鐵律ＡＪ２）：公開倉庫的 Actions 執行紀錄任何人都看得到，主旨含房客姓名與金額 →
+    #   預設只印封數；除錯時在 workflow 設環境變數 DEBUG_LOG=1 才印主旨，查完須改回
+    print(f'  ✅ 已寄出：{subject}' if os.environ.get('DEBUG_LOG') == '1' else '  ✅ 已寄出 1 封（主旨含個資，公開紀錄不印；設 DEBUG_LOG=1 可看）')
 
 
 def check_lease(db):
@@ -145,7 +174,7 @@ def check_lease(db):
         body = (f'{RL.get(r, r)}　{name}\n租約到期日：{expiry}（{left}）\n\n{act}\n\n'
                 f'—— 嘉義房租雲端通知（到期前 45 天起，於 45/30/21/14/7/3/1 天自動提醒）')
         try:
-            send_mail(f'📅 契約到期提醒：{RL.get(r, r)} {name}（{left}）', body); sent += 1
+            send_mail(dup_head('雲端') + f'📅 契約到期提醒：{RL.get(r, r)} {name}（{left}）', body + dup_foot('雲端')); sent += 1
         except Exception as e:
             print(f'  ⚠️ 契約寄送失敗 {r}: {e}')
     return sent
@@ -175,7 +204,7 @@ def check_maintenance(db):
                 f'預計到期：{nxt.strftime("%Y-%m-%d")}（{left}）\n\n請提前安排廠商。\n\n'
                 f'—— 嘉義房租雲端通知（到期前 30 天起，於 30/14/7/3/1 天自動提醒）')
         try:
-            send_mail(f'🔧 維護到期提醒：{lbl}（{left}）', body); sent += 1
+            send_mail(dup_head('雲端') + f'🔧 維護到期提醒：{lbl}（{left}）', body + dup_foot('雲端')); sent += 1
         except Exception as e:
             print(f'  ⚠️ 維護寄送失敗: {e}')
     return sent
@@ -197,7 +226,7 @@ def check_reserve(db):
             f'房屋稅每年 5 月、地價稅每年 11 月各繳一次；每月預存到期不慌。\n\n'
             f'—— 嘉義房租雲端通知（每月 1 日提醒）')
     try:
-        send_mail(f'💰 每月預存提醒：稅務備用金約 NT${half}', body); return 1
+        send_mail(dup_head('雲端') + f'💰 每月預存提醒：稅務備用金約 NT${half}', body + dup_foot('雲端')); return 1
     except Exception as e:
         print(f'  ⚠️ 預存寄送失敗: {e}'); return 0
 
@@ -216,7 +245,7 @@ def check_bill_deadline(db):
             f'請提醒房客於 {today.month}/19 前完成郵局轉帳，避免逾期被台電／台水／瓦斯併入下期。\n\n'
             f'—— 嘉義房租雲端通知（偶數月 14、19 日提醒）')
     try:
-        send_mail(f'⏰ 帳單最後應繳日 {today.month}/19 將至，仍有未收帳單', body); return 1
+        send_mail(dup_head('雲端') + f'⏰ 帳單最後應繳日 {today.month}/19 將至，仍有未收帳單', body + dup_foot('雲端')); return 1
     except Exception as e:
         print(f'  ⚠️ 帳單提醒寄送失敗: {e}'); return 0
 
@@ -523,19 +552,64 @@ def check_monthly_settle(db):
     return sent
 
 
-def main():
-    print('▶ 嘉義房租雲端通知 啟動')
-    if not (GMAIL_ACCOUNT and GMAIL_PASSWORD):
-        raise RuntimeError('缺少 GMAIL_ACCOUNT / GMAIL_PASSWORD')
-    db = load_db()
-    print(f'  已讀取（房客 {len(db.get("tenants") or {})}、維護 {len(db.get("maintenanceRecords") or [])}、帳單 {len(db.get("utilBills") or [])}）')
-    a = check_lease(db)
-    b = check_maintenance(db)
-    c = check_reserve(db)
-    d = check_bill_deadline(db)
-    e = check_monthly_settle(db)
-    print(f'✔ 完成：契約 {a}、維護 {b}、預存 {c}、帳單最後應繳日 {d}、哥弟結算 {e} 封')
+def _hb_url():
+    return (f'https://firestore.googleapis.com/v1/projects/{PROJECT_ID}'
+            f'/databases/(default)/documents/{HB_PATH}')
 
+
+def _token():
+    from google.oauth2 import service_account
+    from google.auth.transport.requests import Request
+    creds = service_account.Credentials.from_service_account_info(
+        json.loads(os.environ.get('FIREBASE_SERVICE_KEY', '')),
+        scopes=['https://www.googleapis.com/auth/datastore'])
+    creds.refresh(Request())
+    return creds.token
+
+
+def write_heartbeat(ok, counts, err=''):
+    """★雲端心跳：成功與失敗都寫；網頁房客管理頁顯示，超過 26 小時沒成功即紅色警示（ＡＭ６０ 失敗要送到使用者會看的地方）"""
+    import requests
+    tok = _token(); hdr = {'Authorization': f'Bearer {tok}'}
+    r = requests.get(_hb_url(), headers=hdr, timeout=30)
+    old = {k: firestore_decode(x) for k, x in r.json().get('fields', {}).items()} if r.status_code == 200 else {}
+    now = datetime.now(TW); today = now.strftime('%Y-%m-%d')
+    ok_dates = [d for d in (old.get('okDates') or []) if d != today] + ([today] if ok else [])
+    ok_dates = ok_dates[-10:]
+    streak = 0; d = now.date()
+    while d.strftime('%Y-%m-%d') in ok_dates:
+        streak += 1; d = d - timedelta(days=1)
+    hb = {'version': SCRIPT_VERSION, 'lastRunAt': now.isoformat(timespec='seconds'), 'lastRunOk': bool(ok),
+          'lastOkAt': now.isoformat(timespec='seconds') if ok else (old.get('lastOkAt') or ''),
+          'lastError': (err or '')[:300], 'sent': counts, 'total': int(sum(counts.values())) if counts else 0,
+          'okDates': ok_dates, 'okStreak': streak}
+    r = requests.patch(_hb_url(), headers=hdr, json={'fields': {k: firestore_encode(v) for k, v in hb.items()}}, timeout=30)
+    r.raise_for_status()
+    print(f'  🛰️ 雲端心跳已寫入：ok={ok}、連續 {streak} 天、共寄 {hb["total"]} 封')
+
+
+def main():
+    print(f'▶ 嘉義房租雲端通知 啟動（版本 {SCRIPT_VERSION}）')
+    counts = {}; err = ''
+    try:
+        if not (GMAIL_ACCOUNT and GMAIL_PASSWORD):
+            raise RuntimeError('缺少 GMAIL_ACCOUNT / GMAIL_PASSWORD')
+        db = load_db()
+        print(f'  已讀取（房客 {len(db.get("tenants") or {})}、維護 {len(db.get("maintenanceRecords") or [])}、帳單 {len(db.get("utilBills") or [])}）')
+        counts['lease'] = check_lease(db)
+        counts['maint'] = check_maintenance(db)
+        counts['reserve'] = check_reserve(db)
+        counts['bill'] = check_bill_deadline(db)
+        counts['settle'] = check_monthly_settle(db)
+        print(f'✔ 完成：契約 {counts["lease"]}、維護 {counts["maint"]}、預存 {counts["reserve"]}、帳單最後應繳日 {counts["bill"]}、哥弟結算 {counts["settle"]} 封')
+    except Exception as e:
+        err = f'{type(e).__name__}: {e}'
+        raise
+    finally:
+        try:
+            write_heartbeat(not err, counts, err)
+        except Exception as he:
+            print(f'  ⚠️ 雲端心跳寫入失敗（網頁 26 小時後會顯示紅色警示）: {he}')
 
 if __name__ == '__main__':
     main()
