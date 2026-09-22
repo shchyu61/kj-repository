@@ -8,7 +8,9 @@
 　・雲端心跳兩步走｜主帥 2026/09/23 00:0x 題二 A（同意新增心跳）
 　・過渡期重複信標示｜主帥 2026/09/23 00:21 第3點
 　・公開紀錄不印主旨｜鐵律ＡＪ２（kj-repository 為公開倉庫，Actions 紀錄不必登入即可看）
-　・實測｜改版記錄(09230021) 第十一章①～⑥
+　・結算日只寄提醒、不自動結算｜主帥 2026/09/23 02:5x 裁示 P3-8 方案 A
+　・奇數月結算日 15 日｜主帥 2026/09/21 21:17 第7點原話（對話紀錄檔 2026-09-21-19-24-00）
+　・實測｜改版記錄(09230308) 第十一章
 ★★★【推定清單】
 　・推定 Firestore 服務帳號可寫 artifacts/kj-rental/landlord/heartbeat（與 landlord/data 同集合）
 　　→ 若為假：心跳寫入失敗，GitHub 紀錄印出警告，網頁 26 小時後紅色警示；寄信與結算不受影響
@@ -20,9 +22,13 @@
   ② 定期維護到期前 30 天（廚房濾心／冷氣／洗衣機／水塔）
   ③ 每月預存提醒（每月 1 日，稅務備用金哥哥半額）
   ④ 帳單最後應繳日提醒（偶數月 14、19 日，若仍有緩收帳單）
-  ⑤ 哥弟結算通知（動態結算日；同時寄給哥與弟）
+  ⑤ 哥弟結算日提醒（奇數月 15 日、偶數月 20 日 20:30；★只寄提醒、不自動結算，結算一律在網頁完成）
 ★09230021：排程改每天台灣 20:30（ＡＭ１④）；每次執行寫「雲端心跳」到 landlord/heartbeat（網頁顯示）；
   過渡期（DUP_TRANSITION=True）①～④ 主旨與內文標示「過渡期重複信・正常」。
+★09230308：通知三級分類（ＡＭ１⑦：急迫／次日有效／一般）：本程式所有信件皆屬【一般】，只在排程 20:30 寄；
+  寄信入口 send_mail 於睡眠時段（台灣 21:30～07:30）攔截非急迫信；睡眠時段手動執行只驗證讀取並寫心跳、不寄信（ＡＭ１①⑥⑦）。
+★09230308：⑤ 改為只寄結算日提醒（主帥 2026/09/23 裁示 P3-8 方案 A）：雲端不再自動標記已結算、不寫結算單，避免與網頁三桶重複結算；
+  奇數月結算日改 15 日（主帥 2026/09/21 21:17：「網路費帳單13日中華電信公司就寄電子帳單出來,就算再拖個2天緩衝期…算9/15好了」）。
 
 依賴：pip install google-auth requests
 Secrets：GMAIL_ACCOUNT / GMAIL_PASSWORD（應用程式密碼）/ FIREBASE_SERVICE_KEY / NOTIFY_TO(可選)
@@ -52,9 +58,23 @@ GMAIL_ACCOUNT  = os.environ.get('GMAIL_ACCOUNT', '').strip()
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '').strip()
 NOTIFY_TO      = os.environ.get('NOTIFY_TO', '').strip() or GMAIL_ACCOUNT
 
-SCRIPT_VERSION = '09230021'   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
+SCRIPT_VERSION = '09230308'   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
 HB_PATH = f'artifacts/{APP_ID}/landlord/heartbeat'   # ★雲端心跳：獨立文件，只有本程式寫、網頁只讀
 TW = timezone(timedelta(hours=8))
+KIND_URGENT, KIND_NEXT_DAY, KIND_NORMAL = '急迫', '次日有效', '一般'   # ★通知三級分類（ＡＭ１⑦）；本程式信件皆為一般
+
+
+def in_quiet_hours(now=None):
+    """睡眠時段＝台灣 21:30～次日 07:30（ＡＭ１①）"""
+    t = (now or datetime.now(TW)).astimezone(TW)
+    m = t.hour * 60 + t.minute
+    return m >= 21 * 60 + 30 or m < 7 * 60 + 30
+
+
+class QuietSkip(Exception):
+    """睡眠時段不寄非急迫信（寄信入口攔截，ＡＭ１⑥⑦）；呼叫端既有 except 會接住，不會被記成已寄"""
+
+
 DUP_TRANSITION = True   # ★過渡期（網頁與雲端並行）；第二步交付時改 False（改版記錄待辦 P3-19）
 
 
@@ -133,7 +153,9 @@ def save_fields(fields: dict):
     print(f'  💾 已寫回 Firestore：{", ".join(fields)}')
 
 
-def send_mail(subject, body, to=None):
+def send_mail(subject, body, to=None, kind=KIND_NORMAL):
+    if kind != KIND_URGENT and in_quiet_hours():
+        raise QuietSkip(f'睡眠時段不寄（{kind}通知，ＡＭ１①）')
     msg = MIMEText(body, 'plain', 'utf-8')
     msg['Subject'] = Header(subject, 'utf-8')
     msg['From'] = GMAIL_ACCOUNT
@@ -296,7 +318,8 @@ def settle_days(db, today):
     y, m = today.year, today.month
     last = calendar.monthrange(y, m)[1]          # 大小月：31/30/29/28
     cost_day = 19 if m % 2 == 0 else 13          # 費用確定日：網路13；偶數月水電19
-    early = min(cost_day + 1, last)              # 奇數月14 / 偶數月20
+    # ★09230308 奇數月＋2 天緩衝（中華電信電子帳單不一定準時 13 日寄，主帥 09/21 21:17）；偶數月維持＋1
+    early = min(cost_day + (1 if m % 2 == 0 else 2), last)   # 奇數月15 / 偶數月20
     rds = _rent_days(db)
     late = min((max(rds) if rds else 1) + 1, last)   # 最後一位房客收租日+1，壓月底
     return early, max(late, early)
@@ -439,118 +462,27 @@ def mark_settled(db, c, today):
 
 
 def check_monthly_settle(db):
-    """⑤ 動態結算日：早鳥日若『哥→弟為正』就結算；否則延到最後一位房客收租日"""
+    """⑤ 哥弟結算日提醒（★09230308 主帥裁示 P3-8 方案 A：只寄提醒、不自動結算、不寫結算單）
+    結算日＝奇數月 15 日／偶數月 20 日（若最後一位房客收租日＋1 更晚，取較晚者）。
+    ★舊版在此計算金額並呼叫 mark_settled 自動標記已結算，會寫出網頁無法撤銷的舊格式結算單，
+      且與網頁「房東課（哥弟結算）」重複結算 → 停用；calc_settle／mark_settled 保留供待辦 P3-21 驗證用，本函式不再呼叫。"""
     today = datetime.now()
     early, late = settle_days(db, today)
-    if today.day not in (early, late):
+    if today.day != late:
         return 0
-    c = calc_settle(db, today)
-    is_final = (today.day == late)
-    if (not is_final) and c['transfer'] < 0:
-        print(f'  ⏸ 早鳥日({early})試算為負（費用>收入），延到最終結算日({late})再寄')
-        return 0
-    if is_final and early != late:
-        pass  # 最終日一律寄（早鳥日已寄過的月份，代表當時為正，本日視為補充/最終確認）
-
-    f = lambda n: f'{int(n):,}'
-    tag = '最終結算' if is_final else '結算'
-    fee = int(db.get('defaultNetFee') or 1409)
-    nmt = '、'.join(f'{m[:4]}年{int(m[4:])}月' for m in c['net_months']) or '—'
-    blocks = 3 + (1 if (c['pub_bro'] or c['pub_big']) else 0) + (1 if c['clines'] else 0)
-    odd_all = (db.get('bsOddOwner') != 'half')
-    pd = c.get('paid_date') or (db.get('bsPaidDate') or '').strip()
-    owed_to_me = owed_to_you = 0
-    for x in (db.get('bsCommonCosts') or []):
-        if x.get('settled'): continue
-        a = int(x.get('amount') or 0); h = a // 2
-        if (x.get('payer') or '哥') == '哥': owed_to_me += h
-        else: owed_to_you += (a - h)
-    pub_total = c['pub_bro'] + c['pub_big']
-    pub_share = pub_total - pub_total // 2
-    subj = (c['cutoff'] + '之前的' if c['cutoff'] else '') + '房租和水、電、瓦斯、網路費結算明細'
-
-    body = f"主旨：{subj}\n\n這期跟你結一下，分 {blocks} 塊：\n\n"
-    body += "【1. 房租】\n"
-    body += f"本期房租收入 {f(c['rent'])}，明細如下：\n"
-    body += ('\n'.join(c['lines']) if c['lines'] else '・（明細請見網頁「收租紀錄」）') + '\n'
-    body += f"兩人各半 → 你的部分 {f(c['rent_bro'])}（我的部分 {f(c['rent'] - c['rent_bro'])}）\n\n"
-
-    body += "【2. 水電瓦斯（你先幫忙代墊的）】\n"
-    body += f"你先幫忙代墊了 {f(c['adv'])} 元。\n"
-    if c['odd']:
-        body += (f"（水電帳單的零頭 {f(c['odd'])} 元，全部由我吸收，不用你負擔）\n" if odd_all
-                 else f"（水電帳單的零頭 {f(c['odd'])} 元，我們各負責一半，你負擔 {f(c['odd_bro'])} 元）\n")
-    if c['paid_back'] > 0:
-        body += (f"我已經在 {pd or '先前'} 先轉帳給你 {f(c['paid_back'])} 元，這次再補你 {f(c['util_to_bro'])} 元；"
-                 f"{f(c['paid_back'])} ＋ {f(c['util_to_bro'])} ＝ {f(c['paid_back'] + c['util_to_bro'])} 元，"
-                 f"剛好就是你該拿回去的代墊款。\n\n")
-    else:
-        body += f"這次我補你 {f(c['util_to_bro'])} 元，就是你該拿回去的代墊款。\n\n"
-
-    body += "【3. 網路費】\n"
-    body += (f"網路費 {f(c['net'])} 元（{nmt}，每月 {f(fee)} 元 × {len(c['net_months'])} 個月）是我先付的，"
-             f"你負責一半 {f(c['net_bro'])} 元（我多負責 1 元）。\n")
-    body += f"這 {f(c['net_bro'])} 元你不用另外拿錢給我，我會直接從「我要轉帳給你的錢」裡面扣掉。\n"
-
-    if pub_total:
-        body += "\n【4. 公共電費（1樓大廳）】\n"
-        body += "這是 1 樓大廳的電費（電號…14-5），房客不分攤，只有我們兩人各負責一半。各期明細：\n"
-        body += ('\n'.join(c['pub_lines']) if c['pub_lines'] else '・（明細請見網頁「1樓公共電費歷史」）') + '\n'
-        body += f"合計 {f(pub_total)} 元，各負責一半 → 你應該負擔 {f(pub_share)} 元（我多負責 1 元）。\n"
-        if c['pub_to_bro'] >= 0:
-            body += (f"你實際已經代墊了 {f(c['pub_bro'])} 元，比應負擔的多墊了 {f(c['pub_to_bro'])} 元，"
-                     f"所以我要補你 {f(c['pub_to_bro'])} 元。\n")
-        else:
-            body += (f"你實際已經代墊了 {f(c['pub_bro'])} 元，比應負擔的還少 {f(abs(c['pub_to_bro']))} 元，"
-                     f"所以這 {f(abs(c['pub_to_bro']))} 元我會從轉帳金額裡面扣掉。\n")
-
-    if c['clines']:
-        body += f"\n【{5 if pub_total else 4}. 其他共同費用（各負責一半，我多負責 1 元）】\n"
-        body += '\n'.join(c['clines']) + '\n'
-        body += f"我先付的部分，你要付給我 {f(owed_to_me)} 元；你先付的部分，我要付給你 {f(owed_to_you)} 元。\n"
-        if c['common_to_bro'] >= 0:
-            body += f"兩邊相抵 → 我還要補你 {f(abs(c['common_to_bro']))} 元。\n"
-        else:
-            body += f"兩邊相抵 → 你還要補我 {f(abs(c['common_to_bro']))} 元，這筆我會從轉帳金額裡面扣掉。\n"
-
-    body += "\n【結算】這次我轉帳給你：\n"
-    body += f"{f(c['rent_bro'])}（房租）＋ {f(c['util_to_bro'])}（水電補你）－ {f(c['net_bro'])}（網路）"
-    if pub_total:
-        body += (f"＋ {f(c['pub_to_bro'])}（公共電費）" if c['pub_to_bro'] >= 0
-                 else f"－ {f(abs(c['pub_to_bro']))}（公共電費）")
-    if c['common_to_bro']:
-        body += (f"＋ {f(c['common_to_bro'])}（共同費用）" if c['common_to_bro'] >= 0
-                 else f"－ {f(abs(c['common_to_bro']))}（共同費用）")
-    body += f" ＝ {f(c['transfer'])} 元"
-
-    if c['unpaid']:
-        body += ('\n\n⚠️ 本月尚未收訖（不列入本次結算，待收訖後併入次月，非我方拖延）：\n'
-                 + '\n'.join('　・' + u for u in c['unpaid']))
-    if c['unassigned']:
-        body += ('\n\n（系統備註，給我自己看：這幾期水電尚未指定誰先付，未列入代墊：'
-                 + '、'.join(c['unassigned']) + '）')
-    body += ('\n\n（本次涵蓋的所有項目已由系統自動標記為已結算，下個月不會重複計算。'
-             '若尚未轉帳或有誤，可至網頁「房東課→結算單」撤銷本次結算。）')
-
-    subject = f'💵 {subj}（我轉帳給你 NT${f(c["transfer"])}）'
-    sent = 0
+    odd = (today.month % 2 == 1)
+    what = ('本月為奇數月：只有網路費（中華電信每月 13 日寄電子帳單，已過 2 天緩衝）。' if odd
+            else '本月為偶數月：含水、電、瓦斯帳單（台電、台水、瓦斯最後應繳日 19 日已過）。')
+    body = (f'今天（{today.month}/{today.day}）是哥弟結算日。\n{what}\n\n'
+            '請開啟房租網頁 → 🔑 房東專區 → 房東課（哥弟結算）→ 按「自動套入」，\n'
+            '產生給弟的通知信與轉帳金額，確認後儘快轉帳給弟。\n\n'
+            '★雲端不再自動結算、不會自動標記已結算（主帥 2026/09/23 裁示），結算一律在網頁完成，避免重複結算。\n\n'
+            '—— 嘉義房租雲端通知（奇數月 15 日、偶數月 20 日 20:30 提醒）')
     try:
-        send_mail(subject, body); sent += 1
+        send_mail(f'💵 今天是哥弟結算日（{today.year}年{today.month}月）：請到網頁結算並轉帳給弟', body)
+        return 1
     except Exception as e:
-        print(f'  ⚠️ 月結算寄送失敗（哥）: {e}')
-    bro = (db.get('brotherEmail') or '').strip()
-    if bro and db.get('notifyBrother'):
-        try:
-            send_mail(subject, body, to=bro); sent += 1
-        except Exception as e:
-            print(f'  ⚠️ 月結算寄送失敗（弟）: {e}')
-    if sent:
-        try:
-            mark_settled(db, c, today)
-        except Exception as e:
-            print(f'  ⚠️ 自動標記已結算失敗（下次可能重複計算，請至網頁手動標記）: {e}')
-    return sent
-
+        print(f'  ⚠️ 結算日提醒寄送失敗: {e}'); return 0
 
 def _hb_url():
     return (f'https://firestore.googleapis.com/v1/projects/{PROJECT_ID}'
@@ -596,12 +528,16 @@ def main():
             raise RuntimeError('缺少 GMAIL_ACCOUNT / GMAIL_PASSWORD')
         db = load_db()
         print(f'  已讀取（房客 {len(db.get("tenants") or {})}、維護 {len(db.get("maintenanceRecords") or [])}、帳單 {len(db.get("utilBills") or [])}）')
-        counts['lease'] = check_lease(db)
-        counts['maint'] = check_maintenance(db)
-        counts['reserve'] = check_reserve(db)
-        counts['bill'] = check_bill_deadline(db)
-        counts['settle'] = check_monthly_settle(db)
-        print(f'✔ 完成：契約 {counts["lease"]}、維護 {counts["maint"]}、預存 {counts["reserve"]}、帳單最後應繳日 {counts["bill"]}、哥弟結算 {counts["settle"]} 封')
+        if in_quiet_hours():
+            print('  🌙 睡眠時段（台灣 21:30～07:30）執行：只驗證讀取並寫心跳，不寄任何信（ＡＭ１①⑦；排程班次為 20:30，此情況只會發生在手動執行）')
+            counts.update(lease=0, maint=0, reserve=0, bill=0, settle=0)
+        else:
+            counts['lease'] = check_lease(db)
+            counts['maint'] = check_maintenance(db)
+            counts['reserve'] = check_reserve(db)
+            counts['bill'] = check_bill_deadline(db)
+            counts['settle'] = check_monthly_settle(db)
+        print(f'✔ 完成：契約 {counts["lease"]}、維護 {counts["maint"]}、預存 {counts["reserve"]}、帳單最後應繳日 {counts["bill"]}、結算日提醒 {counts["settle"]} 封')
     except Exception as e:
         err = f'{type(e).__name__}: {e}'
         raise

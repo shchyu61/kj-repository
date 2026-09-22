@@ -1,4 +1,14 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09230308)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：待辦 P3-7 殘留程式整理（主帥 09/22 00:40 截圖「已停用的功能請移除程式碼」；主帥 09/23 03:08 要求執行待辦）
+　① 依據＝GitHub 提交歷史 git log -S：畫面元素移除時間 → 維護預備金 06/15 18:45；Tapo 設定 06/21 00:59；舊電池紀錄與信件／電池通知表單 03/31 05:39
+　② 移除 8 個函式（renderMaintenanceReserve、saveMaintenanceReserve、deleteMaintenanceReserve、renderMonitorCam、saveTapoSettings、renderBatteryHistory、sendMailNotice、sendLockBatteryNotice）、tenantBillPath、3 處呼叫、1 處重複呼叫
+　③ ★資料欄位 maintenanceReserveLog、tapoSettings 的預設值、載入、存檔三處全部保留，雲端資料不減（ＡＭ６３）
+　　驗證：語法、重複 id、onclick 前後比對、已刪名稱殘留引用 0、(154) 找不到元素、頁面切換實跑、回歸四項　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・開「📬 信件通知」「🔋 電子鎖沒電」「定期維護」頁，畫面與清除前相同（推定：被刪函式皆無畫面元素可操作）
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(09230021)　★依鐵律ＡＭ１７／自檢(14)
 　本輪性質：雲端心跳第一步（主帥 09/23 00:0x 題一A、題二A；00:21 第3點）
 　① 房客管理頁最上方顯示「雲端通知最後成功時間、寄出封數、連續正常天數、雲端版本」；超過 26 小時沒成功 → 紅色警示
@@ -2546,7 +2556,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09230021'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09230308'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -2564,7 +2574,6 @@ const safeId = (email) => email.toLowerCase().replace(/[@.]/g,'_');
 // ★08300156 缺陷③：路徑一律由 Auth 身分推導，未登入即丟例外拒絕
 const landlordPath = () => { requireAuthEmail();
   return window._doc(window._db,'artifacts',window._APP_ID,'landlord','data'); };
-const tenantBillPath = (email) => window._doc(window._db,'artifacts',window._APP_ID,'tenants',safeId(email),'bills','latest');
 // ★settingsPath 只能存取自己；房東可存取任何人（用於協助排除問題）
 const settingsPath = (email) => {
   const me = requireAuthEmail();
@@ -3628,7 +3637,6 @@ window.ST = function(n){
   if(n==='announce')renderAnnounce();
   updateLandlordMenuActive(n);
   if(n==='repair')renderRepair();
-  if(n==='monitor-cam')renderMonitorCam();
   if(n==='former')renderFormer();
   if(n==='photos')renderPhotos();
   if(n==='adtext'){}
@@ -3638,8 +3646,6 @@ window.ST = function(n){
   if(n==='ai-chat'){}
   if(n==='mail-notice'){renderMailPage();}
   if(n==='lock-battery'){renderLockPage();}
-  if(n==='mail-notice'){renderMailPage();}
-  if(n==='lock-battery')renderBatteryHistory();
 };
 window.CM = (id)=>document.getElementById(id).classList.remove('open');
 window.OM = (id)=>document.getElementById(id).classList.add('open');
@@ -5540,78 +5546,13 @@ window.deleteLockRecord = async function(i){
 // 【23. 信件通知 + 電子鎖沒電通知功能】
 // ============================================================
 
-window.sendMailNotice = async function(sendEmail=true){
-  const room=document.getElementById('mn-room')?.value||'';
-  const type=document.getElementById('mn-type')?.value||'掛號信';
-  const note=document.getElementById('mn-note')?.value.trim()||'';
-  const now=new Date().toLocaleString('zh-TW');
-  // ★★★09210142 房缺-01b 修正：原寫入 DB.mailNotices，
-  //   而 renderMailHistory() 與 saveLandlordData() 用的都是 DB.mailRecords → 永遠看不到也不存雲端。
-  if(!DB.mailRecords)DB.mailRecords=[];
-  DB.mailRecords.unshift(window.stampRec({type,room:room||'所有房客',note,sentAt:now,emailed:sendEmail})); 
-  await saveLandlordData();
-  if(sendEmail){
-    initEJS();
-    const tenants=room
-      ? Object.values(DB.tenants).filter(t=>t.room===room&&t.tenantEmail)
-      : Object.values(DB.tenants).filter(t=>t.tenantEmail&&t.status==='occupied');
-    let sent=0;
-    for(const t of tenants){
-      try{
-        await emailjs.send(EJS_SVC,'template_oqm4kw9',{
-          to_email:t.tenantEmail,
-          otp:`📬【信件通知】您有一件「${type}」在一樓信箱，請盡快取件。${note?'備註：'+note:''}`
-        });
-        sent++;
-      }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
-    }
-    toast(`📧 已通知 ${sent} 位房客：${type} ✓`);
-  } else {
-    toast(`💾 已儲存（未寄信）：${type}`);
-  }
-  renderMailHistory();
-};
 
 // ★★★09210142 房缺-01 修正：此處原本【重複定義】renderMailHistory，
 //   且讀的是 DB.mailNotices，而寫入端（第 5244 行）寫的是 DB.mailRecords。
 //   後定義覆蓋前定義 → 信件紀錄永遠顯示「尚無紀錄」。
 //   處置：★刪除本重複定義，★★保留第 5262 行讀 DB.mailRecords 的正確版本。
 
-window.sendLockBatteryNotice = async function(sendEmail=true){
-  const note=document.getElementById('lb-note')?.value.trim()||'';
-  const now=new Date().toLocaleString('zh-TW');
-  // ★★★09210142 房缺-02 修正：原寫入 DB.batteryNotices，
-  //   而 renderBatteryHistory() 讀的是 DB.lockBatteryRecords，兩者對不上；
-  //   且 batteryNotices 不在 saveLandlordData 的欄位清單內 → 永遠不會存進雲端。
-  if(!DB.lockBatteryRecords)DB.lockBatteryRecords=[];
-  DB.lockBatteryRecords.unshift(window.stampRec({type:'換電池通知',room:'1樓大廳',note,sentAt:now,emailed:sendEmail}));
-  await saveLandlordData();
-  if(sendEmail){
-    initEJS();
-    const msg=`🔋【電子鎖沒電通知】1樓大廳電子鎖電池電量偏低，房東人在北部授權房客自行更換。充電電池和充電器放在面對神明桌右邊置物櫃最上方時鐘下面；磁性十字起子放在面對神明桌左邊的桌子上。更換完畢請回報房東，謝謝！${note?'備註：'+note:''}`;
-    const tenants=Object.values(DB.tenants).filter(t=>t.tenantEmail&&t.status==='occupied');
-    let sent=0;
-    for(const t of tenants){
-      try{ await emailjs.send(EJS_SVC,'template_oqm4kw9',{to_email:t.tenantEmail,otp:msg}); sent++; }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
-    }
-    try{ await emailjs.send(EJS_SVC,'template_oqm4kw9',{to_email:LANDLORD_EMAIL,otp:'🔋 換電池通知已發送給房客。'}); }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
-    toast(`📧 換電池通知已發送給 ${sent} 位房客 ✓`);
-  } else {
-    toast('💾 已儲存換電池紀錄（未寄信）');
-  }
-  renderBatteryHistory();
-};
 
-window.renderBatteryHistory = function(){
-  const el=document.getElementById('battery-history');
-  if(!el)return;
-  if(!DB.batteryNotices||!DB.batteryNotices.length){el.innerHTML='<div class="txt-m">尚無紀錄</div>';return;}
-  el.innerHTML=DB.batteryNotices.slice(0,10).map(r=>`
-    <div class="hist-item">
-      <div style="font-weight:900;">🔋 換電池通知</div>
-      <div class="txt-m">${r.sentAt}${r.note?' · '+r.note:''}${r.emailed?' · 已寄信':' · 未寄信'}</div>
-    </div>`).join('');
-};
 
 
 // ── 登入紀錄顯示 ──────────────────────────────────────────
@@ -6532,7 +6473,6 @@ window.saveMaintenanceRecord = async function(type){
   await saveLandlordData();
   renderMaintenanceHistory();
   renderMaintenanceLog();
-  renderMaintenanceReserve();
   toast('✅ 已儲存 '+(MAINTENANCE_ITEMS[type]?.label||type)+' 維護記錄（已存入歷年紀錄）');
 };
 window.loadMaintenanceState = function(){
@@ -6574,50 +6514,6 @@ window.renderMaintenanceHistory = function(){
 };
 
 // ── 2年週期維護：B每月合計 + C預存追蹤 ──────────────────────
-window.renderMaintenanceReserve = function(){
-  const recs=DB.maintenanceRecords||[];
-  let total=0; recs.forEach(r=>{ if(r.cost&&r.cycle) total+=Math.ceil(r.cost/r.cycle); });
-  const tgtEl=document.getElementById('mr-target');
-  if(tgtEl){
-    const parts=recs.filter(r=>r.cost&&r.cycle).map(r=>(MAINTENANCE_ITEMS[r.type]?.icon||'🔧')+(MAINTENANCE_ITEMS[r.type]?.label||r.type)+' '+Math.ceil(r.cost/r.cycle)).join('、');
-    tgtEl.innerHTML = total>0
-      ? '全部設備每月應預存合計：<strong>$'+total.toLocaleString()+'</strong>（'+parts+'）'
-      : '尚未有設備費用資料，請先在上方各設備填寫費用與週期並儲存。';
-  }
-  const am=document.getElementById('mr-amount'); if(am) am.placeholder=String(total||'');
-  const log=(DB.maintenanceReserveLog||[]).slice().sort((a,b)=>(b.month||'').localeCompare(a.month||''));
-  const listEl=document.getElementById('mr-list');
-  if(listEl){
-    listEl.innerHTML = log.length ? log.map(r=>'<div style="border:1px solid var(--border);border-radius:.5rem;padding:.4rem .55rem;margin-bottom:.4rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;"><div><strong>'+(r.month||'—')+'</strong>　預存 $'+(+r.amount||0).toLocaleString()+(r.note?'　<span style="color:var(--muted);font-size:.82rem;">（'+r.note+'）</span>':'')+'</div><button class="btn bd sm" onclick="deleteMaintenanceReserve(\''+r.month+'\')">🗑️</button></div>').join('') : '<div class="txt-m">尚無維護預存紀錄。</div>';
-  }
-  const sumEl=document.getElementById('mr-summary');
-  if(sumEl){
-    const saved=(DB.maintenanceReserveLog||[]).reduce((a,r)=>a+(+r.amount||0),0);
-    sumEl.innerHTML='累計已預存維護金：<strong>$'+saved.toLocaleString()+'</strong>（'+(DB.maintenanceReserveLog||[]).length+' 筆）　／　每月目標 $'+total.toLocaleString();
-  }
-};
-window.saveMaintenanceReserve = async function(){
-  const month=(document.getElementById('mr-month')?.value||'').trim();
-  if(!month){ toast('請選擇預存月份'); return; }
-  let amount=+(document.getElementById('mr-amount')?.value||0);
-  if(!amount){ (DB.maintenanceRecords||[]).forEach(r=>{ if(r.cost&&r.cycle) amount+=Math.ceil(r.cost/r.cycle); }); }
-  const note=(document.getElementById('mr-note')?.value||'').trim();
-  if(!DB.maintenanceReserveLog) DB.maintenanceReserveLog=[];
-  const i=DB.maintenanceReserveLog.findIndex(r=>r.month===month);
-  const rec={month, amount, note, savedAt:new Date().toLocaleString('zh-TW')};
-  if(i>=0) DB.maintenanceReserveLog[i]=rec; else DB.maintenanceReserveLog.push(rec);
-  await saveLandlordData();
-  const ne=document.getElementById('mr-note'); if(ne) ne.value='';
-  renderMaintenanceReserve();
-  toast('✅ 已記錄 '+month+' 維護預存 $'+amount);
-};
-window.deleteMaintenanceReserve = async function(month){
-  if(!confirm('刪除 '+month+' 的維護預存紀錄？')) return;
-  DB.maintenanceReserveLog=(DB.maintenanceReserveLog||[]).filter(r=>r.month!==month);
-  await saveLandlordData();
-  renderMaintenanceReserve();
-  toast('已刪除 '+month);
-};
 // ── A：歷年維護紀錄（依設備分組，含平均費用/間隔）──
 window.renderMaintenanceLog = function(){
   const el=document.getElementById('maintenance-log'); if(!el) return;
@@ -7675,42 +7571,6 @@ window.deleteRepair = async function(i){
 // ============================================================
 
 // ══ TAPO 智慧監控（預留 API 串接）════════════
-function renderMonitorCam(){
-  const s=DB.tapoSettings||{};
-  if(document.getElementById('tapo-email'))document.getElementById('tapo-email').value=s.email||'';
-  if(document.getElementById('tapo-pw'))document.getElementById('tapo-pw').value=s.pw||'';
-  if(document.getElementById('tapo-cam1-id'))document.getElementById('tapo-cam1-id').value=s.cam1||'';
-  if(document.getElementById('tapo-cam2-id'))document.getElementById('tapo-cam2-id').value=s.cam2||'';
-  if(document.getElementById('tapo-cam3-id'))document.getElementById('tapo-cam3-id').value=s.cam3||'';
-  if(document.getElementById('tapo-cam4-id'))document.getElementById('tapo-cam4-id').value=s.cam4||'';
-  if(document.getElementById('tapo-cam3-rtsp'))document.getElementById('tapo-cam3-rtsp').value=s.cam3rtsp||'';
-  // 狀態顯示
-  const abConnected = s.email&&s.cam1;
-  // A、B：TAPO 連線狀態
-  const cam1el=document.getElementById('cam1-status');
-  if(cam1el){cam1el.textContent=s.cam1?'設定完成':'未設定';cam1el.style.background=s.cam1?'#d0f0dc':'#f0e8d5';cam1el.style.color=s.cam1?'var(--success)':'var(--muted)';}
-  const cam2el=document.getElementById('cam2-status');
-  if(cam2el){cam2el.textContent=s.cam2?'設定完成':'未設定';cam2el.style.background=s.cam2?'#d0f0dc':'#f0e8d5';cam2el.style.color=s.cam2?'var(--success)':'var(--muted)';}
-  // C：電子鎖
-  const cam3el=document.getElementById('cam3-status');
-  if(cam3el){cam3el.textContent=s.cam3?'設定完成':'未設定';cam3el.style.background=s.cam3?'#d0f0dc':'#f0e8d5';cam3el.style.color=s.cam3?'var(--success)':'var(--muted)';}
-  // D：有看頭
-  const cam4el=document.getElementById('cam4-status');
-  const cam4set=!!(s.cam4||s.cam3rtsp);
-  if(cam4el){cam4el.textContent=cam4set?'已設定':'未設定';cam4el.style.background=cam4set?'#d0f0dc':'#f0e8d5';cam4el.style.color=cam4set?'var(--success)':'var(--muted)';}
-}
-window.saveTapoSettings = async function(){
-  DB.tapoSettings={
-    email:document.getElementById('tapo-email')?.value.trim()||'',
-    pw:document.getElementById('tapo-pw')?.value||'',
-    cam1:document.getElementById('tapo-cam1-id')?.value.trim()||'',
-    cam2:document.getElementById('tapo-cam2-id')?.value.trim()||'',
-    cam3:document.getElementById('tapo-cam3-id')?.value.trim()||'',
-    cam4:document.getElementById('tapo-cam4-id')?.value.trim()||'',
-    cam3rtsp:document.getElementById('tapo-cam3-rtsp')?.value.trim()||'',
-  };
-  await saveLandlordData(); renderMonitorCam(); toast('TAPO 設定已儲存 ✓ （API串接開發中）');
-};
 // 手動通知按鈕（API未串接前的替代方案）
 window.checkWasher = function(){
   toast('⚙️ TAPO API 尚未串接，目前無法自動查詢。');
