@@ -1,4 +1,16 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09240227)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：待辦 P4-14 全檔安全稽核第 4 批（第 5101～6800 行）查出 4 項錯誤並修正（ＡＭ６９：修正錯誤，附實例）
+　① 登入紀錄頁：loginLog 的 result／note／email／time 原以 innerHTML 直接插入 → 轉義（loginLog 可被任何登入者寫入，屬儲存型 XSS）
+　② 公告倒數：到點若在睡眠時段原會直接寄給房客 → 不寄、保留待寄
+　③ 公告內容原以 innerHTML 插入（含「<」會破版）→ 轉義
+　④ 編輯公告原先 splice 刪除舊公告，未重新發布即離開會遺失 → 改為發布時才取代
+　⑤ 其餘 14 處畫面插入文字（皆房東輸入：房客姓名、備註、報修描述、AI 知識庫等）一律轉義——W-2 開放房客寫入前先清零；(186) 檢查原型重掃為 0
+　　驗證：語法（依類型＋檢查器自證）、重複 id、onclick 前後比對、四項真實程式碼實跑　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・無須實測（四項皆以真實程式碼實跑）
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(09231830)　★依鐵律ＡＭ１７／自檢(14)
 　本輪性質：主帥 09/23 選Ａ「雲端每 15 天把完整備份寄到 Gmail」→ 房客管理頁心跳列加顯示「最後雲端備份」；其餘承接 index(09231818)（AI 問答純文字、待繳租日期格式）
 　　驗證：語法（依類型＋檢查器自證）、重複 id、onclick 前後比對、心跳列三情境實跑　★實證（見交付訊息原始輸出）
@@ -2590,7 +2602,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09231830'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09240227'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -2672,6 +2684,7 @@ window.showMailErrors = function(){
 };
 // ★09221551 ＡＭ１①③④⑥（待辦 P2-2）：睡眠時段＝台灣時間 21:30～次日 07:30；非急迫的【自動提醒】在此時段一律不寄、不標記已寄，
 //   下次在時段外開頁時自然補寄（ＡＭ１④：延發不是丟棄）。手動按鈕與登入驗證碼（__otp，屬急迫）不受影響。
+window._esc = function(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); };   // ★09240227 P4-14 第4批：畫面插入外來文字一律轉義
 window._inQuietHours = function(d){
   const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Taipei',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d||new Date());
   const t=(+p.find(x=>x.type==='hour').value)*60+(+p.find(x=>x.type==='minute').value);
@@ -3635,7 +3648,7 @@ window.renderTaxReserve = function(){
   if(el){
     if(!list.length){ el.innerHTML='<div style="color:var(--muted);">尚無預存紀錄。</div>'; }
     else { el.innerHTML=list.map(r=>`<div style="border:1px solid var(--border);border-radius:.5rem;padding:.45rem .6rem;margin-bottom:.45rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;">
-        <div><strong>${r.month||'—'}</strong>　預存 $${(+r.amount||0).toLocaleString()}${r.note?`　<span style="color:var(--muted);font-size:.82rem;">（${r.note}）</span>`:''}</div>
+        <div><strong>${r.month||'—'}</strong>　預存 $${(+r.amount||0).toLocaleString()}${r.note?`　<span style="color:var(--muted);font-size:.82rem;">（${window._esc(r.note)}）</span>`:''}</div>
         <button class="btn bd sm" onclick="deleteTaxReserve('${r.month}')">🗑️</button>
       </div>`).join(''); }
   }
@@ -3701,7 +3714,7 @@ function renderTenants(){
     grid.innerHTML+=`<div class="room-card ${occ?'occupied':''}" onclick="openEditTenant('${r}')">
       <span class="room-badge ${occ?'b-occ':'b-vac'}">${occ?'入住中':'空房'}</span>
       <div class="room-name">${RL[r]}</div>
-      <div class="room-tenant">${occ?t.name:'（空房）'}</div>
+      <div class="room-tenant">${window._esc(occ?t.name:'（空房）')}</div>
       <div class="room-rent">${occ?'月租 NT$'+(+t.rent||0).toLocaleString():'點擊設定'}</div>
     </div>`;
     // 遮蔽敏感資料（第4點安全強化）
@@ -3711,7 +3724,7 @@ function renderTenants(){
     tb.innerHTML+=`<tr>
       <td class="rl">${RL[r]}</td>
       <td>
-        ${t.name||'—'}
+        ${window._esc(t.name||'—')}
         <div style="font-size:.7rem;color:var(--muted);">${maskPhone(t.phone)}</div>
       </td>
       <td>${t.rent?'NT$'+(+t.rent).toLocaleString():'—'}</td>
@@ -4402,7 +4415,7 @@ window.calcU = function(){
       </div>
       ${lines.map(l=>`
       <div style="display:flex;justify-content:space-between;align-items:baseline;padding:.28rem .5rem;border-bottom:1px solid var(--border2);">
-        <span style="font-size:.88rem;color:var(--muted);">　${l.label}${l.note?`<span style="font-size:.72rem;color:var(--success);"> ${l.note}</span>`:''}</span>
+        <span style="font-size:.88rem;color:var(--muted);">　${l.label}${l.note?`<span style="font-size:.72rem;color:var(--success);"> ${window._esc(l.note)}</span>`:''}</span>
         <strong style="font-size:.92rem;color:${l.color};">$${l.val.toLocaleString()}</strong>
       </div>`).join('')}
       <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem .5rem .25rem;margin-top:.3rem;border-top:2px solid var(--border);">
@@ -4654,7 +4667,7 @@ window.renderRentPauseList = function(){
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.4rem;">
         <div>
           <div style="font-weight:900;">⏸️ ${roomLabel} · ${p.from}～${p.to}</div>
-          <div class="txt-m">原因：${p.reason}</div>
+          <div class="txt-m">原因：${window._esc(p.reason)}</div>
           ${outLine}${settledLine}
           <div style="font-size:.72rem;color:var(--muted);">設定時間：${p.createdAt}</div>
         </div>
@@ -4763,7 +4776,7 @@ window.initRent = function(){
      rr.innerHTML+=`<div style="background:${isPaused?'#fffbf0':occ?'var(--bg2)':'#f5f0e8'};border:1.5px solid ${isPaused?'#f0c060':occ?'var(--border2)':'#e0d8c8'};border-radius:.9rem;padding:.6rem .85rem;margin-bottom:.55rem;opacity:${occ?1:0.6}">
        <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem;flex-wrap:wrap;">
          <div style="font-weight:900;font-size:.88rem;">${RL[r]}</div>
-         <div style="font-size:.8rem;color:var(--accent);font-weight:700;">${occ?t.name:'（空房）'}</div>
+         <div style="font-size:.8rem;color:var(--accent);font-weight:700;">${window._esc(occ?t.name:'（空房）')}</div>
          ${occ&&!isPaused?`<span style="font-size:.68rem;background:#e0f4e8;color:var(--success);border-radius:99px;padding:.1rem .5rem;font-weight:700;">月租 NT$${autoRent.toLocaleString()} ✓ 已自動帶入</span>`:''}
          ${isPaused?`<span style="font-size:.72rem;background:#fff0cc;color:#a06000;border-radius:99px;padding:.1rem .6rem;font-weight:900;">⏸️ 本期暫停收租</span>`:''}
        </div>
@@ -5030,7 +5043,7 @@ window.renderAIKnowledgeList = function(){
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
           <div style="font-weight:900;">📂 ${k.cat}</div>
-          <div class="txt-m" style="white-space:pre-wrap;max-height:60px;overflow:hidden;">${k.text.slice(0,80)}${k.text.length>80?'...':''}</div>
+          <div class="txt-m" style="white-space:pre-wrap;max-height:60px;overflow:hidden;">${window._esc(k.text.slice(0,80))}${k.text.length>80?'...':''}</div>
           <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;">最後更新：${k.updatedAt}</div>
         </div>
         <button class="btn bd sm" onclick="event.stopPropagation();deleteAICat('${k.cat.replace(/'/g,'&apos;')}')">刪除</button>
@@ -5353,7 +5366,7 @@ function renderAnnounce(){
         <div style="font-size:.72rem;color:var(--muted);margin-bottom:.35rem;font-weight:700;display:flex;flex-wrap:wrap;align-items:center;gap:.3rem;">
           📅 ${a.datetime||'—'} ${statusHtml}
         </div>
-        <div style="font-size:.88rem;font-weight:500;color:var(--primary);line-height:1.7;white-space:pre-wrap;">${a.content}</div>
+        <div style="font-size:.88rem;font-weight:500;color:var(--primary);line-height:1.7;white-space:pre-wrap;">${window._esc(a.content)}</div>
         <div style="display:flex;gap:.4rem;margin-top:.5rem;flex-wrap:wrap;">
           ${cancelSendBtn}${editDelBtn}
         </div>
@@ -5392,6 +5405,7 @@ function startAnnCountdown(ann, idx){
 async function sendAnnGmail(idx){
   const a=DB.announces[idx];
   if(!a||a.notified)return;
+if(window._inQuietHours()){ toast('🌙 睡眠時段（21:30～07:30）不寄公告信，已保留待寄；時段外開網頁會自動補寄'); return; }   // ★09240227 P4-14 第4批 ＡＭ１：倒數到點若在睡眠時段不寄（原本直接寄）
   const tenants=Object.values(DB.tenants).filter(t=>t.status==='occupied'&&t.tenantEmail);
   let sent=0;
   initEJS();
@@ -5413,6 +5427,7 @@ async function sendAnnGmail(idx){
 window.saveAnnounce = async function(testOnly=false){
   const content=document.getElementById('ann-content')?.value.trim();
   if(!content){toast('請輸入公告內容');return;}
+if(window._annEditId!=null){ const _k=(DB.announces||[]).findIndex(x=>x.id===window._annEditId); if(_k>=0){ if(_annCountdownTimers[DB.announces[_k].id]) clearInterval(_annCountdownTimers[DB.announces[_k].id]); DB.announces.splice(_k,1); } window._annEditId=null; }   // ★09240227 編輯中的原公告於發布時才移除
   const now=new Date();
   const datetime=now.toLocaleDateString('zh-TW')+' '+now.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
 
@@ -5447,6 +5462,7 @@ window.cancelAnnSend = async function(i){
 };
 
 window.cancelAnnounce = function(){
+window._annEditId=null;
   document.getElementById('ann-content').value='';
   ST(isLandlord ? 'tenants' : 'my-bill');
 };
@@ -5462,9 +5478,9 @@ window.editAnnounce = function(i){
   const a=DB.announces[i];
   const content=document.getElementById('ann-content');
   if(content){ content.value=a.content; content.focus(); }
-  // 刪除舊的，讓房東重新發布
-  DB.announces.splice(i,1);
-  toast('已載入公告內容，修改後請重新發布');
+  // ★09240227 P4-14 第4批：原本先 splice 刪除舊公告，未重新發布就離開時，下一次任何存檔會把刪除寫進雲端 → 改為重新發布時才取代
+  window._annEditId=a.id;
+  toast('已載入公告內容，修改後按發布即取代原公告（發布前原公告仍保留）');
 };
 
 
@@ -5481,8 +5497,8 @@ window.renderMailHistory = function(){
     <div class="hist-item">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
-          <div style="font-weight:900;">${RL[r.room]||r.room} · ${r.type}</div>
-          <div class="txt-m">${r.note||'—'} · ${r.time}</div>
+          <div style="font-weight:900;">${RL[r.room]||r.room} · ${window._esc(r.type)}</div>
+          <div class="txt-m">${window._esc(r.note||'—')} · ${r.time}</div>
         </div>
         <button class="btn bd sm" onclick="deleteMailRecord(${i})">刪除</button>
       </div>
@@ -5506,7 +5522,7 @@ window.renderLockBatteryHistory = function(){
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
           <div style="font-weight:900;">🔋 電子鎖換電池</div>
-          <div class="txt-m">${r.note||'—'} · ${r.time}</div>
+          <div class="txt-m">${window._esc(r.note||'—')} · ${r.time}</div>
         </div>
         <button class="btn bd sm" onclick="deleteLockRecord(${i})">刪除</button>
       </div>
@@ -5569,7 +5585,7 @@ function _renderLoginLogUI(filter, log){
       const tag=_isLL&&LANDLORD_EMAILS.includes(email)?'🏠 房東':'👥 房客';
       const label=isMe?`👤 我（${email}）`:(`${tag} ${email}`);
       return `<span style="font-size:12px;font-weight:700;color:${_colors[i%_colors.length]};display:block;">` +
-             `${label}：${cnt}次　最後登入：${_lastMap[email]||'—'}</span>`;
+             `${window._esc(label)}：${cnt}次　最後登入：${window._esc(_lastMap[email]||'—')}</span>`;
     }).join('');
   const _statHtml=_cntMap&&Object.keys(_cntMap).length?
     `<div style="background:#f0e8ff;border:1.5px solid #c4a0e0;border-radius:0.75rem;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">`+
@@ -5589,12 +5605,12 @@ function _renderLoginLogUI(filter, log){
     return `<div style="background:${bg};border:1px solid ${border};border-radius:.6rem;padding:.45rem .75rem;margin-bottom:.3rem;font-size:.85rem;">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.3rem;">
         <div>
-          <span style="font-weight:900;">${r.result||'—'}</span>
-          <span style="color:var(--muted);margin-left:.5rem;font-size:.8rem;">${r.note||''}</span>
+          <span style="font-weight:900;">${window._esc(r.result||'—')}</span>
+          <span style="color:var(--muted);margin-left:.5rem;font-size:.8rem;">${window._esc(r.note||'')}</span>
         </div>
-        <div style="font-size:.78rem;color:var(--muted);">${r.time||''}</div>
+        <div style="font-size:.78rem;color:var(--muted);">${window._esc(r.time||'')}</div>
       </div>
-      <div style="color:#555;margin-top:.15rem;">📧 ${r.email||'—'}</div>
+      <div style="color:#555;margin-top:.15rem;">📧 ${window._esc(r.email||'—')}</div>
     </div>`;
   }).join('');
 };
@@ -7534,7 +7550,7 @@ function renderRepair(){
           <span style="font-size:.72rem;font-weight:900;color:${statusColor};background:${r.status==='已完成'?'#e0f4e8':r.status==='處理中'?'#e8f0fc':'#fdecea'};border-radius:99px;padding:.15rem .6rem;">${r.status}</span>
         </div>
         <div style="font-size:.72rem;color:var(--muted);margin:.25rem 0 .4rem;">${r.datetime} · ${r.room} ${r.tenantName||''}</div>
-        <div style="font-size:.85rem;color:var(--primary);line-height:1.6;white-space:pre-wrap;">${r.desc}</div>
+        <div style="font-size:.85rem;color:var(--primary);line-height:1.6;white-space:pre-wrap;">${window._esc(r.desc)}</div>
         ${r.time?`<div style="font-size:.75rem;color:var(--muted);margin-top:.25rem;">⏰ 方便時段：${r.time}</div>`:''}
         ${landlordBtns}
       </div>`;
@@ -7704,12 +7720,12 @@ function renderFormer(){
     list.innerHTML+=`<div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.9rem 1rem;margin-bottom:.55rem;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.4rem;">
         <div>
-          <div style="font-weight:900;font-size:.95rem;">${f.name||'—'} <span style="font-size:.75rem;color:var(--muted);font-weight:400;">${RL[f.room]||f.room||''}</span></div>
+          <div style="font-weight:900;font-size:.95rem;">${window._esc(f.name||'—')} <span style="font-size:.75rem;color:var(--muted);font-weight:400;">${RL[f.room]||f.room||''}</span></div>
           <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem;">📱 ${f.phone?f.phone.slice(0,4)+'****'+f.phone.slice(-3):'—'} ・ 🪪 ${f.id?f.id.slice(0,4)+'****':'—'}</div>
           ${f.address?`<div style="font-size:.78rem;color:var(--muted);">🏠 戶籍：${f.address.slice(0,5)}…（完整請點✏️）</div>`:''}
           <div style="font-size:.78rem;color:var(--muted);">📅 ${f.movein||'—'} ～ ${f.moveout||'—'} ・ ${contractLabel[f.contract||'']||''}</div>
           ${f.history?`<div style="font-size:.8rem;color:var(--primary);margin-top:.3rem;white-space:pre-wrap;">${f.history}</div>`:''}
-          ${f.note?`<div style="font-size:.78rem;color:var(--danger);margin-top:.2rem;">⚠️ ${f.note}</div>`:''}
+          ${f.note?`<div style="font-size:.78rem;color:var(--danger);margin-top:.2rem;">⚠️ ${window._esc(f.note)}</div>`:''}
         </div>
         <div style="display:flex;gap:.4rem;">
           <button onclick="editFormer(${i})" class="btn bo sm" style="font-size:.72rem;">✏️</button>
@@ -7759,7 +7775,7 @@ function renderPhotos(){
     list.innerHTML+=`<div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:.9rem;padding:.85rem 1rem;margin-bottom:.5rem;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div style="flex:1;">
-          <div style="font-weight:900;font-size:.9rem;">${n.name||'—'} <span style="font-size:.75rem;color:var(--muted);">${RL[n.room]||n.room||''}</span></div>
+          <div style="font-weight:900;font-size:.9rem;">${window._esc(n.name||'—')} <span style="font-size:.75rem;color:var(--muted);">${RL[n.room]||n.room||''}</span></div>
 
           ${n.url ? `<div style="margin-top:.4rem;"><a href="${n.url}" target="_blank" style="font-size:.75rem;color:var(--info);text-decoration:none;">🔗 查看雲端照片網址</a></div>` : ''} <!-- ══ 此為【雲端照片網址】還不會出現欄位的前置作業。202603271156版項目1:修正照片備註渲染 (解決登入失效問題)。═ -->
 
