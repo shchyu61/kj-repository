@@ -1,4 +1,15 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09240346)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：待辦 P4-14 全檔安全稽核第 5 批（第 6801 行～檔尾，五批完成）查出並修正（ＡＭ６９：修正錯誤，附實例）
+　① 待指派房間：信箱來自登入紀錄（他人可寫），原本原樣插入畫面並塞進按鈕指令 → 轉義、按鈕改用編號
+　② 安全規則名單：房客姓名與信箱（可能由上項流入）→ 轉義
+　③ 報修清單：地點、時間、房間、姓名、方便時段 → 轉義（W-2 開放房客寫入前先清）
+　④ 舊房客歷程、⑤ 帳單備註 → 轉義
+　　驗證：語法（依類型＋檢查器自證）、重複 id、onclick 前後比對、待指派惡意信箱實跑　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・房客管理頁「👥 已登入但尚未指派房間的人」清單與指派按鈕照常運作
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(09240227)　★依鐵律ＡＭ１７／自檢(14)
 　本輪性質：待辦 P4-14 全檔安全稽核第 4 批（第 5101～6800 行）查出 4 項錯誤並修正（ＡＭ６９：修正錯誤，附實例）
 　① 登入紀錄頁：loginLog 的 result／note／email／time 原以 innerHTML 直接插入 → 轉義（loginLog 可被任何登入者寫入，屬儲存型 XSS）
@@ -2602,7 +2613,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09240227'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09240346'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -6931,7 +6942,7 @@ window.renderUtilHistory = function(){
         <div style="flex:1 1 260px;min-width:260px;">
           <div style="font-weight:900;">📅 ${b.period} 期水電帳單 <span style="font-size:.72rem;font-weight:900;color:${cst.allPaid?'var(--success)':'var(--danger)'};">${cst.label}</span></div>
           <div class="txt-m">${b.dateStart||''}～${b.dateEnd||''} · 電費$${b.elecTotal||0}｜水費$${b.waterTotal||0}｜瓦斯$${b.gasTotal||0}｜度數${b.totalKwh||'—'}度</div>
-          ${b.note?`<div class="txt-m">備註：${b.note}</div>`:''}
+          ${b.note?`<div class="txt-m">備註：${window._esc(b.note)}</div>`:''}
           <div style="margin-top:.3rem;flex-wrap:wrap;display:flex;gap:.2rem;">${roomSummary}</div>
           ${collectChips}
         </div>
@@ -7544,14 +7555,14 @@ function renderRepair(){
       <div style="background:var(--bg2);border:1.5px solid ${r.status==='待處理'?'var(--danger)':r.status==='處理中'?'#b0c8f0':'var(--border2)'};border-radius:.9rem;padding:.85rem 1rem;margin-bottom:.5rem;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.3rem;">
           <div>
-            <span style="font-weight:900;font-size:.9rem;">${r.location}</span>
+            <span style="font-weight:900;font-size:.9rem;">${window._esc(r.location)}</span>
             <span style="font-size:.72rem;color:${urgColor};font-weight:900;margin-left:.4rem;">${r.urgency==='非常緊急'?'🚨':r.urgency==='緊急'?'⚠️':'🔧'} ${r.urgency}</span>
           </div>
           <span style="font-size:.72rem;font-weight:900;color:${statusColor};background:${r.status==='已完成'?'#e0f4e8':r.status==='處理中'?'#e8f0fc':'#fdecea'};border-radius:99px;padding:.15rem .6rem;">${r.status}</span>
         </div>
-        <div style="font-size:.72rem;color:var(--muted);margin:.25rem 0 .4rem;">${r.datetime} · ${r.room} ${r.tenantName||''}</div>
+        <div style="font-size:.72rem;color:var(--muted);margin:.25rem 0 .4rem;">${window._esc(r.datetime)} · ${window._esc(r.room)} ${window._esc(r.tenantName||'')}</div>
         <div style="font-size:.85rem;color:var(--primary);line-height:1.6;white-space:pre-wrap;">${window._esc(r.desc)}</div>
-        ${r.time?`<div style="font-size:.75rem;color:var(--muted);margin-top:.25rem;">⏰ 方便時段：${r.time}</div>`:''}
+        ${r.time?`<div style="font-size:.75rem;color:var(--muted);margin-top:.25rem;">⏰ 方便時段：${window._esc(r.time)}</div>`:''}
         ${landlordBtns}
       </div>`;
   });
@@ -7724,7 +7735,7 @@ function renderFormer(){
           <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem;">📱 ${f.phone?f.phone.slice(0,4)+'****'+f.phone.slice(-3):'—'} ・ 🪪 ${f.id?f.id.slice(0,4)+'****':'—'}</div>
           ${f.address?`<div style="font-size:.78rem;color:var(--muted);">🏠 戶籍：${f.address.slice(0,5)}…（完整請點✏️）</div>`:''}
           <div style="font-size:.78rem;color:var(--muted);">📅 ${f.movein||'—'} ～ ${f.moveout||'—'} ・ ${contractLabel[f.contract||'']||''}</div>
-          ${f.history?`<div style="font-size:.8rem;color:var(--primary);margin-top:.3rem;white-space:pre-wrap;">${f.history}</div>`:''}
+          ${f.history?`<div style="font-size:.8rem;color:var(--primary);margin-top:.3rem;white-space:pre-wrap;">${window._esc(f.history)}</div>`:''}
           ${f.note?`<div style="font-size:.78rem;color:var(--danger);margin-top:.2rem;">⚠️ ${window._esc(f.note)}</div>`:''}
         </div>
         <div style="display:flex;gap:.4rem;">
@@ -7879,6 +7890,7 @@ window.renderUnassigned = async function(){
     return;
   }
   const vacant=ROOMS.filter(r=>((DB.tenants[r]||{}).status!=='occupied'));
+  window._uaEmails=order.slice();   // ★09240346 P4-14 第5批：信箱來自登入紀錄（他人可寫），按鈕只帶編號
   let h='';
   order.forEach((e,i)=>{
     const d=seen[e];
@@ -7886,13 +7898,13 @@ window.renderUnassigned = async function(){
       ? vacant.map(r=>'<option value="'+r+'">'+(RL[r]||r)+'</option>').join('')
       : '';
     h+='<div class="list-item" style="padding:.55rem .7rem;">'
-      +'<div style="font-weight:700;color:var(--primary);word-break:break-all;">'+e+'</div>'
+      +'<div style="font-weight:700;color:var(--primary);word-break:break-all;">'+window._esc(e)+'</div>'
       +'<div style="font-size:.76rem;color:var(--muted);margin:.15rem 0 .4rem;">'
-      +'登入 '+d.count+' 次　最後登入：'+(d.last||'—')+'</div>'
+      +'登入 '+d.count+' 次　最後登入：'+window._esc(d.last||'—')+'</div>'
       +(vacant.length
         ? '<div class="gap" style="align-items:center;flex-wrap:wrap;">'
           +'<select id="ua-room-'+i+'" style="padding:.3rem .5rem;font-size:.82rem;">'+opts+'</select>'
-          +'<button class="btn bs sm" onclick="assignRoomByLandlord('+i+',\''+e+'\')">指派到這間房</button>'
+          +'<button class="btn bs sm" onclick="assignRoomByLandlord('+i+')">指派到這間房</button>'
           +'</div>'
         : '<div style="font-size:.8rem;color:#C0392B;font-weight:700;">'
           +'⚠️ 目前沒有空房可指派。請先把某一間房的狀態改成「空房」，或直接到該房間「編輯」填入此 email。</div>')
@@ -7901,6 +7913,7 @@ window.renderUnassigned = async function(){
   box.innerHTML=h;
 };
 window.assignRoomByLandlord = async function(i, email){
+  email = email || (window._uaEmails||[])[i]; if(!email) return;   // ★09240346 由編號取信箱
   const sel=document.getElementById('ua-room-'+i); if(!sel) return;
   const r=sel.value; if(!r) return;
   const t=DB.tenants[r]||{};
@@ -7942,7 +7955,7 @@ window.showRuleWhitelist = function(){
   let h='';
   if(list.length){
     h+='<div class="alert-box a-ok"><b>共 '+list.length+' 位入住中且已填 email 的房客：</b><br>'
-      + list.map(x=>'　・'+(RL[x.room]||x.room)+'　'+(x.name||'(未填姓名)')+'　<code>'+x.email+'</code>').join('<br>')
+      + list.map(x=>'　・'+(RL[x.room]||x.room)+'　'+window._esc(x.name||'(未填姓名)')+'　<code>'+window._esc(x.email)+'</code>').join('<br>')
       + '</div>';
   } else {
     h+='<div class="alert-box a-warn"><b>目前沒有任何「入住中且已填 email」的房客，名單是空的。</b><br>'
@@ -7950,7 +7963,7 @@ window.showRuleWhitelist = function(){
   }
   if(noMail.length){
     h+='<div class="alert-box a-warn"><b>⚠️ 以下 '+noMail.length+' 間房是「入住中」但<u>沒有填 email</u>，因此不會列入名單：</b><br>'
-      + noMail.map(x=>'　・'+x).join('<br>')
+      + noMail.map(x=>'　・'+window._esc(x)).join('<br>')
       + '<br><br>★<b>房東不需要去問房客的 email</b>。'
       + '請房客自己到網頁版登入一次（輸入自己的 email 收 OTP），'
       + '登入時可自行選房間；若他當下不確定，也可以按「我還不確定」跳過，'
