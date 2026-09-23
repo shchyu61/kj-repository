@@ -1,4 +1,20 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09231830)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：主帥 09/23 選Ａ「雲端每 15 天把完整備份寄到 Gmail」→ 房客管理頁心跳列加顯示「最後雲端備份」；其餘承接 index(09231818)（AI 問答純文字、待繳租日期格式）
+　　驗證：語法（依類型＋檢查器自證）、重複 id、onclick 前後比對、心跳列三情境實跑　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・今晚 20:30 雲端執行後，房客管理頁最上方心跳列出現「｜最後雲端備份 9/23 20:3x」
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09231818)（沿用）　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：待辦 P4-14 全檔安全稽核第 3 批（第 3401～5100 行）查出兩項並修正
+　① AI 問答（sendAIChat）：使用者輸入原以 innerHTML 插入 → 改 textContent（自我 XSS）
+　② 收租歷史「✅ 待繳租後點此處」（markRentPaid）：日期原為 toLocaleDateString 的「2026/9/23」→ 改 window.todayLocal()「2026-09-23」
+　　驗證：語法（依類型＋檢查器自證）、重複 id、onclick 前後比對、兩函式真實程式碼實跑　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・無須實測（兩處皆為顯示與日期格式，已以真實程式碼實跑）
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(09231739)　★依鐵律ＡＭ１７／自檢(14)
 　本輪性質：待辦 P4-14 全檔安全稽核第 2 批（第 1701～3400 行）查出：照片備註欄範例含現任房客真名，網頁為公開 GitHub Pages、任何人檢視原始碼可見 → 改為 ○○○
 　　驗證：語法（依類型 .mjs／.js＋檢查器自證）、重複 id、onclick 前後比對、真名殘留 0　★實證（見交付訊息原始輸出）
@@ -2574,7 +2590,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09231739'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09231830'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -2676,7 +2692,7 @@ window.renderCloudHeartbeat = async function(){
     const fmt=x=>{ if(!x) return '—'; const d=new Date(x); return isNaN(d)?String(x):d.toLocaleString('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}); };
     const ok=h.lastOkAt?new Date(h.lastOkAt):null; const hrs=ok?(Date.now()-ok.getTime())/36e5:1e9;
     const days=(h.okDates||[]).slice(-7); const streak=+h.okStreak||0;
-    const ver=h.version?('｜雲端版本 '+h.version):'';
+    const ver=(h.version?('｜雲端版本 '+h.version):'')+(h.lastBackupAt?('｜最後雲端備份 '+fmt(h.lastBackupAt)):'｜雲端備份：尚未寄出');   // ★09231830 主帥選Ａ：雲端每 15 天寄備份
     if(hrs>26){ paint('#fdecea','#b71c1c','⚠️ <b>雲端通知已超過 26 小時沒有成功執行</b>（最後成功：'+fmt(h.lastOkAt)+'；最後執行：'+fmt(h.lastRunAt)+(h.lastError?'；錯誤：'+String(h.lastError).slice(0,80):'')+'）。請到 GitHub → Actions 查看「嘉義房租雲端通知」。網頁的自動提醒照常寄出，不會漏信。'+ver); return; }
     const tail=streak>=3?'　✅ <b>已連續 '+streak+' 天正常</b>，可請 AI 交付第二步（網頁改只提示）':'　（已連續 '+streak+' 天正常，滿 3 天後可交付第二步）';
     paint(h.lastRunOk===false?'#fff8e1':'#e8f5e9',h.lastRunOk===false?'#8a5a00':'#1b5e20','🛰️ 雲端通知最後成功：'+fmt(h.lastOkAt)+'（寄出 '+(+h.total||0)+' 封）'+(h.lastRunOk===false?'｜★最近一次執行失敗：'+String(h.lastError||'').slice(0,80):'')+tail+ver);
@@ -3900,7 +3916,8 @@ window.sendAIChat = async function(){
   input.value = '';
   const userBubble = document.createElement('div');
   userBubble.style.cssText = 'background:var(--accent);color:#fff;border-radius:.65rem;padding:.65rem .85rem;font-size:.88rem;max-width:85%;align-self:flex-end;word-break:break-word;';
-  userBubble.innerHTML = `<div style="font-size:.72rem;color:rgba(255,255,255,.7);margin-bottom:.2rem;">👤 您</div>${userText}`;
+  userBubble.innerHTML = `<div style="font-size:.72rem;color:rgba(255,255,255,.7);margin-bottom:.2rem;">👤 您</div>`;
+  { const _ut=document.createElement('div'); _ut.textContent=userText; userBubble.appendChild(_ut); }   // ★09231818 P4-14 第3批：輸入文字改純文字顯示，不再當成網頁程式碼
   msgs.appendChild(userBubble);
   const loading = document.createElement('div');
   loading.style.cssText = 'background:#f0e8d5;border-radius:.65rem;padding:.65rem .85rem;font-size:.88rem;max-width:85%;align-self:flex-start;';
@@ -4955,7 +4972,7 @@ window.markRentPaid = async function(i){
   ROOMS.forEach(r=>{
     if(rec.payments[r]){
       rec.payments[r].paid=rec.payments[r].amount; // 全額標為已收
-      rec.payments[r].date=new Date().toLocaleDateString('zh-TW');
+      rec.payments[r].date=window.todayLocal();   // ★09231818 P4-14 第3批：原寫「2026/9/23」格式，與其他收款日「2026-09-23」不一致，按日期篩選會漏掉
     }
   });
   await saveLandlordData(); renderRentHistory(); toast('✅ 已標記為繳租完成');

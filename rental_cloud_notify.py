@@ -10,7 +10,8 @@
 　・公開紀錄不印主旨｜鐵律ＡＪ２（kj-repository 為公開倉庫，Actions 紀錄不必登入即可看）
 　・結算日只寄提醒、不自動結算｜主帥 2026/09/23 02:5x 裁示 P3-8 方案 A
 　・奇數月結算日 15 日｜主帥 2026/09/21 21:17 第7點原話（對話紀錄檔 2026-09-21-19-24-00）
-　・實測｜改版記錄(09230308) 第十一章
+　・雲端每 15 天寄完整備份到主帥 Gmail｜主帥 2026/09/23 18:3x 回覆「21 選 Ａ」（本機備份程式未帶身分，主帥 18:18 無痕視窗測試證實讀不到）
+　・實測｜改版記錄(09231830) 第十一章
 ★★★【推定清單】
 　・推定 Firestore 服務帳號可寫 artifacts/kj-rental/landlord/heartbeat（與 landlord/data 同集合）
 　　→ 若為假：心跳寫入失敗，GitHub 紀錄印出警告，網頁 26 小時後紅色警示；寄信與結算不受影響
@@ -22,6 +23,7 @@
   ② 定期維護到期前 30 天（廚房濾心／冷氣／洗衣機／水塔）
   ③ 每月預存提醒（每月 1 日，稅務備用金哥哥半額）
   ④ 帳單最後應繳日提醒（偶數月 14、19 日，若仍有緩收帳單）
+  ⑥ ★09231830 雲端備份：距上次滿 15 天即把房東資料與登入紀錄寄到主帥 Gmail（附 JSON，可用網頁匯入還原）
   ⑤ 哥弟結算日提醒（奇數月 15 日、偶數月 20 日 20:30；★只寄提醒、不自動結算，結算一律在網頁完成）
 ★09230021：排程改每天台灣 20:30（ＡＭ１④）；每次執行寫「雲端心跳」到 landlord/heartbeat（網頁顯示）；
   過渡期（DUP_TRANSITION=True）①～④ 主旨與內文標示「過渡期重複信・正常」。
@@ -36,6 +38,8 @@ Secrets：GMAIL_ACCOUNT / GMAIL_PASSWORD（應用程式密碼）/ FIREBASE_SERVI
 import os, json, smtplib, calendar
 from datetime import datetime, timezone, timedelta
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 from email.header import Header
 
 PROJECT_ID = 'kj-wealth-manager'
@@ -58,7 +62,9 @@ GMAIL_ACCOUNT  = os.environ.get('GMAIL_ACCOUNT', '').strip()
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '').strip()
 NOTIFY_TO      = os.environ.get('NOTIFY_TO', '').strip() or GMAIL_ACCOUNT
 
-SCRIPT_VERSION = '09230308'   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
+SCRIPT_VERSION = '09231830'   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
+LOGIN_PATH = f'artifacts/{APP_ID}/loginLog/data'   # ★09231830 雲端備份一併寄登入紀錄
+BACKUP_EVERY_DAYS = 15   # ★09231830 主帥 09/23 選Ａ：雲端每 15 天把完整備份寄到主帥 Gmail（取代從未成功的本機備份程式）
 HB_PATH = f'artifacts/{APP_ID}/landlord/heartbeat'   # ★雲端心跳：獨立文件，只有本程式寫、網頁只讀
 TW = timezone(timedelta(hours=8))
 KIND_URGENT, KIND_NEXT_DAY, KIND_NORMAL = '急迫', '次日有效', '一般'   # ★通知三級分類（ＡＭ１⑦）；本程式信件皆為一般
@@ -484,6 +490,68 @@ def check_monthly_settle(db):
     except Exception as e:
         print(f'  ⚠️ 結算日提醒寄送失敗: {e}'); return 0
 
+def _get_doc(path):
+    """以服務帳號讀 Firestore 文件；404 回傳 None"""
+    import requests
+    url = f'https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents/{path}'
+    r = requests.get(url, headers={'Authorization': f'Bearer {_token()}'}, timeout=30)
+    if r.status_code == 404:
+        return None
+    r.raise_for_status()
+    return {k: firestore_decode(x) for k, x in r.json().get('fields', {}).items()}
+
+
+def send_mail_files(subject, body, files, kind=KIND_NORMAL):
+    """寄附檔信（files＝[(檔名, bytes)]）；寄信入口同 send_mail，睡眠時段攔截非急迫信"""
+    if kind != KIND_URGENT and in_quiet_hours():
+        raise QuietSkip(f'睡眠時段不寄（{kind}通知，ＡＭ１①）')
+    msg = MIMEMultipart()
+    msg['Subject'] = Header(subject, 'utf-8')
+    msg['From'] = GMAIL_ACCOUNT
+    msg['To'] = NOTIFY_TO
+    msg.attach(MIMEText(body, 'plain', 'utf-8'))
+    for fname, data in files:
+        part = MIMEApplication(data, _subtype='json')
+        part.add_header('Content-Disposition', 'attachment', filename=('utf-8', '', fname))
+        msg.attach(part)
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=60) as s:
+        s.login(GMAIL_ACCOUNT, GMAIL_PASSWORD)
+        s.sendmail(GMAIL_ACCOUNT, [NOTIFY_TO], msg.as_string())
+    # ★ＡＪ２：公開紀錄只印大小，不印內容
+    print(f'  ✅ 已寄出雲端備份（附檔 {len(files)} 個，共 {sum(len(d) for _, d in files) // 1024} KB）')
+
+
+def backup_if_due(db, last_backup_at):
+    """⑥ 雲端備份：距上次滿 BACKUP_EVERY_DAYS 天才寄；回傳（寄出封數, 本次備份時間或 None）。
+    寄信失敗會往外丟 → 本次執行標為失敗、心跳顯示錯誤、隔天自動重試（ＡＭ６０）。"""
+    now = datetime.now(TW)
+    if last_backup_at:
+        try:
+            last = datetime.fromisoformat(str(last_backup_at))
+            if (now - last).days < BACKUP_EVERY_DAYS:
+                return 0, None
+        except ValueError:
+            pass
+    stamp = now.strftime('%Y%m%d_%H%M')
+    main = dict(db); main['_backupAt'] = now.strftime('%Y/%m/%d %H:%M:%S'); main['_backupBy'] = f'雲端 rental_cloud_notify {SCRIPT_VERSION}'
+    files = [(f'科蓁房租備份_{stamp}.json', json.dumps(main, ensure_ascii=False, indent=2).encode('utf-8'))]
+    note = ''
+    try:
+        lg = _get_doc(LOGIN_PATH)
+        if lg is not None:
+            files.append((f'科蓁房租備份_loginLog_{stamp}.json', json.dumps(lg, ensure_ascii=False, indent=2).encode('utf-8')))
+    except Exception as e:
+        note = f'\n★登入紀錄本次讀取失敗（{type(e).__name__}），主資料不受影響。'
+    nxt = (now + timedelta(days=BACKUP_EVERY_DAYS)).strftime('%m/%d')
+    body = (f'嘉義房租雲端完整備份（每 {BACKUP_EVERY_DAYS} 天自動寄出）\n\n'
+            f'附檔：{"、".join(f for f, _ in files)}{note}\n\n'
+            '還原方式：房租網頁 → 🔑 房東專區 → 備份 → 「⬆ 匯入備份還原」或「🛟 資料救援還原：只補空欄位」→ 選這個附檔。\n'
+            '★此信附檔含房客個資，請勿轉寄；可存到您自己的雲端硬碟保管。\n\n'
+            f'下次預計寄出：約 {nxt}。\n—— 嘉義房租雲端通知（取代從未成功的本機備份程式，主帥 2026/09/23 選Ａ）')
+    send_mail_files(f'🗄️ 嘉義房租雲端備份（{now.strftime("%Y/%m/%d")}）：請保存附檔', body, files)
+    return 1, now.isoformat(timespec='seconds')
+
+
 def _hb_url():
     return (f'https://firestore.googleapis.com/v1/projects/{PROJECT_ID}'
             f'/databases/(default)/documents/{HB_PATH}')
@@ -499,7 +567,7 @@ def _token():
     return creds.token
 
 
-def write_heartbeat(ok, counts, err=''):
+def write_heartbeat(ok, counts, err='', backup_at=None):
     """★雲端心跳：成功與失敗都寫；網頁房客管理頁顯示，超過 26 小時沒成功即紅色警示（ＡＭ６０ 失敗要送到使用者會看的地方）"""
     import requests
     tok = _token(); hdr = {'Authorization': f'Bearer {tok}'}
@@ -514,7 +582,8 @@ def write_heartbeat(ok, counts, err=''):
     hb = {'version': SCRIPT_VERSION, 'lastRunAt': now.isoformat(timespec='seconds'), 'lastRunOk': bool(ok),
           'lastOkAt': now.isoformat(timespec='seconds') if ok else (old.get('lastOkAt') or ''),
           'lastError': (err or '')[:300], 'sent': counts, 'total': int(sum(counts.values())) if counts else 0,
-          'okDates': ok_dates, 'okStreak': streak}
+          'okDates': ok_dates, 'okStreak': streak,
+          'lastBackupAt': backup_at or (old.get('lastBackupAt') or '')}
     r = requests.patch(_hb_url(), headers=hdr, json={'fields': {k: firestore_encode(v) for k, v in hb.items()}}, timeout=30)
     r.raise_for_status()
     print(f'  🛰️ 雲端心跳已寫入：ok={ok}、連續 {streak} 天、共寄 {hb["total"]} 封')
@@ -522,28 +591,36 @@ def write_heartbeat(ok, counts, err=''):
 
 def main():
     print(f'▶ 嘉義房租雲端通知 啟動（版本 {SCRIPT_VERSION}）')
-    counts = {}; err = ''
+    counts = {}; err = ''; backup_at = None
     try:
         if not (GMAIL_ACCOUNT and GMAIL_PASSWORD):
             raise RuntimeError('缺少 GMAIL_ACCOUNT / GMAIL_PASSWORD')
         db = load_db()
+        try:
+            _hb_old = _get_doc(HB_PATH) or {}
+        except Exception as _he:
+            _hb_old = None
+            print(f'  ⚠️ 讀心跳失敗，本次不寄備份（避免天天重寄）：{type(_he).__name__}')
         print(f'  已讀取（房客 {len(db.get("tenants") or {})}、維護 {len(db.get("maintenanceRecords") or [])}、帳單 {len(db.get("utilBills") or [])}）')
         if in_quiet_hours():
             print('  🌙 睡眠時段（台灣 21:30～07:30）執行：只驗證讀取並寫心跳，不寄任何信（ＡＭ１①⑦；排程班次為 20:30，此情況只會發生在手動執行）')
-            counts.update(lease=0, maint=0, reserve=0, bill=0, settle=0)
+            counts.update(lease=0, maint=0, reserve=0, bill=0, settle=0, backup=0)
         else:
             counts['lease'] = check_lease(db)
             counts['maint'] = check_maintenance(db)
             counts['reserve'] = check_reserve(db)
             counts['bill'] = check_bill_deadline(db)
             counts['settle'] = check_monthly_settle(db)
-        print(f'✔ 完成：契約 {counts["lease"]}、維護 {counts["maint"]}、預存 {counts["reserve"]}、帳單最後應繳日 {counts["bill"]}、結算日提醒 {counts["settle"]} 封')
+            counts['backup'] = 0
+            if _hb_old is not None:
+                counts['backup'], backup_at = backup_if_due(db, _hb_old.get('lastBackupAt'))
+        print(f'✔ 完成：契約 {counts["lease"]}、維護 {counts["maint"]}、預存 {counts["reserve"]}、帳單最後應繳日 {counts["bill"]}、結算日提醒 {counts["settle"]}、雲端備份 {counts["backup"]} 封')
     except Exception as e:
         err = f'{type(e).__name__}: {e}'
         raise
     finally:
         try:
-            write_heartbeat(not err, counts, err)
+            write_heartbeat(not err, counts, err, backup_at)
         except Exception as he:
             print(f'  ⚠️ 雲端心跳寫入失敗（網頁 26 小時後會顯示紅色警示）: {he}')
 
