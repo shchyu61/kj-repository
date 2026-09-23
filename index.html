@@ -1,4 +1,11 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09240418)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：ＡＭ５９⑦ 回頭重驗——自檢(09240403) 強化版 (186) 重掃 index(09240346) FAIL 30 處（先組字串再寫入的片段），逐處改為 window._esc(…)（ＡＭ７２；修正錯誤）
+　　驗證：強化版檢查器自證、重掃 FAIL 0、語法（依類型＋檢查器自證）、重複 id、onclick 前後比對、回歸　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・無須實測（僅改文字顯示方式，回歸輸出逐字相同）
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(09240346)　★依鐵律ＡＭ１７／自檢(14)
 　本輪性質：待辦 P4-14 全檔安全稽核第 5 批（第 6801 行～檔尾，五批完成）查出並修正（ＡＭ６９：修正錯誤，附實例）
 　① 待指派房間：信箱來自登入紀錄（他人可寫），原本原樣插入畫面並塞進按鈕指令 → 轉義、按鈕改用編號
@@ -2613,7 +2620,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09240346'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09240418'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -3659,8 +3666,8 @@ window.renderTaxReserve = function(){
   if(el){
     if(!list.length){ el.innerHTML='<div style="color:var(--muted);">尚無預存紀錄。</div>'; }
     else { el.innerHTML=list.map(r=>`<div style="border:1px solid var(--border);border-radius:.5rem;padding:.45rem .6rem;margin-bottom:.45rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;">
-        <div><strong>${r.month||'—'}</strong>　預存 $${(+r.amount||0).toLocaleString()}${r.note?`　<span style="color:var(--muted);font-size:.82rem;">（${window._esc(r.note)}）</span>`:''}</div>
-        <button class="btn bd sm" onclick="deleteTaxReserve('${r.month}')">🗑️</button>
+        <div><strong>${window._esc(r.month||'—')}</strong>　預存 $${(+r.amount||0).toLocaleString()}${r.note?`　<span style="color:var(--muted);font-size:.82rem;">（${window._esc(r.note)}）</span>`:''}</div>
+        <button class="btn bd sm" data-id="${window._esc(r.month)}" onclick="deleteTaxReserve(this.dataset.id)">🗑️</button>
       </div>`).join(''); }
   }
   const sum=document.getElementById('tr-summary');
@@ -3722,7 +3729,7 @@ function renderTenants(){
   ROOMS.forEach(r=>{
     const t=DB.tenants[r]||{};
     const occ=t.status==='occupied'&&t.name;
-    grid.innerHTML+=`<div class="room-card ${occ?'occupied':''}" onclick="openEditTenant('${r}')">
+    grid.innerHTML+=`<div class="room-card ${occ?'occupied':''}" data-id="${window._esc(r)}" onclick="openEditTenant(this.dataset.id)">
       <span class="room-badge ${occ?'b-occ':'b-vac'}">${occ?'入住中':'空房'}</span>
       <div class="room-name">${RL[r]}</div>
       <div class="room-tenant">${window._esc(occ?t.name:'（空房）')}</div>
@@ -3745,8 +3752,8 @@ function renderTenants(){
       <td>${t.deposit?'NT$'+(+t.deposit).toLocaleString():'—'}</td>
       <td><span class="${occ?'pay-paid':'b-vac'}">${occ?'入住中':'空房'}</span></td>
       <td style="white-space:nowrap;">
-        <button class="btn bo sm" onclick="openEditTenant('${r}')" style="margin-bottom:.2rem;">編輯</button>
-        ${occ?`<button class="btn ba sm" onclick="copyTenantToFormer('${r}')" style="font-size:.72rem;">→舊房客</button>`:''}
+        <button class="btn bo sm" data-id="${window._esc(r)}" onclick="openEditTenant(this.dataset.id)" style="margin-bottom:.2rem;">編輯</button>
+        ${occ?`<button class="btn ba sm" data-id="${window._esc(r)}" onclick="copyTenantToFormer(this.dataset.id)" style="font-size:.72rem;">→舊房客</button>`:''}
       </td>
     </tr>`;
   });
@@ -5292,7 +5299,7 @@ function renderMyInfo(){
   document.getElementById('my-room-info').innerHTML=`
     <div class="rrow"><span class="lbl">房間</span><span>${RL[myRoom]}</span></div>
     <div class="rrow"><span class="lbl">月租金</span><span style="font-weight:700;color:var(--info);">NT$${(+t.rent||0).toLocaleString()}</span></div>
-    <div class="rrow"><span class="lbl">登入帳號</span><span>${currentEmail}</span></div>`;
+    <div class="rrow"><span class="lbl">登入帳號</span><span>${window._esc(currentEmail)}</span></div>`;
   // 租約資訊
   const leaseEl=document.getElementById('my-lease-info');
   if(t.expiry){
@@ -5508,8 +5515,8 @@ window.renderMailHistory = function(){
     <div class="hist-item">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
-          <div style="font-weight:900;">${RL[r.room]||r.room} · ${window._esc(r.type)}</div>
-          <div class="txt-m">${window._esc(r.note||'—')} · ${r.time}</div>
+          <div style="font-weight:900;">${window._esc(RL[r.room]||r.room)} · ${window._esc(r.type)}</div>
+          <div class="txt-m">${window._esc(r.note||'—')} · ${window._esc(r.time)}</div>
         </div>
         <button class="btn bd sm" onclick="deleteMailRecord(${i})">刪除</button>
       </div>
@@ -5533,7 +5540,7 @@ window.renderLockBatteryHistory = function(){
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
           <div style="font-weight:900;">🔋 電子鎖換電池</div>
-          <div class="txt-m">${window._esc(r.note||'—')} · ${r.time}</div>
+          <div class="txt-m">${window._esc(r.note||'—')} · ${window._esc(r.time)}</div>
         </div>
         <button class="btn bd sm" onclick="deleteLockRecord(${i})">刪除</button>
       </div>
@@ -6024,8 +6031,8 @@ window.bsRenderSettlements = function(){
       '<div style="font-size:.78rem;color:var(--muted);margin-top:.2rem;">房租 '+f(s.rent)+'／弟代墊 '+f(s.adv)+'／網路 '+f(s.net)+
       (s.netMonths&&s.netMonths.length?'（'+s.netMonths.join('、')+'）':'')+'　來源：'+(s.by||'雲端')+'</div></div>'+
       '<div style="display:flex;gap:.3rem;white-space:nowrap;">'+
-      (s.confirmed?'':'<button class="btn bs sm" style="padding:.1rem .5rem;" onclick="bsConfirmSettle(\''+s.id+'\')">✅確認</button>')+
-      '<button class="btn bd sm" style="padding:.1rem .5rem;" onclick="bsRevokeSettle(\''+s.id+'\')">↩撤銷</button>'+
+      (s.confirmed?'':'<button class="btn bs sm" style="padding:.1rem .5rem;" data-id="'+window._esc(s.id)+'" onclick="bsConfirmSettle(this.dataset.id)">✅確認</button>')+
+      '<button class="btn bd sm" style="padding:.1rem .5rem;" data-id="'+window._esc(s.id)+'" onclick="bsRevokeSettle(this.dataset.id)">↩撤銷</button>'+
       '</div></div></div>';
   }).join('');
 };
@@ -6171,8 +6178,8 @@ window.btRender = function(){
           (t.createdBy?('　👤'+String(t.createdBy).split('@')[0]):'')+
         '</div></div>'+
         '<div style="display:flex;gap:.3rem;white-space:nowrap;">'+
-          '<button class="btn ba sm" style="padding:.1rem .5rem;" onclick="btEdit(\''+t.id+'\')">✏️編輯</button>'+
-          '<button class="btn bd sm" style="padding:.1rem .5rem;" onclick="btDel(\''+t.id+'\')">刪</button>'+
+          '<button class="btn ba sm" style="padding:.1rem .5rem;" data-id="'+window._esc(t.id)+'" onclick="btEdit(this.dataset.id)">✏️編輯</button>'+
+          '<button class="btn bd sm" style="padding:.1rem .5rem;" data-id="'+window._esc(t.id)+'" onclick="btDel(this.dataset.id)">刪</button>'+
         '</div></div></div>';
     }).join('');
 };
@@ -6529,8 +6536,8 @@ window.renderMaintenanceHistory = function(){
     return `<div class="hist-item">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.3rem;">
         <div>
-          <div style="font-weight:900;">${icon} ${r.label}</div>
-          <div class="txt-m">上次：${r.lastDate}　費用：$${(r.cost||0).toLocaleString()}　週期：${r.cycle}個月　${monthly}</div>
+          <div style="font-weight:900;">${icon} ${window._esc(r.label)}</div>
+          <div class="txt-m">上次：${window._esc(r.lastDate)}　費用：$${(r.cost||0).toLocaleString()}　週期：${window._esc(r.cycle)}個月　${monthly}</div>
           <div class="txt-m">下次：${next.toLocaleDateString('zh-TW')} ${badge}</div>
         </div>
       </div>
@@ -6557,7 +6564,7 @@ window.renderMaintenanceLog = function(){
     }
     html+='<div class="hist-item" style="margin-bottom:.5rem;"><div style="font-weight:900;">'+info.icon+' '+info.label+'　<span style="font-size:.8rem;color:var(--muted);font-weight:400;">共 '+evs.length+' 次｜平均費用 $'+avgCost.toLocaleString()+'｜平均間隔 '+avgGap+'</span></div>';
     evs.slice().reverse().forEach(e=>{
-      html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;font-size:.84rem;padding:.2rem 0;border-top:1px dashed var(--border);"><span>📅 '+e.date+'　$'+(+e.cost||0).toLocaleString()+'　週期'+e.cycle+'月</span><button class="btn bd sm" onclick="deleteMaintenanceLogEvent(\''+e.id+'\')">🗑️</button></div>';
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;font-size:.84rem;padding:.2rem 0;border-top:1px dashed var(--border);"><span>📅 '+window._esc(e.date)+'　$'+(+e.cost||0).toLocaleString()+'　週期'+e.cycle+'月</span><button class="btn bd sm" data-id="'+window._esc(e.id)+'" onclick="deleteMaintenanceLogEvent(this.dataset.id)">🗑️</button></div>';
     });
     html+='</div>';
   });
@@ -7285,7 +7292,7 @@ window.renderBK = function(){
     } else {
       blEl.innerHTML=BLACKLIST_EMAILS.map(e=>`
         <div style="display:inline-flex;align-items:center;gap:.4rem;background:#fff0f0;border:1px solid #ffcccc;border-radius:.5rem;padding:.25rem .7rem;margin:.2rem;font-size:.85rem;">
-          🚫 ${e}
+          🚫 ${window._esc(e)}
         </div>`).join('');
     }
   }
@@ -7552,13 +7559,13 @@ function renderRepair(){
         <button onclick="deleteRepair(${realIdx})" class="btn bd sm" style="font-size:.72rem;">🗑️ 刪除</button>
       </div>`:'';
     list.innerHTML+=`
-      <div style="background:var(--bg2);border:1.5px solid ${r.status==='待處理'?'var(--danger)':r.status==='處理中'?'#b0c8f0':'var(--border2)'};border-radius:.9rem;padding:.85rem 1rem;margin-bottom:.5rem;">
+      <div style="background:var(--bg2);border:1.5px solid ${window._esc(r.status==='待處理'?'var(--danger)':r.status==='處理中'?'#b0c8f0':'var(--border2)')};border-radius:.9rem;padding:.85rem 1rem;margin-bottom:.5rem;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.3rem;">
           <div>
             <span style="font-weight:900;font-size:.9rem;">${window._esc(r.location)}</span>
-            <span style="font-size:.72rem;color:${urgColor};font-weight:900;margin-left:.4rem;">${r.urgency==='非常緊急'?'🚨':r.urgency==='緊急'?'⚠️':'🔧'} ${r.urgency}</span>
+            <span style="font-size:.72rem;color:${urgColor};font-weight:900;margin-left:.4rem;">${window._esc(r.urgency==='非常緊急'?'🚨':r.urgency==='緊急'?'⚠️':'🔧')} ${window._esc(r.urgency)}</span>
           </div>
-          <span style="font-size:.72rem;font-weight:900;color:${statusColor};background:${r.status==='已完成'?'#e0f4e8':r.status==='處理中'?'#e8f0fc':'#fdecea'};border-radius:99px;padding:.15rem .6rem;">${r.status}</span>
+          <span style="font-size:.72rem;font-weight:900;color:${statusColor};background:${window._esc(r.status==='已完成'?'#e0f4e8':r.status==='處理中'?'#e8f0fc':'#fdecea')};border-radius:99px;padding:.15rem .6rem;">${window._esc(r.status)}</span>
         </div>
         <div style="font-size:.72rem;color:var(--muted);margin:.25rem 0 .4rem;">${window._esc(r.datetime)} · ${window._esc(r.room)} ${window._esc(r.tenantName||'')}</div>
         <div style="font-size:.85rem;color:var(--primary);line-height:1.6;white-space:pre-wrap;">${window._esc(r.desc)}</div>
@@ -8146,7 +8153,8 @@ checkSession();
   }
   function E(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-  function N(n){ return Math.round(+n||0).toLocaleString(); }
+  function _esc(v){ return E(v); }   // ★09240418 附加模組自用轉義（等同 E），不依賴外部 window._esc
+function N(n){ return Math.round(+n||0).toLocaleString(); }
   /* ★08051455 修正：不可用 toISOString()（那是 UTC）。
      台灣為 UTC+8，本地 2026-02-15 00:00 轉成 UTC 是 2026-02-14 16:00，
      取前 10 碼會得到 2026-02-14，整個日期【倒退一天】，
@@ -8274,9 +8282,9 @@ checkSession();
            '　<span style="color:var(--primary);font-weight:700;">'+
            (c.unknownStart?'（起日不可考）':E(c.start))+' ～ '+E(c.end)+'</span>'+
            '　月租 NT$'+N(c.rent)+'</div>'+
-           '<div class="gap"><button class="btn bd sm" onclick="rcEdit(\''+c.id+'\')">✏️ 編輯</button>'+
-           '<button class="btn bo sm" onclick="rcDel(\''+c.id+'\')">刪</button></div></div>'+
-           warn+(c.note?'<div style="font-size:.78rem;color:var(--muted);">'+E(c.note)+'</div>':'')+
+           '<div class="gap"><button class="btn bd sm" data-id="'+_esc(c.id)+'" onclick="rcEdit(this.dataset.id)">✏️ 編輯</button>'+
+           '<button class="btn bo sm" data-id="'+_esc(c.id)+'" onclick="rcDel(this.dataset.id)">刪</button></div></div>'+
+           warn+(c.note?'<div style="font-size:.78rem;color:var(--muted);">'+_esc(c.note)+'</div>':'')+
            '</div>';
       });
     });
@@ -8401,12 +8409,12 @@ checkSession();
       var tagCol = dd<0 ? '#C0392B' : '#16a34a';
       h+='<div class="list-item" style="padding:.5rem .6rem;">'+
          '<div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;">'+
-         '<div><strong style="color:var(--primary);">'+E(r.date)+'　NT$'+N(r.amount)+'</strong>'+
+         '<div><strong style="color:var(--primary);">'+_esc(r.date)+'　NT$'+N(r.amount)+'</strong>'+
          '　<span style="font-size:.78rem;">'+E(r.room)+(r.tenant?'・'+E(r.tenant):'')+'</span>'+
          '　<span style="font-size:.72rem;color:'+tagCol+';font-weight:700;">['+tagTxt+']</span></div>'+
-         '<div class="gap"><button class="btn bd sm" onclick="rpEdit(\''+r.id+'\')">✏️ 編輯</button>'+
-         '<button class="btn bo sm" onclick="rpDel(\''+r.id+'\')">刪</button></div></div>'+
-         '<div style="font-size:.78rem;color:var(--muted);">所屬租期：'+E(r.periodStart)+' ～ '+E(r.periodEnd)+
+         '<div class="gap"><button class="btn bd sm" data-id="'+_esc(r.id)+'" onclick="rpEdit(this.dataset.id)">✏️ 編輯</button>'+
+         '<button class="btn bo sm" data-id="'+_esc(r.id)+'" onclick="rpDel(this.dataset.id)">刪</button></div></div>'+
+         '<div style="font-size:.78rem;color:var(--muted);">所屬租期：'+_esc(r.periodStart)+' ～ '+E(r.periodEnd)+
          '　｜　'+E(r.method)+(r.note?'　｜　'+E(r.note):'')+
          (r.createdBy?'　👤 '+E(r.createdBy):'')+'</div></div>';
     });
@@ -8434,7 +8442,7 @@ checkSession();
     console.error('[房租附加模組]',e);
     var b1=document.getElementById('rc-list'), b2=document.getElementById('rpay-list');
     var msg='<div style="color:#C0392B;font-weight:700;">⚠️ 契約／入帳模組載入失敗：'+
-            E(e&&e.message?e.message:e)+'<br>請截圖此訊息回報，不要繼續建檔。</div>';
+            _esc(e&&e.message?e.message:e)+'<br>請截圖此訊息回報，不要繼續建檔。</div>';
     if(b1) b1.innerHTML=msg; if(b2) b2.innerHTML=msg;
   }
   function hook(){
