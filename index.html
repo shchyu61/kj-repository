@@ -1,4 +1,11 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09231739)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：待辦 P4-14 全檔安全稽核第 2 批（第 1701～3400 行）查出：照片備註欄範例含現任房客真名，網頁為公開 GitHub Pages、任何人檢視原始碼可見 → 改為 ○○○
+　　驗證：語法（依類型 .mjs／.js＋檢查器自證）、重複 id、onclick 前後比對、真名殘留 0　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・房東專區「照片」頁開新增備註視窗，範例文字顯示「嘉義房租/○○○」
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(09230610)　★依鐵律ＡＭ１７／自檢(14)
 　本輪性質：待辦 P1-1 存檔假成功（ＡＭ６０ 型一）＋ P3-24 移除被覆蓋的舊定義
 　① 存檔函式 saveLandlordData：非房東帳號時由 return 改為拋錯 → 房東端不再出現「✅ 已儲存」假成功
@@ -1710,7 +1717,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     </div>
     <div class="form-row">
       <div><label>照片說明（存放位置與內容）</label>
-        <textarea id="mp2-desc" rows="4" placeholder="例：Google 相簿「嘉義房租/湯富傑」資料夾&#10;- 身分證正面（入住日 2024/01/15）&#10;- 身分證背面（戶籍：嘉義市東區...）&#10;- 勞保證明截圖&#10;- 退租點交照片（2024/07/20）"></textarea>
+        <textarea id="mp2-desc" rows="4" placeholder="例：Google 相簿「嘉義房租/○○○」資料夾&#10;- 身分證正面（入住日 2024/01/15）&#10;- 身分證背面（戶籍：嘉義市東區...）&#10;- 勞保證明截圖&#10;- 退租點交照片（2024/07/20）"></textarea>
 
         <input type="text" id="mp2-url" class="inp" placeholder="🔗 請貼上 Google 雲端硬碟網址 (選填)" style="margin-top: .5rem; width: 100%;"> <!-- ══ 此行才是新增【雲端照片網址】欄位。202603271407版。═ -->
 
@@ -2567,7 +2574,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09230610'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09231739'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
