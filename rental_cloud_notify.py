@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-★★★【自我舉證表】rental_cloud_notify(09230021).py（ＡＭ２５）
+★★★【自我舉證表】rental_cloud_notify(09250857).py（ＡＭ２５）
 　關鍵結論｜來源
+　・★09250857 甲案：排程維持 20:30；落在睡眠時段而沒寄的提醒，下一次 20:30 補寄；心跳只算準時｜主帥 2026/09/25 08:57 後裁示「甲：維持20:30＋補寄＋心跳只算準時」
+　・★09250857 起因：9/24 20:30 排程被 GitHub 延到 9/25 01:25 才跑，落在睡眠時段寄出 0 封、備份未寄｜主帥 09/25 08:57 回報網頁心跳列原文
 　・排程改台灣 20:30｜主帥 2026/08/30 13:23「全面改成當天晚上 20:30」（ＡＭ１④）；本檔搭配 rental_notify(09230021).yml
 　・重複的 4 種提醒交雲端寄｜主帥 2026/09/23 00:0x 題一 A
 　・雲端心跳兩步走｜主帥 2026/09/23 00:0x 題二 A（同意新增心跳）
@@ -13,6 +15,8 @@
 　・雲端每 15 天寄完整備份到主帥 Gmail｜主帥 2026/09/23 18:3x 回覆「21 選 Ａ」（本機備份程式未帶身分，主帥 18:18 無痕視窗測試證實讀不到）
 　・實測｜改版記錄(09231830) 第十一章
 ★★★【推定清單】
+　・★09250857 推定 GitHub 排程延遲不會連續兩天都落在睡眠時段 → 若為假：補寄再往後延一天，missedDates 保留直到有一次準時執行
+　・★09250857 推定補寄時各提醒函式個別失敗只印警告（沿用原設計）→ 若為假或寄信失敗：該日補寄不重試，GitHub 紀錄可見警告
 　・推定 Firestore 服務帳號可寫 artifacts/kj-rental/landlord/heartbeat（與 landlord/data 同集合）
 　　→ 若為假：心跳寫入失敗，GitHub 紀錄印出警告，網頁 26 小時後紅色警示；寄信與結算不受影響
 ─────────────────────────────────────────────
@@ -62,7 +66,7 @@ GMAIL_ACCOUNT  = os.environ.get('GMAIL_ACCOUNT', '').strip()
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '').strip()
 NOTIFY_TO      = os.environ.get('NOTIFY_TO', '').strip() or GMAIL_ACCOUNT
 
-SCRIPT_VERSION = '09231830'   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
+SCRIPT_VERSION = '09250857'   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
 LOGIN_PATH = f'artifacts/{APP_ID}/loginLog/data'   # ★09231830 雲端備份一併寄登入紀錄
 BACKUP_EVERY_DAYS = 15   # ★09231830 主帥 09/23 選Ａ：雲端每 15 天把完整備份寄到主帥 Gmail（取代從未成功的本機備份程式）
 HB_PATH = f'artifacts/{APP_ID}/landlord/heartbeat'   # ★雲端心跳：獨立文件，只有本程式寫、網頁只讀
@@ -80,6 +84,8 @@ def in_quiet_hours(now=None):
 class QuietSkip(Exception):
     """睡眠時段不寄非急迫信（寄信入口攔截，ＡＭ１⑥⑦）；呼叫端既有 except 會接住，不會被記成已寄"""
 
+
+_SUBJ_PREFIX = ''   # ★09250857 補寄時加在主旨前（例：【補寄：9/24 排程延遲】）
 
 DUP_TRANSITION = True   # ★過渡期（網頁與雲端並行）；第二步交付時改 False（改版記錄待辦 P3-19）
 
@@ -163,7 +169,7 @@ def send_mail(subject, body, to=None, kind=KIND_NORMAL):
     if kind != KIND_URGENT and in_quiet_hours():
         raise QuietSkip(f'睡眠時段不寄（{kind}通知，ＡＭ１①）')
     msg = MIMEText(body, 'plain', 'utf-8')
-    msg['Subject'] = Header(subject, 'utf-8')
+    msg['Subject'] = Header(_SUBJ_PREFIX + subject, 'utf-8')
     msg['From'] = GMAIL_ACCOUNT
     msg['To']   = to or NOTIFY_TO
     with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=30) as s:
@@ -174,10 +180,10 @@ def send_mail(subject, body, to=None, kind=KIND_NORMAL):
     print(f'  ✅ 已寄出：{subject}' if os.environ.get('DEBUG_LOG') == '1' else '  ✅ 已寄出 1 封（主旨含個資，公開紀錄不印；設 DEBUG_LOG=1 可看）')
 
 
-def check_lease(db):
+def check_lease(db, today=None):
     """① 房客租約到期前 45 天"""
     tenants = db.get('tenants') or {}
-    today = datetime.now()
+    today = today or datetime.now()
     sent = 0
     for r in ROOMS:
         t = tenants.get(r)
@@ -208,10 +214,10 @@ def check_lease(db):
     return sent
 
 
-def check_maintenance(db):
+def check_maintenance(db, today=None):
     """② 定期維護到期前 30 天"""
     recs = db.get('maintenanceRecords') or []
-    today = datetime.now()
+    today = today or datetime.now()
     sent = 0
     for r in recs:
         last = (r.get('lastDate') or '').strip()
@@ -238,9 +244,9 @@ def check_maintenance(db):
     return sent
 
 
-def check_reserve(db):
+def check_reserve(db, today=None):
     """③ 每月預存提醒（每月 1 日，稅務備用金哥哥半額）"""
-    today = datetime.now()
+    today = today or datetime.now()
     if today.day != 1:
         return 0
     tr = db.get('taxRecords') or {}
@@ -259,9 +265,9 @@ def check_reserve(db):
         print(f'  ⚠️ 預存寄送失敗: {e}'); return 0
 
 
-def check_bill_deadline(db):
+def check_bill_deadline(db, today=None):
     """④ 帳單最後應繳日提醒（偶數月 14、19 日，若仍有緩收帳單）"""
-    today = datetime.now()
+    today = today or datetime.now()
     if today.month % 2 != 0 or today.day not in BILL_DUE_DAYS:
         return 0
     pending = [b for b in (db.get('utilBills') or []) if b.get('deferred')]
@@ -467,12 +473,12 @@ def mark_settled(db, c, today):
                  'broTransfers': bts})
 
 
-def check_monthly_settle(db):
+def check_monthly_settle(db, today=None):
     """⑤ 哥弟結算日提醒（★09230308 主帥裁示 P3-8 方案 A：只寄提醒、不自動結算、不寫結算單）
     結算日＝奇數月 15 日／偶數月 20 日（若最後一位房客收租日＋1 更晚，取較晚者）。
     ★舊版在此計算金額並呼叫 mark_settled 自動標記已結算，會寫出網頁無法撤銷的舊格式結算單，
       且與網頁「房東課（哥弟結算）」重複結算 → 停用；calc_settle／mark_settled 保留供待辦 P3-21 驗證用，本函式不再呼叫。"""
-    today = datetime.now()
+    today = today or datetime.now()
     early, late = settle_days(db, today)
     if today.day != late:
         return 0
@@ -489,6 +495,41 @@ def check_monthly_settle(db):
         return 1
     except Exception as e:
         print(f'  ⚠️ 結算日提醒寄送失敗: {e}'); return 0
+
+def intended_date(now):
+    """★09250857 排程本應執行的日期：07:30 前執行者屬前一天的 20:30 班次"""
+    return (now - timedelta(days=1)).date() if now.hour * 60 + now.minute < 7 * 60 + 30 else now.date()
+
+
+def plan_catchup(hb, now, on_time):
+    """★09250857 甲案：回傳（保留的 missedDates, 本次要補寄的日期）。
+    睡眠時段執行 → 記下本應執行的日期（該日若已有準時執行則不記）；準時執行 → 補寄早於今天的漏寄日。"""
+    ontd = set(hb.get('onTimeDates') or [])
+    missed = [d for d in (hb.get('missedDates') or []) if d not in ontd]
+    if not on_time:
+        s = intended_date(now).strftime('%Y-%m-%d')
+        if s not in ontd and s not in missed:
+            missed.append(s)
+        return missed[-10:], []
+    today = now.strftime('%Y-%m-%d')
+    return [d for d in missed if d >= today], sorted(d for d in missed if d < today)
+
+
+def hb_dates(old, now, ok, on_time):
+    """★09250857 心跳只算準時：只有 21:30 前成功跑完的日子列入 onTimeDates／okDates 與連續天數"""
+    today = now.strftime('%Y-%m-%d')
+    dates = [d for d in (old.get('onTimeDates') or []) if d != today] + ([today] if (ok and on_time) else [])
+    dates = dates[-10:]
+    streak = 0; d = now.date()
+    while d.strftime('%Y-%m-%d') in dates:
+        streak += 1; d = d - timedelta(days=1)
+    return dates, streak
+
+
+def run_checks(db, day=None):
+    return dict(lease=check_lease(db, day), maint=check_maintenance(db, day), reserve=check_reserve(db, day),
+                bill=check_bill_deadline(db, day), settle=check_monthly_settle(db, day))
+
 
 def _get_doc(path):
     """以服務帳號讀 Firestore 文件；404 回傳 None"""
@@ -567,31 +608,31 @@ def _token():
     return creds.token
 
 
-def write_heartbeat(ok, counts, err='', backup_at=None):
+def write_heartbeat(ok, counts, err='', backup_at=None, on_time=True, missed=None):
     """★雲端心跳：成功與失敗都寫；網頁房客管理頁顯示，超過 26 小時沒成功即紅色警示（ＡＭ６０ 失敗要送到使用者會看的地方）"""
     import requests
     tok = _token(); hdr = {'Authorization': f'Bearer {tok}'}
     r = requests.get(_hb_url(), headers=hdr, timeout=30)
     old = {k: firestore_decode(x) for k, x in r.json().get('fields', {}).items()} if r.status_code == 200 else {}
     now = datetime.now(TW); today = now.strftime('%Y-%m-%d')
-    ok_dates = [d for d in (old.get('okDates') or []) if d != today] + ([today] if ok else [])
-    ok_dates = ok_dates[-10:]
-    streak = 0; d = now.date()
-    while d.strftime('%Y-%m-%d') in ok_dates:
-        streak += 1; d = d - timedelta(days=1)
+    ok_dates, streak = hb_dates(old, now, ok, on_time)   # ★09250857 只算準時（舊 okDates 不沿用，連續天數自部署後重算）
     hb = {'version': SCRIPT_VERSION, 'lastRunAt': now.isoformat(timespec='seconds'), 'lastRunOk': bool(ok),
           'lastOkAt': now.isoformat(timespec='seconds') if ok else (old.get('lastOkAt') or ''),
           'lastError': (err or '')[:300], 'sent': counts, 'total': int(sum(counts.values())) if counts else 0,
           'okDates': ok_dates, 'okStreak': streak,
-          'lastBackupAt': backup_at or (old.get('lastBackupAt') or '')}
+          'lastBackupAt': backup_at or (old.get('lastBackupAt') or ''),
+          'onTimeDates': ok_dates, 'lastRunOnTime': bool(on_time),
+          'missedDates': missed if missed is not None else (old.get('missedDates') or [])}
     r = requests.patch(_hb_url(), headers=hdr, json={'fields': {k: firestore_encode(v) for k, v in hb.items()}}, timeout=30)
     r.raise_for_status()
-    print(f'  🛰️ 雲端心跳已寫入：ok={ok}、連續 {streak} 天、共寄 {hb["total"]} 封')
+    print(f'  🛰️ 雲端心跳已寫入：ok={ok}、準時={bool(on_time)}、連續準時 {streak} 天、共寄 {hb["total"]} 封、待補寄 {len(hb["missedDates"])} 日')
 
 
 def main():
     print(f'▶ 嘉義房租雲端通知 啟動（版本 {SCRIPT_VERSION}）')
+    global _SUBJ_PREFIX
     counts = {}; err = ''; backup_at = None
+    now = datetime.now(TW); on_time = not in_quiet_hours(now); missed = None
     try:
         if not (GMAIL_ACCOUNT and GMAIL_PASSWORD):
             raise RuntimeError('缺少 GMAIL_ACCOUNT / GMAIL_PASSWORD')
@@ -602,25 +643,34 @@ def main():
             _hb_old = None
             print(f'  ⚠️ 讀心跳失敗，本次不寄備份（避免天天重寄）：{type(_he).__name__}')
         print(f'  已讀取（房客 {len(db.get("tenants") or {})}、維護 {len(db.get("maintenanceRecords") or [])}、帳單 {len(db.get("utilBills") or [])}）')
-        if in_quiet_hours():
-            print('  🌙 睡眠時段（台灣 21:30～07:30）執行：只驗證讀取並寫心跳，不寄任何信（ＡＭ１①⑦；排程班次為 20:30，此情況只會發生在手動執行）')
-            counts.update(lease=0, maint=0, reserve=0, bill=0, settle=0, backup=0)
+        if _hb_old is not None:
+            missed, due = plan_catchup(_hb_old, now, on_time)
         else:
-            counts['lease'] = check_lease(db)
-            counts['maint'] = check_maintenance(db)
-            counts['reserve'] = check_reserve(db)
-            counts['bill'] = check_bill_deadline(db)
-            counts['settle'] = check_monthly_settle(db)
+            due = []
+        if not on_time:
+            print('  🌙 睡眠時段（台灣 21:30～07:30）執行：只驗證讀取並寫心跳，不寄任何信（ＡＭ１①⑦；排程班次為 20:30，此情況只會發生在手動執行）')
+            counts.update(lease=0, maint=0, reserve=0, bill=0, settle=0, backup=0, catchup=0)
+            if missed: print(f'  📝 已記錄待補寄日期 {len(missed)} 日，下次 20:30 準時執行時補寄（主帥 09/25 甲案）')
+        else:
+            counts.update(run_checks(db))
+            counts['catchup'] = 0
+            for _s in due:   # ★09250857 甲案：補寄前幾天因排程延遲落在睡眠時段而沒寄的提醒
+                _d = datetime.strptime(_s, '%Y-%m-%d')
+                _SUBJ_PREFIX = f'【補寄：{_d.month}/{_d.day} 排程延遲】'
+                try:
+                    counts['catchup'] += sum(run_checks(db, _d).values())
+                finally:
+                    _SUBJ_PREFIX = ''
             counts['backup'] = 0
             if _hb_old is not None:
                 counts['backup'], backup_at = backup_if_due(db, _hb_old.get('lastBackupAt'))
-        print(f'✔ 完成：契約 {counts["lease"]}、維護 {counts["maint"]}、預存 {counts["reserve"]}、帳單最後應繳日 {counts["bill"]}、結算日提醒 {counts["settle"]}、雲端備份 {counts["backup"]} 封')
+        print(f'✔ 完成：契約 {counts["lease"]}、維護 {counts["maint"]}、預存 {counts["reserve"]}、帳單最後應繳日 {counts["bill"]}、結算日提醒 {counts["settle"]}、補寄 {counts["catchup"]}、雲端備份 {counts["backup"]} 封')
     except Exception as e:
         err = f'{type(e).__name__}: {e}'
         raise
     finally:
         try:
-            write_heartbeat(not err, counts, err, backup_at)
+            write_heartbeat(not err, counts, err, backup_at, on_time, missed)
         except Exception as he:
             print(f'  ⚠️ 雲端心跳寫入失敗（網頁 26 小時後會顯示紅色警示）: {he}')
 
