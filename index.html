@@ -2620,7 +2620,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09251257'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09251331'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -3027,7 +3027,7 @@ const completeLogin = async (email, method=null) => {
     if(ddBtn)ddBtn.innerHTML='🔑 房東專區 ▾';
     document.querySelectorAll('.tenant-only').forEach(el=>el.style.display='none');
     await loadLandlordData();
-    renderTenants(); renderAnnounce();
+    renderTenants(); renderAnnounce(); renderUnassigned();   // ★09251331 登入後即重畫「待指派」
     const backupBtn = document.querySelector('[onclick="ST(\'backup\')"]');
     if(backupBtn) backupBtn.style.display='inline-block';
   } else {
@@ -3713,6 +3713,7 @@ window.ST = function(n){
   if(n==='maintenance'){renderMaintenanceHistory();loadMaintenanceState();renderMaintenanceLog(); checkMaintenanceDue();}
   if(n==='taxreserve'){renderTaxReserve(); renderReserveProfile(); sendReserveReport(false); checkMaintenanceDue();}
   if(n==='announce')renderAnnounce();
+  if(n==='tenants')renderUnassigned();   // ★09251331 進入房客管理頁即重畫「待指派」（主帥 09/25 13:31 第 b 點：須按重新整理才出現）
   updateLandlordMenuActive(n);
   if(n==='repair')renderRepair();
   if(n==='former')renderFormer();
@@ -3741,11 +3742,13 @@ function renderTenants(){
   ROOMS.forEach(r=>{
     const t=DB.tenants[r]||{};
     const occ=t.status==='occupied'&&t.name;
+    // ★09251331 主帥 13:3x 裁示 d：已指派 email 但未填姓名者，卡片不再顯示「空房」（只改卡片顯示，occ 判斷不動）
+    const asg=!occ && t.status==='occupied' && (t.tenantEmail||'').trim();
     grid.innerHTML+=`<div class="room-card ${occ?'occupied':''}" data-id="${window._esc(r)}" onclick="openEditTenant(this.dataset.id)">
-      <span class="room-badge ${occ?'b-occ':'b-vac'}">${occ?'入住中':'空房'}</span>
+      <span class="room-badge ${occ?'b-occ':'b-vac'}">${occ?'入住中':(asg?'已指派．待補資料':'空房')}</span>
       <div class="room-name">${RL[r]}</div>
-      <div class="room-tenant">${window._esc(occ?t.name:'（空房）')}</div>
-      <div class="room-rent">${occ?'月租 NT$'+(+t.rent||0).toLocaleString():'點擊設定'}</div>
+      <div class="room-tenant">${window._esc(occ?t.name:(asg?t.tenantEmail:'（空房）'))}</div>
+      <div class="room-rent">${occ?'月租 NT$'+(+t.rent||0).toLocaleString():(asg?'點擊補填姓名與月租':'點擊設定')}</div>
     </div>`;
     // 遮蔽敏感資料（第4點安全強化）
     const maskPhone = (p)=>p?p.slice(0,4)+'****'+p.slice(-3):'—'; // 遮蔽4碼
@@ -7941,7 +7944,7 @@ window.assignRoomByLandlord = async function(i, email){
   }
   if(!confirm('要把這個人指派到「'+(RL[r]||r)+'」嗎？\n\n'
     +email+'\n\n'
-    +'指派後他登入就會看到該房間的帳單。\n'
+    +'★目前房客登入後還看不到帳單（安全規則尚未開放房客讀取，待丙案）。\n'   // ★09251331 主帥 13:3x 裁示 c1
     +'（房間的姓名、月租、押金等資料，仍請另外到「編輯」補齊）')) return;
   DB.tenants[r]=Object.assign({}, t, {tenantEmail:email, status:'occupied'});
   await saveLandlordData();
@@ -8011,16 +8014,9 @@ window.copyRuleWhitelist = function(){
   } else toast('⚠️ 內容已選取，請按 Ctrl+C 複製');
 };
 window.notifyWhitelistChanged = function(reason){
-  const list=getTenantEmails();
-  const line=list.map(x=>"'"+x.email+"'").join(', ')||'（目前沒有入住中的房客）';
-  alert('⚠️ 房客名單已變更（'+reason+'）\n'+
-    '────────────────────────────\n'+
-    '★Firestore 安全規則裡的房客名單需要同步更新，否則會發生：\n'+
-    '　・新房客登入後看不到自己的帳單\n'+
-    '　・★已退租的房客仍然讀得到全部房客資料（比較嚴重的是這個）\n'+
-    '────────────────────────────\n'+
-    '更新後應該是這一行：\n\n'+line+'\n\n'+
-    '★可隨時到「房客管理」按【🔐 產生安全規則名單】重新取得。');
+  // ★09251331 主帥 13:3x 裁示 c2：停用。現行 Firestore 規則（09/25 甲案）沒有房客名單，
+  //   原提醒叫主帥到 Firebase 更新一份不存在的名單；函式保留，避免第 3824、7950、8071 行呼叫點報錯
+  return;
 };
 window.copyTenantToFormer = async function(r){
   const t=DB.tenants[r];
