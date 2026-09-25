@@ -216,7 +216,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, signInAnonymously,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
          onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";   // ★09251257 甲案：非擁有者只追加登入紀錄
+import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, deleteDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";   // ★09251257 甲案：非擁有者只追加登入紀錄
 
 const firebaseConfig = {
   apiKey: "AIzaSyCnvmKp-2RUjFuiJNlrkoRw5OkTzz-Bbi4",
@@ -232,7 +232,7 @@ const db   = getFirestore(app);
 const APP_ID = 'kj-rental'; // 獨立路徑，與理財管家分開
 
 window._db = db; window._auth = auth; window._APP_ID = APP_ID;
-window._doc = doc; window._setDoc = setDoc; window._getDoc = getDoc; window._updateDoc = updateDoc; window._arrayUnion = arrayUnion;
+window._doc = doc; window._setDoc = setDoc; window._getDoc = getDoc; window._updateDoc = updateDoc; window._arrayUnion = arrayUnion; window._deleteDoc = deleteDoc; window._collection = collection; window._getDocs = getDocs;   // ★09251438 丙案：發布房客專屬文件
 window._signInAnonymously = signInAnonymously;
 // ★08300156 登入改造：module 頂層宣告不進全域，必須逐一掛 window（本專案 08051523 已踩過此坑）
 window._createUserWithEmailAndPassword = createUserWithEmailAndPassword;
@@ -2620,7 +2620,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09251331'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09251438'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -3031,7 +3031,8 @@ const completeLogin = async (email, method=null) => {
     const backupBtn = document.querySelector('[onclick="ST(\'backup\')"]');
     if(backupBtn) backupBtn.style.display='inline-block';
   } else {
-    await loadLandlordData();
+    // ★09251438 丙案（主帥 09/25 14:15 第 4 點）：房客不讀房東資料（規則④只准房東），改讀房東發布給本人的那一份
+    await window.loadTenantDoc(email);
     myRoom = findMyRoom(email);
 
     if(myRoom){
@@ -3155,6 +3156,9 @@ window.doLogout = async function(){
   // ★08300156 3-7：舊版只清 localStorage，Firebase 身分仍留著
   try{ if(window._signOut && window._auth) await window._signOut(window._auth); }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
   localStorage.removeItem('kj_rental_email');
+  // ★09251438 主帥 09/25 13:46 截圖：登出不清記憶體，房客在同一分頁登入後看到房東頁與其他房客姓名、月租（個資外洩）
+  //   比照股票PRO 第 4630～4634 行：登出後重新載入頁面，記憶體與畫面一次清乾淨
+  location.reload(); return;
   currentEmail=''; isLandlord=false; myRoom=null;
   document.getElementById('security-overlay').style.display='flex';
   document.getElementById('btn-logout').style.display='none';
@@ -3302,6 +3306,43 @@ const saveLandlordData = async () => {
   Object.keys(_p).forEach(function(k){ window._cloudCounts[k]=window._fieldSize(_p[k]); });
   }catch(e){ if(window.setCloudStatus) setCloudStatus('fail'); throw e; }
   if(window.setCloudStatus) setCloudStatus('ok');
+  window.publishTenantDocs();   // ★09251438 丙案：存檔成功後發布各房客專屬文件（不等待，失敗只記主控台）
+};
+// ★09251438 丙案：房東替每位「入住中且已填 email」的房客發布一份只含他自己那一間的資料；已取消指派者刪除
+window.publishTenantDocs = async function(){
+  if(!isLandlord) return;
+  try{
+    await initFBAuth();
+    const want={};
+    ROOMS.forEach(function(r){ const t=(DB.tenants||{})[r]||{}; const em=String(t.tenantEmail||'').trim().toLowerCase();
+      if(t.status==='occupied' && em) want[em.replace(/[@.]/g,'_')]={r:r,t:t,em:em}; });
+    for(const id of Object.keys(want)){
+      const w=want[id], r=w.r, t=w.t;
+      const bills=(DB.utilBills||[]).filter(function(b){ return b&&b.rooms&&b.rooms[r]; })
+        .map(function(b){ const o={}; o[r]=b.rooms[r]; return {period:b.period||'',dateStart:b.dateStart||'',dateEnd:b.dateEnd||'',rooms:o}; });
+      await window._setDoc(window._doc(window._db,'artifacts',window._APP_ID,'tenants',id), {
+        room:r, tenant:{name:t.name||'',rent:t.rent||0,movein:t.movein||'',expiry:t.expiry||'',tenantEmail:w.em,status:'occupied'},
+        utilBills:bills, postalAccount:DB.postalAccount||null, announces:DB.announces||[], publishedAt:new Date().toISOString()
+      }, {merge:false});
+    }
+    const snap=await window._getDocs(window._collection(window._db,'artifacts',window._APP_ID,'tenants'));
+    for(const d of snap.docs){ if(!want[d.id]) await window._deleteDoc(d.ref); }
+  }catch(e){ console.error('[靜默失敗] 發布房客資料', e && e.message); }
+};
+// ★09251438 丙案：房客讀自己那一份（文件 ID＝email 轉小寫、@ 與 . 換成 _，與規則 safeId() 一致）
+window.loadTenantDoc = async function(email){
+  await initFBAuth();
+  try{
+    const id=String(email||'').toLowerCase().replace(/[@.]/g,'_');
+    const s=await window._getDoc(window._doc(window._db,'artifacts',window._APP_ID,'tenants',id));
+    if(!s.exists()) return false;
+    const d=s.data()||{};
+    if(d.room && d.tenant){ DB.tenants={}; DB.tenants[d.room]=d.tenant; }
+    DB.utilBills=Array.isArray(d.utilBills)?d.utilBills:[];
+    if(d.postalAccount) DB.postalAccount=d.postalAccount;
+    DB.announces=Array.isArray(d.announces)?d.announces:[];
+    return true;
+  }catch(e){ console.error('[靜默失敗] 讀取房客資料', e && e.message); return false; }
 };
 // ★★ 必須掛上 window：新版函式以 if(window.saveLandlordData) 判斷，
 //    未掛載時會整段【靜默跳過存檔】（2026/08/04 重大事故根因，切勿刪除此行）
@@ -5260,6 +5301,12 @@ window.saveCO = async function(){
 // ============================================================
 
 // ══ 房客：我的帳單 ══════════════════════════
+// ★09251438 丙案：原本第 3052、3140 行呼叫 renderTenantView，全檔卻沒有定義 → 房客分支一律報錯中斷（主帥 13:46 截圖成因之一）
+window.renderTenantView = function(){
+  try{ renderMyBill(); }catch(e){ console.error('[房客畫面] 我的帳單', e && e.message); }
+  try{ renderMyInfo(); }catch(e){ console.error('[房客畫面] 我的房間', e && e.message); }
+  try{ renderAnnounce(); }catch(e){ console.error('[房客畫面] 公告', e && e.message); }
+};
 function renderMyBill(){
   updatePostalDisplay();
   const t=myRoom?DB.tenants[myRoom]:null;
@@ -7927,12 +7974,30 @@ window.renderUnassigned = async function(){
         ? '<div class="gap" style="align-items:center;flex-wrap:wrap;">'
           +'<select id="ua-room-'+i+'" style="padding:.3rem .5rem;font-size:.82rem;">'+opts+'</select>'
           +'<button class="btn bs sm" onclick="assignRoomByLandlord('+i+')">指派到這間房</button>'
+           +((window.isOwnerAcct&&window.isOwnerAcct())?'<button class="btn bd sm" onclick="removeUnassigned('+i+')">🗑 移除此人</button>':'')   // ★09251438 主帥 14:15 第 3 點
           +'</div>'
         : '<div style="font-size:.8rem;color:#C0392B;font-weight:700;">'
           +'⚠️ 目前沒有空房可指派。請先把某一間房的狀態改成「空房」，或直接到該房間「編輯」填入此 email。</div>')
       +'</div>';
   });
   box.innerHTML=h;
+};
+// ★09251438 主帥 14:15 第 3 點：只刪該信箱的登入紀錄（限主帥；規則⑥ 擁有者可整份寫回）
+window.removeUnassigned = async function(i){
+  if(!(window.isOwnerAcct && window.isOwnerAcct())){ toast('⚠️ 僅限主帥操作'); return; }
+  const email=(window._uaEmails||[])[i]; if(!email) return;
+  if(!confirm('要把這個人從「待指派」移除嗎？\n\n'+email+'\n\n會刪除此信箱的全部登入紀錄（其他人的紀錄不受影響）。')) return;
+  try{
+    await initFBAuth();
+    const logPath=window._doc(window._db,'artifacts',window._APP_ID,'loginLog','data');
+    const snap=await window._getDoc(logPath);
+    const log=(snap.exists()&&snap.data().log)?snap.data().log:[];
+    const kept=window._sortLog(log.filter(function(x){ return String((x&&x.email)||'').toLowerCase()!==String(email).toLowerCase(); }));
+    await window._setDoc(logPath,{log:kept},{merge:false});
+    DB.loginLog=kept;
+    toast('✅ 已移除 '+(log.length-kept.length)+' 筆登入紀錄');
+  }catch(e){ console.error('[靜默失敗] 移除待指派', e && e.message); toast('❌ 移除失敗'); }
+  renderUnassigned();
 };
 window.assignRoomByLandlord = async function(i, email){
   email = email || (window._uaEmails||[])[i]; if(!email) return;   // ★09240346 由編號取信箱
@@ -7944,7 +8009,7 @@ window.assignRoomByLandlord = async function(i, email){
   }
   if(!confirm('要把這個人指派到「'+(RL[r]||r)+'」嗎？\n\n'
     +email+'\n\n'
-    +'★目前房客登入後還看不到帳單（安全規則尚未開放房客讀取，待丙案）。\n'   // ★09251331 主帥 13:3x 裁示 c1
+    +'指派並存檔後，他登入就會看到自己房間的帳單（看不到其他房客的資料）。\n'   // ★09251438 丙案上線後改寫（原 09251331 c1 文字）
     +'（房間的姓名、月租、押金等資料，仍請另外到「編輯」補齊）')) return;
   DB.tenants[r]=Object.assign({}, t, {tenantEmail:email, status:'occupied'});
   await saveLandlordData();
@@ -7992,9 +8057,8 @@ window.showRuleWhitelist = function(){
       + '之後由房東在上方<b>「👥 已登入但尚未指派房間的人」</b>一鍵指派即可。</div>';
   }
   h+='<div class="alert-box a-info" style="font-size:.82rem;">'
-    + '★<b>使用方式</b>：把下方框內的內容，貼到安全規則中<b>標示為房客名單</b>的位置，'
-    + '貼完務必按 Firebase Console 的「<b>發布</b>」，否則不會生效。<br>'
-    + '★<b>房東自己的信箱是另一份名單</b>，不在這裡，請勿覆蓋掉。<br>'
+    + '★<b>現行做法（09/25 丙案）</b>：房東每次存檔，系統自動把每位房客「只屬於他自己」的資料發布給他本人；'
+    + '<b>不需要</b>到 Firebase 貼任何名單。本面板僅供核對哪些房間已指派 email。<br>'
     + '★空房、已退租但尚未清空的房間，都不會列進來。</div>';
   msgEl.innerHTML=h;
   txt.value = line || '（目前無房客 email；請在安全規則中把房客名單留空）';
