@@ -216,7 +216,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, signInAnonymously,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
          onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";   // ★09251257 甲案：非擁有者只追加登入紀錄
 
 const firebaseConfig = {
   apiKey: "AIzaSyCnvmKp-2RUjFuiJNlrkoRw5OkTzz-Bbi4",
@@ -232,7 +232,7 @@ const db   = getFirestore(app);
 const APP_ID = 'kj-rental'; // 獨立路徑，與理財管家分開
 
 window._db = db; window._auth = auth; window._APP_ID = APP_ID;
-window._doc = doc; window._setDoc = setDoc; window._getDoc = getDoc;
+window._doc = doc; window._setDoc = setDoc; window._getDoc = getDoc; window._updateDoc = updateDoc; window._arrayUnion = arrayUnion;
 window._signInAnonymously = signInAnonymously;
 // ★08300156 登入改造：module 頂層宣告不進全域，必須逐一掛 window（本專案 08051523 已踩過此坑）
 window._createUserWithEmailAndPassword = createUserWithEmailAndPassword;
@@ -2620,7 +2620,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09240418'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09251257'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -2807,15 +2807,24 @@ function isOwnerAuth(){
 }
 window.isOwnerAuth = isOwnerAuth;
 
+// ★09251257 登入紀錄依時間新→舊排序（甲案後非擁有者的紀錄追加在尾端）
+window._sortLog = function(a){ return (a||[]).slice().sort((x,y)=>String((y&&y.savedAt)||'').localeCompare(String((x&&x.savedAt)||''))); };
 async function writeLoginLog(email, result, note=''){
   await initFBAuth();
   const now = new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei'});
   const record = {email, result, note, time:now, savedAt:new Date().toISOString()};
-  // 先從 Firebase 讀取現有紀錄再追加（避免 DB.loginLog 尚未載入時覆蓋舊資料）
+  const logPath = window._doc(window._db,'artifacts',window._APP_ID,'loginLog','data');
+  // ★09251257 甲案（主帥 09/25 13:0x 裁示）：只有擁有者讀整份再寫；其他人（弟、房客）不讀、只在尾端追加自己一筆
+  //   原因：規則⑥ 讀取只准房東 → 房客「先讀」即被擋，紀錄從未寫入（主帥 09/25 12:57 以 yahoo 帳號實測）
+  if(!(window.isOwnerAcct && window.isOwnerAcct())){
+    try{ await window._updateDoc(logPath, {log: window._arrayUnion(record)}); }
+    catch(e){ console.error('[靜默失敗] 登入紀錄追加', e && e.message); }
+    return;
+  }
+  // 擁有者：先從 Firebase 讀取現有紀錄再追加（避免 DB.loginLog 尚未載入時覆蓋舊資料）
   try{
-    const logPath = window._doc(window._db,'artifacts',window._APP_ID,'loginLog','data');
     const snap = await window._getDoc(logPath);
-    const existingLog = (snap.exists() && snap.data().log) ? snap.data().log : [];
+    const existingLog = window._sortLog((snap.exists() && snap.data().log) ? snap.data().log : []);
     existingLog.unshift(record);
     const trimmed = existingLog.slice(0, 200);
     await window._setDoc(logPath, {log: trimmed}, {merge:false});
@@ -3006,6 +3015,9 @@ const completeLogin = async (email, method=null) => {
   const badge=document.getElementById('user-badge');
   badge.style.display='block';
   badge.textContent = isLandlord ? '🏠 房東' : ('👤 '+email.split('@')[0]);
+  // ★09251257 換帳號登入前先還原上一個身分留下的頁籤與徽章樣式（主帥 09/25 12:57 第 2b 點：顯示房東卻只剩訪客兩個頁籤；訪客分支會逐一隱藏所有頁籤按鈕）
+  document.querySelectorAll('.tab-nav button').forEach(b=>{ b.style.display=''; });
+  badge.style.background=''; badge.style.color='';
 
   if(isLandlord){
     // 房東：顯示全部頁籤，讀取所有資料
@@ -5577,7 +5589,7 @@ window.renderLoginLog = async function(filter='all'){
     await initFBAuth();
     const logPath = window._doc(window._db,'artifacts',window._APP_ID,'loginLog','data');
     const snap = await window._getDoc(logPath);
-    const log = (snap.exists() && snap.data().log) ? snap.data().log : [];
+    const log = window._sortLog((snap.exists() && snap.data().log) ? snap.data().log : []);   // ★09251257 依時間排序
     DB.loginLog = log; // 同步回 DB
     _renderLoginLogUI(filter, log);
   }catch(e){
@@ -7875,7 +7887,7 @@ window.renderUnassigned = async function(){
     await initFBAuth();
     const lp=window._doc(window._db,'artifacts',window._APP_ID,'loginLog','data');
     const snap=await window._getDoc(lp);
-    if(snap.exists() && snap.data().log) { log=snap.data().log; DB.loginLog=log; }
+    if(snap.exists() && snap.data().log) { log=window._sortLog(snap.data().log); DB.loginLog=log; }   // ★09251257 依時間排序
   }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
   const assigned=new Set();
   ROOMS.forEach(r=>{ const e=((DB.tenants[r]||{}).tenantEmail||'').trim().toLowerCase();
