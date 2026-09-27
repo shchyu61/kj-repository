@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-★★★【自我舉證表】rental_cloud_notify(09250857).py（ＡＭ２５）
+★★★【自我舉證表】rental_cloud_notify(09262351).py（ＡＭ２５）
 　關鍵結論｜來源
+　・★09262351 丁案：排程 15:30＋20:30 兩班；當天第一個準時（21:30 前）班次寄出，同日後續班次只寫心跳（同日去重）；心跳多寫 lastOnTimeAt 供網頁判斷「準時」｜主帥 2026/09/26 15:26「我採用你的建議,我選丁案。」
+　・★09262351 起因：主帥截圖 09261508——GitHub 排程對本倉庫固定延後約 4.5～5 小時（#84～#87 08:00 班實際 12:24～12:42；#89～#91 20:30 班實際 01:20～01:25），20:30 班自 9/23 起從未準時｜截圖 09261422、09261508
 　・★09250857 甲案：排程維持 20:30；落在睡眠時段而沒寄的提醒，下一次 20:30 補寄；心跳只算準時｜主帥 2026/09/25 08:57 後裁示「甲：維持20:30＋補寄＋心跳只算準時」
 　・★09250857 起因：9/24 20:30 排程被 GitHub 延到 9/25 01:25 才跑，落在睡眠時段寄出 0 封、備份未寄｜主帥 09/25 08:57 回報網頁心跳列原文
 　・排程改台灣 20:30｜主帥 2026/08/30 13:23「全面改成當天晚上 20:30」（ＡＭ１④）；本檔搭配 rental_notify(09230021).yml
@@ -15,7 +17,8 @@
 　・雲端每 15 天寄完整備份到主帥 Gmail｜主帥 2026/09/23 18:3x 回覆「21 選 Ａ」（本機備份程式未帶身分，主帥 18:18 無痕視窗測試證實讀不到）
 　・實測｜改版記錄(09231830) 第十一章
 ★★★【推定清單】
-　・★09250857 推定 GitHub 排程延遲不會連續兩天都落在睡眠時段 → 若為假：補寄再往後延一天，missedDates 保留直到有一次準時執行
+　・★09250857 推定 GitHub 排程延遲不會連續兩天都落在睡眠時段 → ★09262351 已被推翻（連三班落在睡眠時段，補寄永遠等不到準時班次）→ 改由 15:30 班承接
+　・★09262351 推定 GitHub 延後維持約 4.5～5 小時（15:30 班約 20:00～20:30 執行）→ 若延後縮短：信在 15:30 起寄出（非睡眠時段，無害）；若延後超過 6 小時：兩班皆落入睡眠時段，隔天第一個準時班次補寄（主旨【補寄】），網頁紅字提醒
 　・★09250857 推定補寄時各提醒函式個別失敗只印警告（沿用原設計）→ 若為假或寄信失敗：該日補寄不重試，GitHub 紀錄可見警告
 　・推定 Firestore 服務帳號可寫 artifacts/kj-rental/landlord/heartbeat（與 landlord/data 同集合）
 　　→ 若為假：心跳寫入失敗，GitHub 紀錄印出警告，網頁 26 小時後紅色警示；寄信與結算不受影響
@@ -32,7 +35,8 @@
 ★09230021：排程改每天台灣 20:30（ＡＭ１④）；每次執行寫「雲端心跳」到 landlord/heartbeat（網頁顯示）；
   過渡期（DUP_TRANSITION=True）①～④ 主旨與內文標示「過渡期重複信・正常」。
 ★09230308：通知三級分類（ＡＭ１⑦：急迫／次日有效／一般）：本程式所有信件皆屬【一般】，只在排程 20:30 寄；
-  寄信入口 send_mail 於睡眠時段（台灣 21:30～07:30）攔截非急迫信；睡眠時段手動執行只驗證讀取並寫心跳、不寄信（ＡＭ１①⑥⑦）。
+  寄信入口 send_mail 於睡眠時段（台灣 21:30～07:30）攔截非急迫信；睡眠時段執行只驗證讀取並寫心跳、不寄信（ＡＭ１①⑥⑦）。
+★09262351 丁案：排程 15:30＋20:30 兩班（GitHub 固定延後約 4.5～5 小時，15:30 班約 20:00～20:30 執行）；當天第一個準時班次寄出，同日後續班次只寫心跳（同日去重）。
 ★09230308：⑤ 改為只寄結算日提醒（主帥 2026/09/23 裁示 P3-8 方案 A）：雲端不再自動標記已結算、不寫結算單，避免與網頁三桶重複結算；
   奇數月結算日改 15 日（主帥 2026/09/21 21:17：「網路費帳單13日中華電信公司就寄電子帳單出來,就算再拖個2天緩衝期…算9/15好了」）。
 
@@ -66,7 +70,7 @@ GMAIL_ACCOUNT  = os.environ.get('GMAIL_ACCOUNT', '').strip()
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '').strip()
 NOTIFY_TO      = os.environ.get('NOTIFY_TO', '').strip() or GMAIL_ACCOUNT
 
-SCRIPT_VERSION = '09250857'   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
+SCRIPT_VERSION = '09262351'   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
 LOGIN_PATH = f'artifacts/{APP_ID}/loginLog/data'   # ★09231830 雲端備份一併寄登入紀錄
 BACKUP_EVERY_DAYS = 15   # ★09231830 主帥 09/23 選Ａ：雲端每 15 天把完整備份寄到主帥 Gmail（取代從未成功的本機備份程式）
 HB_PATH = f'artifacts/{APP_ID}/landlord/heartbeat'   # ★雲端心跳：獨立文件，只有本程式寫、網頁只讀
@@ -622,6 +626,7 @@ def write_heartbeat(ok, counts, err='', backup_at=None, on_time=True, missed=Non
           'okDates': ok_dates, 'okStreak': streak,
           'lastBackupAt': backup_at or (old.get('lastBackupAt') or ''),
           'onTimeDates': ok_dates, 'lastRunOnTime': bool(on_time),
+          'lastOnTimeAt': now.isoformat(timespec='seconds') if (ok and on_time) else (old.get('lastOnTimeAt') or ''),   # ★09262351 網頁以此判斷「準時」，只看成功會被深夜執行蒙蔽
           'missedDates': missed if missed is not None else (old.get('missedDates') or [])}
     r = requests.patch(_hb_url(), headers=hdr, json={'fields': {k: firestore_encode(v) for k, v in hb.items()}}, timeout=30)
     r.raise_for_status()
@@ -648,9 +653,13 @@ def main():
         else:
             due = []
         if not on_time:
-            print('  🌙 睡眠時段（台灣 21:30～07:30）執行：只驗證讀取並寫心跳，不寄任何信（ＡＭ１①⑦；排程班次為 20:30，此情況只會發生在手動執行）')
+            print('  🌙 睡眠時段（台灣 21:30～07:30）執行：只驗證讀取並寫心跳，不寄任何信（ＡＭ１①⑦；GitHub 排程固定延後約 4.5～5 小時，20:30 班常落在此時段，09/26 查證）')
             counts.update(lease=0, maint=0, reserve=0, bill=0, settle=0, backup=0, catchup=0)
             if missed: print(f'  📝 已記錄待補寄日期 {len(missed)} 日，下次 20:30 準時執行時補寄（主帥 09/25 甲案）')
+        elif _hb_old is not None and now.strftime('%Y-%m-%d') in (_hb_old.get('onTimeDates') or []):
+            # ★09262351 丁案同日去重：今天已由較早的準時班次寄過 → 本班只寫心跳，不重寄（主帥 09/26 15:26）
+            print('  ✔ 今天已由較早的準時班次寄過，本班只寫心跳、不重寄（同日去重，丁案）')
+            counts.update(lease=0, maint=0, reserve=0, bill=0, settle=0, backup=0, catchup=0)
         else:
             counts.update(run_checks(db))
             counts['catchup'] = 0
