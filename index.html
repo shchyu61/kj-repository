@@ -2620,7 +2620,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09251438'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09262351'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -2725,6 +2725,9 @@ window.renderCloudHeartbeat = async function(){
     const days=(h.okDates||[]).slice(-7); const streak=+h.okStreak||0;
     const ver=(h.version?('｜雲端版本 '+h.version):'')+(h.lastBackupAt?('｜最後雲端備份 '+fmt(h.lastBackupAt)):'｜雲端備份：尚未寄出');   // ★09231830 主帥選Ａ：雲端每 15 天寄備份
     if(hrs>26){ paint('#fdecea','#b71c1c','⚠️ <b>雲端通知已超過 26 小時沒有成功執行</b>（最後成功：'+fmt(h.lastOkAt)+'；最後執行：'+fmt(h.lastRunAt)+(h.lastError?'；錯誤：'+String(h.lastError).slice(0,80):'')+'）。請到 GitHub → Actions 查看「嘉義房租雲端通知」。網頁的自動提醒照常寄出，不會漏信。'+ver); return; }
+    // ★09262351 丁案（主帥 09/26 15:26）：只看「成功」會被深夜執行蒙蔽——9/23～9/26 每天 01:2x 成功、寄 0 封仍顯示綠色；改加判「最後一次準時（21:30 前）執行」
+    const ot=h.lastOnTimeAt?new Date(h.lastOnTimeAt):null; const hrsOT=ot?(Date.now()-ot.getTime())/36e5:null;
+    if(hrsOT!==null&&hrsOT>26){ paint('#fdecea','#b71c1c','⚠️ <b>雲端通知已超過 26 小時沒有「準時」（21:30 前）執行</b>（最後準時：'+fmt(h.lastOnTimeAt)+'；最後執行：'+fmt(h.lastRunAt)+'）。提醒信會延到隔天補寄；急用時請到 GitHub → Actions →「嘉義房租雲端通知」按「Run workflow」手動執行一次。'+ver); return; }
     const tail=streak>=3?'　✅ <b>已連續 '+streak+' 天正常</b>，可請 AI 交付第二步（網頁改只提示）':'　（已連續 '+streak+' 天正常，滿 3 天後可交付第二步）';
     paint(h.lastRunOk===false?'#fff8e1':'#e8f5e9',h.lastRunOk===false?'#8a5a00':'#1b5e20','🛰️ 雲端通知最後成功：'+fmt(h.lastOkAt)+'（寄出 '+(+h.total||0)+' 封）'+(h.lastRunOk===false?'｜★最近一次執行失敗：'+String(h.lastError||'').slice(0,80):'')+tail+ver);
   }catch(e){ paint('#fdecea','#b71c1c','⚠️ 無法讀取雲端心跳：'+(e&&e.message?e.message:e)+'（請截圖回報）'); }
