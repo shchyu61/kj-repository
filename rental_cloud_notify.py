@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-★★★【自我舉證表】rental_cloud_notify(09262351).py（ＡＭ２５）
+★★★【自我舉證表】rental_cloud_notify(09280841).py（ＡＭ２５）
+　・★09280841 N-10：連續準時天數改從「本應執行日」往回數（原從日曆今天往回數，01:2x 備援班一寫入就成 0，網頁「滿 3 天可交付第二步」永遠等不到）｜本版 N-09 稽核模擬情境A（09/30 01:25 連續=0）；網頁 index 第 2725、2731 行讀 okStreak
 　關鍵結論｜來源
 　・★09262351 丁案：排程 15:30＋20:30 兩班；當天第一個準時（21:30 前）班次寄出，同日後續班次只寫心跳（同日去重）；心跳多寫 lastOnTimeAt 供網頁判斷「準時」｜主帥 2026/09/26 15:26「我採用你的建議,我選丁案。」
 　・★09262351 起因：主帥截圖 09261508——GitHub 排程對本倉庫固定延後約 4.5～5 小時（#84～#87 08:00 班實際 12:24～12:42；#89～#91 20:30 班實際 01:20～01:25），20:30 班自 9/23 起從未準時｜截圖 09261422、09261508
@@ -70,7 +71,7 @@ GMAIL_ACCOUNT  = os.environ.get('GMAIL_ACCOUNT', '').strip()
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '').strip()
 NOTIFY_TO      = os.environ.get('NOTIFY_TO', '').strip() or GMAIL_ACCOUNT
 
-SCRIPT_VERSION = '09262351'   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
+SCRIPT_VERSION = '09280841'   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
 LOGIN_PATH = f'artifacts/{APP_ID}/loginLog/data'   # ★09231830 雲端備份一併寄登入紀錄
 BACKUP_EVERY_DAYS = 15   # ★09231830 主帥 09/23 選Ａ：雲端每 15 天把完整備份寄到主帥 Gmail（取代從未成功的本機備份程式）
 HB_PATH = f'artifacts/{APP_ID}/landlord/heartbeat'   # ★雲端心跳：獨立文件，只有本程式寫、網頁只讀
@@ -524,7 +525,7 @@ def hb_dates(old, now, ok, on_time):
     today = now.strftime('%Y-%m-%d')
     dates = [d for d in (old.get('onTimeDates') or []) if d != today] + ([today] if (ok and on_time) else [])
     dates = dates[-10:]
-    streak = 0; d = now.date()
+    streak = 0; d = intended_date(now)   # ★09280841 N-10：原為 now.date()，07:30 前執行者屬前一天班次
     while d.strftime('%Y-%m-%d') in dates:
         streak += 1; d = d - timedelta(days=1)
     return dates, streak

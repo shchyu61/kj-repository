@@ -1,5 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(09240418)　★依鐵律ＡＭ１７／自檢(14)
+　・★09280841 N-08：房客讀取失敗、房東發布失敗改為畫面提示；initFBAuth 移進 try｜依據：本版 09280305 批 N-03 自查（股票PRO 09272008 四①）、ＡＭ６０ 靜默失敗；實測見改版記錄(09280841) 第十一章
 　本輪性質：ＡＭ５９⑦ 回頭重驗——自檢(09240403) 強化版 (186) 重掃 index(09240346) FAIL 30 處（先組字串再寫入的片段），逐處改為 window._esc(…)（ＡＭ７２；修正錯誤）
 　　驗證：強化版檢查器自證、重掃 FAIL 0、語法（依類型＋檢查器自證）、重複 id、onclick 前後比對、回歸　★實證（見交付訊息原始輸出）
 ★★★【推定清單（★須主帥實測）】
@@ -2620,7 +2621,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09262351'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09280841'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -3036,6 +3037,7 @@ const completeLogin = async (email, method=null) => {
   } else {
     // ★09251438 丙案（主帥 09/25 14:15 第 4 點）：房客不讀房東資料（規則④只准房東），改讀房東發布給本人的那一份
     await window.loadTenantDoc(email);
+    if(window._tenantLoadErr) toast('⚠️ 讀取您的房間資料失敗（'+String(window._tenantLoadErr).slice(0,60)+'），請截圖給房東；目前先以訪客畫面顯示', 8000);   // ★09280841 N-08
     myRoom = findMyRoom(email);
 
     if(myRoom){
@@ -3330,12 +3332,13 @@ window.publishTenantDocs = async function(){
     }
     const snap=await window._getDocs(window._collection(window._db,'artifacts',window._APP_ID,'tenants'));
     for(const d of snap.docs){ if(!want[d.id]) await window._deleteDoc(d.ref); }
-  }catch(e){ console.error('[靜默失敗] 發布房客資料', e && e.message); }
+  }catch(e){ console.error('[發布房客資料失敗]', e && e.message); toast('⚠️ 房客專屬資料發布失敗（'+String((e&&e.message)||e).slice(0,60)+'），房客看到的可能是舊資料；請截圖給 AI', 8000); }   // ★09280841 N-08：原本只寫主控台，房東看不到
 };
 // ★09251438 丙案：房客讀自己那一份（文件 ID＝email 轉小寫、@ 與 . 換成 _，與規則 safeId() 一致）
 window.loadTenantDoc = async function(email){
-  await initFBAuth();
+  window._tenantLoadErr=null;   // ★09280841 N-08：讀取失敗改為畫面可見（原本只寫主控台，房客只看到訪客頁、看不出原因）
   try{
+    await initFBAuth();         // ★09280841 N-08：原在 try 外，出錯會中斷整個登入流程
     const id=String(email||'').toLowerCase().replace(/[@.]/g,'_');
     const s=await window._getDoc(window._doc(window._db,'artifacts',window._APP_ID,'tenants',id));
     if(!s.exists()) return false;
@@ -3345,7 +3348,7 @@ window.loadTenantDoc = async function(email){
     if(d.postalAccount) DB.postalAccount=d.postalAccount;
     DB.announces=Array.isArray(d.announces)?d.announces:[];
     return true;
-  }catch(e){ console.error('[靜默失敗] 讀取房客資料', e && e.message); return false; }
+  }catch(e){ console.error('[讀取房客資料失敗]', e && e.message); window._tenantLoadErr=(e&&e.message)||String(e); return false; }
 };
 // ★★ 必須掛上 window：新版函式以 if(window.saveLandlordData) 判斷，
 //    未掛載時會整段【靜默跳過存檔】（2026/08/04 重大事故根因，切勿刪除此行）
