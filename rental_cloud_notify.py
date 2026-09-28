@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-★★★【自我舉證表】rental_cloud_notify(09280841).py（ＡＭ２５）
+★★★【自我舉證表】rental_cloud_notify(09280929).py（ＡＭ２５）
+　・★09280929 N-11：①當天已記的準時紀錄不因同日後續班次（深夜或失敗）被刪除 ②連續天數只算排程班（手動 Run workflow 不算，才能證明排程可靠）｜主帥 09/28 09:29 貼 Actions 紀錄「連續準時 3 天」含手動執行；GitHub 官方文件：預設環境變數每一步驟可讀、GITHUB_EVENT_NAME＝觸發事件名稱
 　・★09280841 N-10：連續準時天數改從「本應執行日」往回數（原從日曆今天往回數，01:2x 備援班一寫入就成 0，網頁「滿 3 天可交付第二步」永遠等不到）｜本版 N-09 稽核模擬情境A（09/30 01:25 連續=0）；網頁 index 第 2725、2731 行讀 okStreak
 　關鍵結論｜來源
 　・★09262351 丁案：排程 15:30＋20:30 兩班；當天第一個準時（21:30 前）班次寄出，同日後續班次只寫心跳（同日去重）；心跳多寫 lastOnTimeAt 供網頁判斷「準時」｜主帥 2026/09/26 15:26「我採用你的建議,我選丁案。」
@@ -71,7 +72,9 @@ GMAIL_ACCOUNT  = os.environ.get('GMAIL_ACCOUNT', '').strip()
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '').strip()
 NOTIFY_TO      = os.environ.get('NOTIFY_TO', '').strip() or GMAIL_ACCOUNT
 
-SCRIPT_VERSION = '09280841'   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
+SCRIPT_VERSION = '09280929'
+EVENT = os.environ.get('GITHUB_EVENT_NAME', '')   # ★09280929 N-11：GitHub 預設環境變數（schedule＝排程班；workflow_dispatch＝手動 Run workflow；本機執行為空）
+SCHEDULED = (EVENT == 'schedule')   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
 LOGIN_PATH = f'artifacts/{APP_ID}/loginLog/data'   # ★09231830 雲端備份一併寄登入紀錄
 BACKUP_EVERY_DAYS = 15   # ★09231830 主帥 09/23 選Ａ：雲端每 15 天把完整備份寄到主帥 Gmail（取代從未成功的本機備份程式）
 HB_PATH = f'artifacts/{APP_ID}/landlord/heartbeat'   # ★雲端心跳：獨立文件，只有本程式寫、網頁只讀
@@ -520,15 +523,19 @@ def plan_catchup(hb, now, on_time):
     return [d for d in missed if d >= today], sorted(d for d in missed if d < today)
 
 
-def hb_dates(old, now, ok, on_time):
-    """★09250857 心跳只算準時：只有 21:30 前成功跑完的日子列入 onTimeDates／okDates 與連續天數"""
+def hb_dates(old, now, ok, on_time, scheduled=True):
+    """★09250857 心跳只算準時：只有 21:30 前成功跑完的日子列入 onTimeDates／okDates
+    ★09280929 N-11：①當天已記者不因同日後續班次被刪除 ②連續天數改由 schedOnTimeDates（只收排程班）計算"""
     today = now.strftime('%Y-%m-%d')
-    dates = [d for d in (old.get('onTimeDates') or []) if d != today] + ([today] if (ok and on_time) else [])
-    dates = dates[-10:]
+    def _keep(key, cond):
+        prev = list(old.get(key) or [])
+        return ([d for d in prev if d != today] + ([today] if (cond or today in prev) else []))[-10:]
+    dates = _keep('onTimeDates', ok and on_time)
+    sdates = _keep('schedOnTimeDates', ok and on_time and scheduled)
     streak = 0; d = intended_date(now)   # ★09280841 N-10：原為 now.date()，07:30 前執行者屬前一天班次
-    while d.strftime('%Y-%m-%d') in dates:
+    while d.strftime('%Y-%m-%d') in sdates:
         streak += 1; d = d - timedelta(days=1)
-    return dates, streak
+    return dates, streak, sdates
 
 
 def run_checks(db, day=None):
@@ -620,22 +627,23 @@ def write_heartbeat(ok, counts, err='', backup_at=None, on_time=True, missed=Non
     r = requests.get(_hb_url(), headers=hdr, timeout=30)
     old = {k: firestore_decode(x) for k, x in r.json().get('fields', {}).items()} if r.status_code == 200 else {}
     now = datetime.now(TW); today = now.strftime('%Y-%m-%d')
-    ok_dates, streak = hb_dates(old, now, ok, on_time)   # ★09250857 只算準時（舊 okDates 不沿用，連續天數自部署後重算）
+    ok_dates, streak, sched_dates = hb_dates(old, now, ok, on_time, SCHEDULED)   # ★09280929 N-11 連續天數只算排程班
     hb = {'version': SCRIPT_VERSION, 'lastRunAt': now.isoformat(timespec='seconds'), 'lastRunOk': bool(ok),
           'lastOkAt': now.isoformat(timespec='seconds') if ok else (old.get('lastOkAt') or ''),
           'lastError': (err or '')[:300], 'sent': counts, 'total': int(sum(counts.values())) if counts else 0,
           'okDates': ok_dates, 'okStreak': streak,
           'lastBackupAt': backup_at or (old.get('lastBackupAt') or ''),
           'onTimeDates': ok_dates, 'lastRunOnTime': bool(on_time),
+          'schedOnTimeDates': sched_dates, 'lastRunTrigger': EVENT or 'local',   # ★09280929 N-11
           'lastOnTimeAt': now.isoformat(timespec='seconds') if (ok and on_time) else (old.get('lastOnTimeAt') or ''),   # ★09262351 網頁以此判斷「準時」，只看成功會被深夜執行蒙蔽
           'missedDates': missed if missed is not None else (old.get('missedDates') or [])}
     r = requests.patch(_hb_url(), headers=hdr, json={'fields': {k: firestore_encode(v) for k, v in hb.items()}}, timeout=30)
     r.raise_for_status()
-    print(f'  🛰️ 雲端心跳已寫入：ok={ok}、準時={bool(on_time)}、連續準時 {streak} 天、共寄 {hb["total"]} 封、待補寄 {len(hb["missedDates"])} 日')
+    print(f'  🛰️ 雲端心跳已寫入：ok={ok}、準時={bool(on_time)}、觸發={EVENT or "local"}、排程班連續準時 {streak} 天、共寄 {hb["total"]} 封、待補寄 {len(hb["missedDates"])} 日')
 
 
 def main():
-    print(f'▶ 嘉義房租雲端通知 啟動（版本 {SCRIPT_VERSION}）')
+    print(f'▶ 嘉義房租雲端通知 啟動（版本 {SCRIPT_VERSION}；觸發 {EVENT or "local"}）')
     global _SUBJ_PREFIX
     counts = {}; err = ''; backup_at = None
     now = datetime.now(TW); on_time = not in_quiet_hours(now); missed = None
