@@ -1,4 +1,14 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(09301945)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：心跳文字與股票PRO 統一（主帥 2026/09/30 13:12 b「嘉義房租版也和你使用同一套程式碼,你們協調過程有沒有達成共識,改成相同的文字和運作邏輯?」；本版 09301401 回函第四節同意；股票PRO 09301529 第九節③ 已上線）
+　① 心跳列綠色文字改為「☁️ 雲端最後成功 MM/DD HH:MM（該次寄出 N 封）｜排程準時連續 N 天」，滿 3 天另示可交付第二步（P4-19）
+　② 滑鼠提示兩行：「該次寄出：最近一次執行寄出的封數」「雲端累計寄出（起算日 起）：N 封」（累計欄由 rental_cloud_notify 09301945 起寫入）
+　③ 最近一次執行失敗訊息改經 _esc 轉義；APP_VER v09280841→v09301945
+　　驗證：語法（node --check 兩段 module）、心跳三情境以本函式實跑　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・雲端 09301945 首次寫入 totalSent 前，滑鼠提示顯示「雲端累計寄出（— 起）：0 封」；寫入後顯示起算日與累計封數
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(09240418)　★依鐵律ＡＭ１７／自檢(14)
 　・★09280841 N-08：房客讀取失敗、房東發布失敗改為畫面提示；initFBAuth 移進 try｜依據：本版 09280305 批 N-03 自查（股票PRO 09272008 四①）、ＡＭ６０ 靜默失敗；實測見改版記錄(09280841) 第十一章
 　本輪性質：ＡＭ５９⑦ 回頭重驗——自檢(09240403) 強化版 (186) 重掃 index(09240346) FAIL 30 處（先組字串再寫入的片段），逐處改為 window._esc(…)（ＡＭ７２；修正錯誤）
@@ -2621,7 +2631,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09280841'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v09301945'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -2715,7 +2725,7 @@ window._dupHead = function(src){ return window.DUP_TRANSITION ? ('【過渡期�
 window._dupFoot = function(src){ return window.DUP_TRANSITION ? ('\n\n──────────\n★這是【過渡期的重複信】，屬正常，不是程式壞掉，不必找 AI 修。\n・原因：2026/09/23 起，雲端通知改為每天 20:30 寄出，並加裝「雲端心跳」（每次執行都在雲端留下紀錄）。依鐵律ＡＭ１２，必須先確認雲端連續 3 天正常，網頁才能停寄，所以驗收期間同一類提醒會收到兩封：一封【網頁寄】、一封【雲端寄】。\n・本信由：【'+src+'】寄出。\n・何時結束：房租網頁「🏠 房客管理」頁最上方顯示「雲端已連續 3 天正常」後，AI 會交付第二步，之後只剩雲端一封（改版記錄待辦 P3-19）。') : ''; };
 // ★雲端心跳：雲端每次執行寫入 landlord/heartbeat（獨立文件，網頁只讀不寫，避免整份存檔蓋掉新心跳）
 window.renderCloudHeartbeat = async function(){
-  const el=document.getElementById('cloud-heartbeat'); if(!el) return;
+  const el=document.getElementById('cloud-heartbeat'); if(!el) return; el.title='';   // ★09301945 滑鼠提示先清空（紅字情境不顯示累計）
   const paint=(bg,fg,html)=>{ el.style.background=bg; el.style.color=fg; el.innerHTML=html; };
   try{
     const snap=await window._getDoc(window._doc(window._db,'artifacts',window._APP_ID,'landlord','heartbeat'));
@@ -2729,8 +2739,10 @@ window.renderCloudHeartbeat = async function(){
     // ★09262351 丁案（主帥 09/26 15:26）：只看「成功」會被深夜執行蒙蔽——9/23～9/26 每天 01:2x 成功、寄 0 封仍顯示綠色；改加判「最後一次準時（21:30 前）執行」
     const ot=h.lastOnTimeAt?new Date(h.lastOnTimeAt):null; const hrsOT=ot?(Date.now()-ot.getTime())/36e5:null;
     if(hrsOT!==null&&hrsOT>26){ paint('#fdecea','#b71c1c','⚠️ <b>雲端通知已超過 26 小時沒有「準時」（21:30 前）執行</b>（最後準時：'+fmt(h.lastOnTimeAt)+'；最後執行：'+fmt(h.lastRunAt)+'）。提醒信會延到隔天補寄；急用時請到 GitHub → Actions →「嘉義房租雲端通知」按「Run workflow」手動執行一次。'+ver); return; }
-    const tail=streak>=3?'　✅ <b>已連續 '+streak+' 天正常</b>，可請 AI 交付第二步（網頁改只提示）':'　（已連續 '+streak+' 天正常，滿 3 天後可交付第二步）';
-    paint(h.lastRunOk===false?'#fff8e1':'#e8f5e9',h.lastRunOk===false?'#8a5a00':'#1b5e20','🛰️ 雲端通知最後成功：'+fmt(h.lastOkAt)+'（寄出 '+(+h.total||0)+' 封）'+(h.lastRunOk===false?'｜★最近一次執行失敗：'+String(h.lastError||'').slice(0,80):'')+tail+ver);
+    const tail=streak>=3?'　✅ <b>可請 AI 交付第二步</b>（網頁改只提示）':'（滿 3 天後可交付第二步）';   // ★09301945 心跳文字與股票PRO 統一（主帥 09/30 13:12 b）
+    const md=x=>{ if(!x) return '—'; const d=new Date(x); return isNaN(d)?String(x):d.toLocaleString('zh-TW',{timeZone:'Asia/Taipei',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}); };
+    paint(h.lastRunOk===false?'#fff8e1':'#e8f5e9',h.lastRunOk===false?'#8a5a00':'#1b5e20','☁️ 雲端最後成功 '+md(h.lastOkAt)+'（該次寄出 '+(+h.total||0)+' 封）｜排程準時連續 '+streak+' 天'+tail+(h.lastRunOk===false?'｜★最近一次執行失敗：'+window._esc(String(h.lastError||'').slice(0,80)):'')+ver);
+    el.title='該次寄出：最近一次執行寄出的封數\n雲端累計寄出（'+(h.sentSince?String(h.sentSince).slice(5,10).replace('-','/'):'—')+' 起）：'+(+h.totalSent||0)+' 封';
   }catch(e){ paint('#fdecea','#b71c1c','⚠️ 無法讀取雲端心跳：'+(e&&e.message?e.message:e)+'（請截圖回報）'); }
 };
 let _ejsPatched = false;

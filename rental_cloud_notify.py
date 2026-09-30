@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-★★★【自我舉證表】rental_cloud_notify(09301845).py（ＡＭ２５）
+★★★【自我舉證表】rental_cloud_notify(09301945).py（ＡＭ２５）
+　・★09301945 心跳加寫 totalSent（雲端累計寄出封數）與 sentSince（起算日），供網頁滑鼠提示（主帥 2026/09/30 13:12 b：兩版心跳文字與運作邏輯統一；股票PRO 09301529 第九節③）；被取消的排程班不寫心跳，累計不重複
 　・★09301845 甲案＋一天一次：排程加 11:30 首班（主帥 2026/09/30 18:36「好,採用你的建議,我選甲案。」）；排程班若本應執行日已有準時成功之排程班紀錄（schedOnTimeDates），本班一啟動即結束——不讀資料、不寄信、不寫心跳（主帥 09/30 18:45 2c「一天只要執行一次就好…第2個時段和第3個時段…自動取消不執行」）；手動 Run workflow 不受影響｜主帥截圖 09301818：延後 5.7～8.2 小時
 　・★09280929 N-11：①當天已記的準時紀錄不因同日後續班次（深夜或失敗）被刪除 ②連續天數只算排程班（手動 Run workflow 不算，才能證明排程可靠）｜主帥 09/28 09:29 貼 Actions 紀錄「連續準時 3 天」含手動執行；GitHub 官方文件：預設環境變數每一步驟可讀、GITHUB_EVENT_NAME＝觸發事件名稱
 　・★09280841 N-10：連續準時天數改從「本應執行日」往回數（原從日曆今天往回數，01:2x 備援班一寫入就成 0，網頁「滿 3 天可交付第二步」永遠等不到）｜本版 N-09 稽核模擬情境A（09/30 01:25 連續=0）；網頁 index 第 2725、2731 行讀 okStreak
@@ -75,7 +76,7 @@ GMAIL_ACCOUNT  = os.environ.get('GMAIL_ACCOUNT', '').strip()
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '').strip()
 NOTIFY_TO      = os.environ.get('NOTIFY_TO', '').strip() or GMAIL_ACCOUNT
 
-SCRIPT_VERSION = '09301845'
+SCRIPT_VERSION = '09301945'
 EVENT = os.environ.get('GITHUB_EVENT_NAME', '')   # ★09280929 N-11：GitHub 預設環境變數（schedule＝排程班；workflow_dispatch＝手動 Run workflow；本機執行為空）
 SCHEDULED = (EVENT == 'schedule')   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
 LOGIN_PATH = f'artifacts/{APP_ID}/loginLog/data'   # ★09231830 雲端備份一併寄登入紀錄
@@ -643,6 +644,8 @@ def write_heartbeat(ok, counts, err='', backup_at=None, on_time=True, missed=Non
           'onTimeDates': ok_dates, 'lastRunOnTime': bool(on_time),
           'schedOnTimeDates': sched_dates, 'lastRunTrigger': EVENT or 'local',   # ★09280929 N-11
           'lastOnTimeAt': now.isoformat(timespec='seconds') if (ok and on_time) else (old.get('lastOnTimeAt') or ''),   # ★09262351 網頁以此判斷「準時」，只看成功會被深夜執行蒙蔽
+          'totalSent': int(old.get('totalSent') or 0) + (int(sum(counts.values())) if counts else 0),   # ★09301945 雲端累計寄出（網頁滑鼠提示）
+          'sentSince': old.get('sentSince') or today,   # ★09301945 累計起算日（首次寫入當天）
           'missedDates': missed if missed is not None else (old.get('missedDates') or [])}
     r = requests.patch(_hb_url(), headers=hdr, json={'fields': {k: firestore_encode(v) for k, v in hb.items()}}, timeout=30)
     r.raise_for_status()
