@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-★★★【自我舉證表】rental_cloud_notify(09280929).py（ＡＭ２５）
+★★★【自我舉證表】rental_cloud_notify(09301845).py（ＡＭ２５）
+　・★09301845 甲案＋一天一次：排程加 11:30 首班（主帥 2026/09/30 18:36「好,採用你的建議,我選甲案。」）；排程班若本應執行日已有準時成功之排程班紀錄（schedOnTimeDates），本班一啟動即結束——不讀資料、不寄信、不寫心跳（主帥 09/30 18:45 2c「一天只要執行一次就好…第2個時段和第3個時段…自動取消不執行」）；手動 Run workflow 不受影響｜主帥截圖 09301818：延後 5.7～8.2 小時
 　・★09280929 N-11：①當天已記的準時紀錄不因同日後續班次（深夜或失敗）被刪除 ②連續天數只算排程班（手動 Run workflow 不算，才能證明排程可靠）｜主帥 09/28 09:29 貼 Actions 紀錄「連續準時 3 天」含手動執行；GitHub 官方文件：預設環境變數每一步驟可讀、GITHUB_EVENT_NAME＝觸發事件名稱
 　・★09280841 N-10：連續準時天數改從「本應執行日」往回數（原從日曆今天往回數，01:2x 備援班一寫入就成 0，網頁「滿 3 天可交付第二步」永遠等不到）｜本版 N-09 稽核模擬情境A（09/30 01:25 連續=0）；網頁 index 第 2725、2731 行讀 okStreak
 　關鍵結論｜來源
@@ -21,6 +22,7 @@
 ★★★【推定清單】
 　・★09250857 推定 GitHub 排程延遲不會連續兩天都落在睡眠時段 → ★09262351 已被推翻（連三班落在睡眠時段，補寄永遠等不到準時班次）→ 改由 15:30 班承接
 　・★09262351 推定 GitHub 延後維持約 4.5～5 小時（15:30 班約 20:00～20:30 執行）→ 若延後縮短：信在 15:30 起寄出（非睡眠時段，無害）；若延後超過 6 小時：兩班皆落入睡眠時段，隔天第一個準時班次補寄（主旨【補寄】），網頁紅字提醒
+　・★09301845 推定延後不超過約 10 小時（11:30 班約 17:10～19:40 執行）→ 若超過：三班皆落入睡眠時段，隔天第一個準時班次補寄，網頁紅字提醒；GitHub 官方文件載明排程事件可能延遲或被丟棄 → 丟班由下一班承接
 　・★09250857 推定補寄時各提醒函式個別失敗只印警告（沿用原設計）→ 若為假或寄信失敗：該日補寄不重試，GitHub 紀錄可見警告
 　・推定 Firestore 服務帳號可寫 artifacts/kj-rental/landlord/heartbeat（與 landlord/data 同集合）
 　　→ 若為假：心跳寫入失敗，GitHub 紀錄印出警告，網頁 26 小時後紅色警示；寄信與結算不受影響
@@ -39,6 +41,7 @@
 ★09230308：通知三級分類（ＡＭ１⑦：急迫／次日有效／一般）：本程式所有信件皆屬【一般】，只在排程 20:30 寄；
   寄信入口 send_mail 於睡眠時段（台灣 21:30～07:30）攔截非急迫信；睡眠時段執行只驗證讀取並寫心跳、不寄信（ＡＭ１①⑥⑦）。
 ★09262351 丁案：排程 15:30＋20:30 兩班（GitHub 固定延後約 4.5～5 小時，15:30 班約 20:00～20:30 執行）；當天第一個準時班次寄出，同日後續班次只寫心跳（同日去重）。
+★09301845 甲案：排程 11:30＋15:30＋20:30 三班；當天第一個準時排程班完成後，其餘排程班一啟動即結束（不寫心跳；主帥 09/30 18:45 2c）。
 ★09230308：⑤ 改為只寄結算日提醒（主帥 2026/09/23 裁示 P3-8 方案 A）：雲端不再自動標記已結算、不寫結算單，避免與網頁三桶重複結算；
   奇數月結算日改 15 日（主帥 2026/09/21 21:17：「網路費帳單13日中華電信公司就寄電子帳單出來,就算再拖個2天緩衝期…算9/15好了」）。
 
@@ -72,7 +75,7 @@ GMAIL_ACCOUNT  = os.environ.get('GMAIL_ACCOUNT', '').strip()
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '').strip()
 NOTIFY_TO      = os.environ.get('NOTIFY_TO', '').strip() or GMAIL_ACCOUNT
 
-SCRIPT_VERSION = '09280929'
+SCRIPT_VERSION = '09301845'
 EVENT = os.environ.get('GITHUB_EVENT_NAME', '')   # ★09280929 N-11：GitHub 預設環境變數（schedule＝排程班；workflow_dispatch＝手動 Run workflow；本機執行為空）
 SCHEDULED = (EVENT == 'schedule')   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
 LOGIN_PATH = f'artifacts/{APP_ID}/loginLog/data'   # ★09231830 雲端備份一併寄登入紀錄
@@ -508,6 +511,10 @@ def intended_date(now):
     """★09250857 排程本應執行的日期：07:30 前執行者屬前一天的 20:30 班次"""
     return (now - timedelta(days=1)).date() if now.hour * 60 + now.minute < 7 * 60 + 30 else now.date()
 
+def skip_if_done(hb, now, scheduled):
+    """★09301845 一天只執行一次（主帥 09/30 18:45 2c）：排程班且本應執行日已在 schedOnTimeDates（已有準時成功之排程班）→ True＝本班取消"""
+    return bool(scheduled and hb and intended_date(now).strftime('%Y-%m-%d') in (hb.get('schedOnTimeDates') or []))
+
 
 def plan_catchup(hb, now, on_time):
     """★09250857 甲案：回傳（保留的 missedDates, 本次要補寄的日期）。
@@ -647,6 +654,15 @@ def main():
     global _SUBJ_PREFIX
     counts = {}; err = ''; backup_at = None
     now = datetime.now(TW); on_time = not in_quiet_hours(now); missed = None
+    if SCHEDULED:   # ★09301845 一天只執行一次（主帥 09/30 18:45 2c）；手動 Run workflow 不受影響
+        try:
+            _hb0 = _get_doc(HB_PATH)
+        except Exception as _e0:
+            _hb0 = None
+            print(f'  ⚠️ 讀心跳失敗，照常執行（避免誤取消）：{type(_e0).__name__}')
+        if skip_if_done(_hb0, now, SCHEDULED):
+            print(f'  ⏭ {intended_date(now):%m/%d} 已由較早的排程班準時完成，本班取消不執行（不讀資料、不寄信、不寫心跳；主帥 09/30 18:45）')
+            return
     try:
         if not (GMAIL_ACCOUNT and GMAIL_PASSWORD):
             raise RuntimeError('缺少 GMAIL_ACCOUNT / GMAIL_PASSWORD')
