@@ -1,4 +1,14 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(10011510)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：題一甲 房客報修存雲端、題二甲 寄信入口依ＡＭ１⑦ 分級（主帥 2026/10/01 15:10「採用你的建議,我選甲案。」兩題）
+　① 唯一寄信入口（initEJS）：__otp、__urgent 為急迫照寄；其餘於睡眠時段 21:30～07:30 由按鍵者選「存本機待寄」或「仍要立即寄出」；待寄於非睡眠時段開網頁時與每 10 分鐘自動寄出（信首註明原按下時間）
+　② 淹水警報、報修「非常緊急」標 __urgent（ＡＭ１⑦ａ）；剛存待寄時呼叫端成功提示改為待寄說明
+　③ 房客報修寫入 tenants/{本人}/repairs/{編號}（Firestore 規則 10011510 只准本人新增、欄位白名單）；房東與房客報修頁合併顯示雲端報修，房東可改狀態與刪除；APP_VER v10011510
+　　驗證：語法（node --check 兩段 module）、寄信分級 7 情境與報修合併 3 情境實跑　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・Firestore 規則 10011510 發布前，房客報修存雲端會被拒絕 → 畫面提示「Email 已送達、雲端失敗」，不影響寄信
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(09301945)　★依鐵律ＡＭ１７／自檢(14)
 　本輪性質：心跳文字與股票PRO 統一（主帥 2026/09/30 13:12 b「嘉義房租版也和你使用同一套程式碼,你們協調過程有沒有達成共識,改成相同的文字和運作邏輯?」；本版 09301401 回函第四節同意；股票PRO 09301529 第九節③ 已上線）
 　① 心跳列綠色文字改為「☁️ 雲端最後成功 MM/DD HH:MM（該次寄出 N 封）｜排程準時連續 N 天」，滿 3 天另示可交付第二步（P4-19）
@@ -2631,7 +2641,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v09301945'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v10011510'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -2670,6 +2680,8 @@ const initFBAuth = async () => {
 
 // ══ Toast ════════════════════════════════
 function toast(msg, dur=2200){
+  // ★10011510 題二甲：剛存入待寄時，呼叫端「已通知／已寄」成功提示改為待寄說明，避免誤以為已寄出
+  if(window._mailQueuedAt && Date.now()-window._mailQueuedAt<4000 && /✓|已通知|已寄|已送出/.test(String(msg)) && !/待寄/.test(String(msg))){ msg='🌙 睡眠時段：通知已存入待寄（尚未寄出），07:30 後您下次開網頁時自動寄出'; dur=5000; }
   const e=document.getElementById('toast');
   e.textContent=msg; e.style.display='block';
   clearTimeout(e._t); e._t=setTimeout(()=>e.style.display='none',dur);
@@ -2745,6 +2757,38 @@ window.renderCloudHeartbeat = async function(){
     el.title='該次寄出：最近一次執行寄出的封數\n雲端累計寄出（'+(h.sentSince?String(h.sentSince).slice(5,10).replace('-','/'):'—')+' 起）：'+(+h.totalSent||0)+' 封';
   }catch(e){ paint('#fdecea','#b71c1c','⚠️ 無法讀取雲端心跳：'+(e&&e.message?e.message:e)+'（請截圖回報）'); }
 };
+// ★10011510 題二甲（主帥 10/01 15:10「採用你的建議,我選甲案。」）：睡眠時段一般通知之本機待寄（ＡＭ１④ 延發不是丟棄、ＡＭ１⑦ 三級分類）
+window._MAIL_Q_KEY='kj-rental-pending-mail';
+window._quietChoice = function(){
+  const now=Date.now(), c=window._qc;
+  if(c && now-c.at<60000) return c.v;          // 同一次操作（例：通知多位房客）只問一次
+  const ok=confirm('🌙 現在是睡眠時段（21:30～07:30）。\n這封通知不急迫（鐵律ＡＭ１）。\n\n按「確定」＝先存待寄，07:30 後您下次開網頁時自動寄出（建議）\n按「取消」＝仍要立即寄出');
+  window._qc={v: ok?'queue':'now', at: now};
+  return window._qc.v;
+};
+window._readMailQ = function(){ try{ return JSON.parse(localStorage.getItem(window._MAIL_Q_KEY)||'[]')||[]; }catch(e){ window._silentFail && window._silentFail('讀待寄清單', e); return []; } };
+window._writeMailQ = function(q){ try{ localStorage.setItem(window._MAIL_Q_KEY, JSON.stringify(q)); return true; }catch(e){ window._silentFail && window._silentFail('寫待寄清單', e); return false; } };
+window._queueMail = function(svc, tpl, params){
+  const q=window._readMailQ(); q.push({svc:svc, tpl:tpl, params:params, at:new Date().toISOString()});
+  if(!window._writeMailQ(q)){ alert('⚠️ 本機無法存待寄清單，這封通知未寄出，請 07:30 後再按一次。'); return false; }
+  window._mailQueuedAt=Date.now();
+  toast('🌙 睡眠時段：已存入待寄（尚未寄出）。07:30 後您下次開網頁時自動寄出，目前待寄 '+q.length+' 封', 5000);
+  return true;
+};
+window._flushPendingMail = async function(){
+  if(window._inQuietHours()) return;
+  const q=window._readMailQ(); if(!q.length) return;
+  initEJS(); const left=[]; let ok=0;
+  for(const m of q){
+    const t=new Date(m.at).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+    const head='【延後寄出｜原於 '+t+' 睡眠時段按下，依ＡＭ１ 於 07:30 後寄出】\n';
+    const p=Object.assign({}, m.params, {__flush:true});
+    if(typeof p.otp==='string') p.otp=head+p.otp; else if(typeof p.message==='string') p.message=head+p.message;
+    try{ await emailjs.send(m.svc, m.tpl, p); ok++; }catch(e){ left.push(m); }
+  }
+  window._writeMailQ(left);
+  toast('📧 已寄出睡眠時段待寄通知 '+ok+' 封'+(left.length?('；'+left.length+' 封失敗，下次開網頁再試'):''), 5000);
+};
 let _ejsPatched = false;
 function initEJS(){
   if(_ejsOk)return;
@@ -2760,6 +2804,14 @@ function initEJS(){
           const _msg=String(params.otp||params.message||'');
           _tpl=EJS_TPL_NOTICE; _p={to_email:params.to_email, subject:window._noticeSubject(_msg), message:_msg};
         }
+        // ★10011510 題二甲：ＡＭ１⑦ 於唯一入口判定（ＡＭ１⑥）——ａ急迫（__otp、__urgent）照寄；ｃ一般於睡眠時段由按鍵者選擇存待寄或立即寄
+        const _urgent=!!(params && (params.__otp || params.__urgent)), _fl=!!(params && params.__flush);
+        if(params && (params.__urgent!==undefined || params.__flush!==undefined) && _p===params){ _p=Object.assign({},params); }
+        if(_p && _p!==params){ delete _p.__urgent; delete _p.__flush; }
+        if(!_urgent && !_fl && window._inQuietHours() && window._quietChoice()==='queue'){
+          if(window._queueMail(svc, tpl, params)) return {status:200, text:'QUEUED', queued:true};
+          throw new Error('待寄清單無法儲存');
+        }
         try{
           return await _rawSend(svc, _tpl, _p, ...rest);
         }catch(e){
@@ -2773,6 +2825,8 @@ function initEJS(){
   }catch(e){ console.error('initEJS 失敗:', e); }
 }
 try{ if(typeof emailjs!=='undefined') initEJS(); }catch(e){ console.error(e); }   // ★09220137：載入即初始化，29 處寄信一律經過上方唯一入口
+setTimeout(()=>{ window._flushPendingMail().catch(e=>console.error('[待寄補寄失敗]',e)); }, 5000);   // ★10011510 題二甲：開網頁後補寄睡眠時段待寄
+setInterval(()=>{ window._flushPendingMail().catch(e=>console.error('[待寄補寄失敗]',e)); }, 600000);
 
 // ══ 登入紀錄寫入 Firebase ════════════════════════════
 
@@ -3102,7 +3156,7 @@ const completeLogin = async (email, method=null) => {
     checkRentOverdue();
     checkLeaseExpiry();
     renderCloudHeartbeat();   // ★09230021 雲端心跳顯示
-    updateRepairBadge();
+    window.loadCloudRepairs().then(()=>updateRepairBadge());   // ★10011510 題一甲：含雲端報修
   },1500);
   // 更新郵局帳號顯示（確保 Firebase 資料已讀取後再更新）
   setTimeout(()=>{
@@ -3774,7 +3828,7 @@ window.ST = function(n){
   if(n==='announce')renderAnnounce();
   if(n==='tenants')renderUnassigned();   // ★09251331 進入房客管理頁即重畫「待指派」（主帥 09/25 13:31 第 b 點：須按重新整理才出現）
   updateLandlordMenuActive(n);
-  if(n==='repair')renderRepair();
+  if(n==='repair'){ renderRepair(); window.loadCloudRepairs().then(()=>renderRepair()); }   // ★10011510 題一甲：合併雲端報修
   if(n==='former')renderFormer();
   if(n==='photos')renderPhotos();
   if(n==='adtext'){}
@@ -7559,6 +7613,7 @@ async function checkSession(){
 window.submitRepair = async function(){
   const desc=document.getElementById('repair-desc')?.value.trim();
   if(!desc){toast('請填寫損壞描述');return;}
+  if(desc.length>500){toast('損壞描述請在 500 字內');return;}   // ★10011510 與規則 desc.size()<=500 一致
   const location=document.getElementById('repair-location')?.value||'';
   const urgency=document.getElementById('repair-urgency')?.value||'普通';
   const time=document.getElementById('repair-time')?.value.trim()||'';
@@ -7575,7 +7630,7 @@ window.submitRepair = async function(){
   const urgencyEmoji=urgency==='非常緊急'?'🚨':urgency==='緊急'?'⚠️':'🔧';
   try{
     await emailjs.send(EJS_SVC,'template_oqm4kw9',{
-      to_email:LANDLORD_EMAIL,
+      to_email:LANDLORD_EMAIL, __urgent: urgency==='非常緊急',   // ★10011510 ＡＭ１⑦ａ
       otp:`${urgencyEmoji}【報修通知】${room} ${tname}\n地點：${location}\n緊急程度：${urgency}\n說明：${desc}\n方便時段：${time||'未填'}\n提報時間：${datetime}`
     });
     toast('📧 報修單已送出，已通知房東 ✓');
@@ -7591,11 +7646,19 @@ window.submitRepair = async function(){
      ★目前先誠實告知：報修已用 Email 送達房東（這一段是有效的），
      但雲端紀錄需等 Firestore 安全規則上線、開放房客專屬路徑後才能保存。 */
   if(typeof isLandlord!=='undefined' && !isLandlord){
-    alert('✅ 您的報修已用 Email 送達房東，房東會收到通知。\n\n'
-      +'★提醒：目前系統還在改版中，這筆報修【不會顯示在網頁的報修清單上】，\n'
-      +'　但房東確實已經收到 Email，不會遺漏。\n'
-      +'　若情況緊急，仍請直接聯絡房東。');
-    document.getElementById('repair-desc').value='';
+    // ★10011510 題一甲（主帥 10/01 15:10「採用你的建議,我選甲案。」）：房客報修寫入本人專屬路徑 tenants/{本人}/repairs/{編號}（規則 10011510 只准本人新增、欄位白名單、不准改刪）
+    const _tid=safeId(currentEmail), _rid=String(repair.id);
+    try{
+      await window._setDoc(window._doc(window._db,'artifacts',window._APP_ID,'tenants',_tid,'repairs',_rid), repair);
+      window._cloudRepairs=(window._cloudRepairs||[]).filter(x=>!(x.tid===_tid&&x.rid===_rid));
+      window._cloudRepairs.unshift({r:repair, tid:_tid, rid:_rid});
+      document.getElementById('repair-desc').value=''; document.getElementById('repair-time').value='';
+      renderRepair(); updateRepairBadge(); toast('📋 報修已存入雲端，下方清單可看處理進度 ✓', 4000);
+    }catch(e){
+      console.error('[報修存雲端失敗]', e && e.message);
+      alert('✅ 您的報修已用 Email 送達房東。\n\n⚠️ 但這筆報修存入雲端失敗（'+String((e&&e.message)||e).slice(0,60)+'），暫時不會顯示在下方清單；若情況緊急，請直接聯絡房東。');
+      document.getElementById('repair-desc').value='';
+    }
     return;
   }
   await saveLandlordData();
@@ -7605,6 +7668,52 @@ window.submitRepair = async function(){
   renderRepair();
 };
 
+// ★10011510 題一甲：雲端報修（房客本人路徑）＋房東資料區舊報修，合併顯示（依編號去重）
+window._repairAll = function(){
+  const cloud=(window._cloudRepairs||[]);
+  const local=(DB.repairs||[]).filter(r=>!cloud.some(c=>c.r.id===r.id)).map(r=>({r:r}));
+  return cloud.concat(local).sort((a,b)=>(+b.r.id||0)-(+a.r.id||0));
+};
+window._rb = function(x,i,s){ return x.tid ? "updateCloudRepair('"+window._esc(x.tid)+"','"+window._esc(x.rid)+"','"+s+"')" : "updateRepairStatus("+i+",'"+s+"')"; };
+window._rd = function(x,i){ return x.tid ? "deleteCloudRepair('"+window._esc(x.tid)+"','"+window._esc(x.rid)+"')" : "deleteRepair("+i+")"; };
+window.loadCloudRepairs = async function(){
+  try{
+    await initFBAuth();
+    const ids=new Set(), out=[];
+    if(isLandlord){
+      Object.values(DB.tenants||{}).forEach(t=>{ const em=String((t&&t.tenantEmail)||'').trim(); if(em) ids.add(safeId(em)); });
+      const s=await window._getDocs(window._collection(window._db,'artifacts',window._APP_ID,'tenants')); s.docs.forEach(d=>ids.add(d.id));
+    }else if(currentEmail){ ids.add(safeId(currentEmail)); }
+    for(const tid of ids){
+      const s=await window._getDocs(window._collection(window._db,'artifacts',window._APP_ID,'tenants',tid,'repairs'));
+      s.docs.forEach(d=>{ const r=d.data()||{}; if(r.id) out.push({r:r, tid:tid, rid:d.id}); });
+    }
+    window._cloudRepairs=out; window._cloudRepairErr=null;
+  }catch(e){ console.error('[讀雲端報修失敗]', e && e.message); window._cloudRepairErr=String((e&&e.message)||e).slice(0,60); }
+};
+window.updateCloudRepair = async function(tid, rid, status){
+  const it=(window._cloudRepairs||[]).find(x=>x.tid===tid&&x.rid===rid); if(!it) return;
+  const statusDate=new Date().toLocaleDateString('zh-TW');
+  try{
+    await window._setDoc(window._doc(window._db,'artifacts',window._APP_ID,'tenants',tid,'repairs',rid), {status:status, statusDate:statusDate}, {merge:true});
+    it.r.status=status; it.r.statusDate=statusDate;
+    if(status==='已完成' && it.r.tenantEmail){
+      initEJS();
+      try{ await emailjs.send(EJS_SVC,'template_oqm4kw9',{to_email:it.r.tenantEmail, otp:`✅【報修完成通知】您於 ${it.r.datetime} 提報的「${it.r.location}：${String(it.r.desc||'').slice(0,40)}」已完成修繕，請確認。如有問題請再報修。`}); }
+      catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
+    }
+    renderRepair(); updateRepairBadge(); toast('狀態已更新 ✓');
+  }catch(e){ toast('⚠️ 狀態更新失敗：'+String((e&&e.message)||e).slice(0,60), 6000); }
+};
+window.deleteCloudRepair = async function(tid, rid){
+  if(!confirm('確定刪除此報修紀錄？'))return;
+  try{
+    await window._deleteDoc(window._doc(window._db,'artifacts',window._APP_ID,'tenants',tid,'repairs',rid));
+    window._cloudRepairs=(window._cloudRepairs||[]).filter(x=>!(x.tid===tid&&x.rid===rid));
+    renderRepair(); updateRepairBadge(); toast('已刪除');
+  }catch(e){ toast('⚠️ 刪除失敗：'+String((e&&e.message)||e).slice(0,60), 6000); }
+};
+
 function renderRepair(){
   // 報修表單：房東、弟弟、房客全部可提報
   const submitCard=document.getElementById('repair-submit-card');
@@ -7612,31 +7721,30 @@ function renderRepair(){
 
   const list=document.getElementById('repair-list');
   const badge=document.getElementById('repair-pending-badge');
-  if(!DB.repairs||!DB.repairs.length){
+  const _all=window._repairAll();
+  if(!_all.length){
     list.innerHTML='<div class="txt-m">尚無報修紀錄。</div>';
     if(badge)badge.style.display='none';
     return;
   }
   // 房客只看自己的，房東看全部
-  const filtered = isLandlord
-    ? DB.repairs
-    : DB.repairs.filter(r=>r.tenantEmail===currentEmail);
-  const pending=filtered.filter(r=>r.status==='待處理').length;
+  const filtered = isLandlord ? _all : _all.filter(x=>String(x.r.tenantEmail||'').toLowerCase()===String(currentEmail||'').toLowerCase());
+  const pending=filtered.filter(x=>x.r.status==='待處理').length;
   if(badge){
     badge.textContent=pending>0?pending+'件待處理':'';
     badge.style.display=pending>0?'':'none';
   }
   if(!filtered.length){list.innerHTML='<div class="txt-m">尚無報修紀錄。</div>';return;}
   list.innerHTML='';
-  filtered.forEach((r,i)=>{
-    const realIdx=DB.repairs.findIndex(x=>x.id===r.id);
+  filtered.forEach((x,i)=>{
+    const r=x.r; const realIdx=x.tid?-1:DB.repairs.findIndex(y=>y.id===r.id);
     const urgColor=r.urgency==='非常緊急'?'var(--danger)':r.urgency==='緊急'?'#b06a20':'var(--success)';
     const statusColor=r.status==='已完成'?'var(--success)':r.status==='處理中'?'#1a4a8a':'var(--danger)';
     const landlordBtns=isLandlord?`
       <div style="display:flex;gap:.4rem;margin-top:.5rem;flex-wrap:wrap;">
-        <button onclick="updateRepairStatus(${realIdx},'處理中')" class="btn bo sm" style="font-size:.72rem;">🔨 處理中</button>
-        <button onclick="updateRepairStatus(${realIdx},'已完成')" class="btn bs sm" style="font-size:.72rem;">✅ 已完成</button>
-        <button onclick="deleteRepair(${realIdx})" class="btn bd sm" style="font-size:.72rem;">🗑️ 刪除</button>
+        <button onclick="${window._rb(x,realIdx,'處理中')}" class="btn bo sm" style="font-size:.72rem;">🔨 處理中</button>
+        <button onclick="${window._rb(x,realIdx,'已完成')}" class="btn bs sm" style="font-size:.72rem;">✅ 已完成</button>
+        <button onclick="${window._rd(x,realIdx)}" class="btn bd sm" style="font-size:.72rem;">🗑️ 刪除</button>
       </div>`:'';
     list.innerHTML+=`
       <div style="background:var(--bg2);border:1.5px solid ${window._esc(r.status==='待處理'?'var(--danger)':r.status==='處理中'?'#b0c8f0':'var(--border2)')};border-radius:.9rem;padding:.85rem 1rem;margin-bottom:.5rem;">
@@ -7723,8 +7831,8 @@ window.notifyBatteryLow = async function(){
 function updateRepairBadge(){
   const badge=document.getElementById('repair-pending-badge');
   if(!badge)return;
-  const repairs=DB.repairs||[];
-  const myRepairs=isLandlord?repairs:repairs.filter(r=>r.tenantEmail===currentEmail);
+  const repairs=window._repairAll().map(x=>x.r);   // ★10011510 題一甲：含雲端報修
+  const myRepairs=isLandlord?repairs:repairs.filter(r=>String(r.tenantEmail||'').toLowerCase()===String(currentEmail||'').toLowerCase());
   const pending=myRepairs.filter(r=>r.status==='待處理').length;
   badge.textContent=pending>0?pending+'件':'';
   badge.style.display=pending>0?'':'none';
@@ -8189,7 +8297,7 @@ window.notifyFloodAlert = async function(){
     try{
       await emailjs.send(EJS_SVC,'template_oqm4kw9',{
         to_email:t.tenantEmail,
-        otp:`🌧️【積水警告 ${now}】5樓監視器偵測到戶外地面排水孔附近疑似因大雨/颱風造成積水，請注意安全，外出請小心積水路面。`
+        __urgent:true, otp:`🌧️【積水警告 ${now}】5樓監視器偵測到戶外地面排水孔附近疑似因大雨/颱風造成積水，請注意安全，外出請小心積水路面。`
       });
       sent++;
     }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
@@ -8198,7 +8306,7 @@ window.notifyFloodAlert = async function(){
   try{
     await emailjs.send(EJS_SVC,'template_oqm4kw9',{
       to_email:LANDLORD_EMAIL,
-      otp:`🌧️【積水警告 ${now}】5樓監視器偵測到戶外地面排水孔附近疑似積水，請注意嘉義老家排水狀況。`
+      __urgent:true, otp:`🌧️【積水警告 ${now}】5樓監視器偵測到戶外地面排水孔附近疑似積水，請注意嘉義老家排水狀況。`
     });
   }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
   toast(`📧 積水警告已通知房東 + ${sent} 位房客 ✓`);
