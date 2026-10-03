@@ -1,4 +1,13 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(10040436)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：法規監控（主帥 2026/10/04 04:36 選甲）——房客管理頁心跳列加顯示「契約法規 現行版本（最後檢查日）」
+　① 心跳列 ver 字串後加「｜契約法規 YYY-MM-DD 版（M/D 查）」；雲端尚未檢查時顯示「｜契約法規：尚未檢查」；值經 _esc 轉義
+　② APP_VER v10032335→v10040436；其餘未改
+　　驗證：語法（node --check 兩段 module）、心跳列兩情境實跑　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・雲端 10040436 第一次準時執行後，心跳列出現「｜契約法規 114-04-18 版」；之前顯示「尚未檢查」
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(10032335)　★依鐵律ＡＭ１７／自檢(14)
 　本輪性質：P4-19 雲端心跳第二步（主帥 09/23 題二A「同意兩步走」；10/03 主帥貼心跳「排程準時連續 3 天　✅ 可請 AI 交付第二步」）
 　① DUP_TRANSITION 改 false：過渡期重複信標示消失
@@ -2651,7 +2660,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v10032335'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v10040436'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -2772,7 +2781,7 @@ window.renderCloudHeartbeat = async function(){
     const fmt=x=>{ if(!x) return '—'; const d=new Date(x); return isNaN(d)?String(x):d.toLocaleString('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}); };
     const ok=h.lastOkAt?new Date(h.lastOkAt):null; const hrs=ok?(Date.now()-ok.getTime())/36e5:1e9;
     const days=(h.okDates||[]).slice(-7); const streak=+h.okStreak||0;
-    const ver=(h.version?('｜雲端版本 '+h.version):'')+(h.lastBackupAt?('｜最後雲端備份 '+fmt(h.lastBackupAt)):'｜雲端備份：尚未寄出');   // ★09231830 主帥選Ａ：雲端每 15 天寄備份
+    const ver=(h.version?('｜雲端版本 '+h.version):'')+(h.lastBackupAt?('｜最後雲端備份 '+fmt(h.lastBackupAt)):'｜雲端備份：尚未寄出')+(h.lawDate?('｜契約法規 '+window._esc(h.lawDate)+' 版（'+fmt(h.lawCheckedAt)+' 查）'):'｜契約法規：尚未檢查');   // ★10040436 法規監控（主帥 10/04 04:36 選甲）｜★09231830 主帥選Ａ：雲端每 15 天寄備份
     if(hrs>26){ paint('#fdecea','#b71c1c','⚠️ <b>雲端通知已超過 26 小時沒有成功執行</b>（最後成功：'+fmt(h.lastOkAt)+'；最後執行：'+fmt(h.lastRunAt)+(h.lastError?'；錯誤：'+String(h.lastError).slice(0,80):'')+'）。請到 GitHub → Actions 查看「嘉義房租雲端通知」。網頁的自動提醒照常寄出，不會漏信。'+ver); return; }
     // ★09262351 丁案（主帥 09/26 15:26）：只看「成功」會被深夜執行蒙蔽——9/23～9/26 每天 01:2x 成功、寄 0 封仍顯示綠色；改加判「最後一次準時（21:30 前）執行」
     const ot=h.lastOnTimeAt?new Date(h.lastOnTimeAt):null; const hrsOT=ot?(Date.now()-ot.getTime())/36e5:null;

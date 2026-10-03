@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-★★★【自我舉證表】rental_cloud_notify(10032335).py（ＡＭ２５）
+★★★【自我舉證表】rental_cloud_notify(10040436).py（ＡＭ２５）
+　・★10040436 法規監控（主帥 2026/10/04 04:36「採用你的建議,我選甲案。查詢行政院當然更好,全國最高行政機關,資料更具可信度和即時性。」）：每月第一個準時班次讀行政院全球資訊網《住宅租賃定型化契約應記載及不得記載事項》頁，比對「日期」欄與修正沿革；首次寄確認信、改版寄通知、讀不到每月寄一封失敗通知，只寄 NOTIFY_TO（主帥本人）；心跳加 law* 欄位（舊值逐次帶回）
 　・★10032335 P4-19 第二步：DUP_TRANSITION 改 False，過渡期重複信標示消失（主帥 09/23 題二A 兩步走；10/03 主帥貼心跳「排程準時連續 3 天」）
 　・★09301945 心跳加寫 totalSent（雲端累計寄出封數）與 sentSince（起算日），供網頁滑鼠提示（主帥 2026/09/30 13:12 b：兩版心跳文字與運作邏輯統一；股票PRO 09301529 第九節③）；被取消的排程班不寫心跳，累計不重複
 　・★09301845 甲案＋一天一次：排程加 11:30 首班（主帥 2026/09/30 18:36「好,採用你的建議,我選甲案。」）；排程班若本應執行日已有準時成功之排程班紀錄（schedOnTimeDates），本班一啟動即結束——不讀資料、不寄信、不寫心跳（主帥 09/30 18:45 2c「一天只要執行一次就好…第2個時段和第3個時段…自動取消不執行」）；手動 Run workflow 不受影響｜主帥截圖 09301818：延後 5.7～8.2 小時
@@ -77,7 +78,7 @@ GMAIL_ACCOUNT  = os.environ.get('GMAIL_ACCOUNT', '').strip()
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '').strip()
 NOTIFY_TO      = os.environ.get('NOTIFY_TO', '').strip() or GMAIL_ACCOUNT
 
-SCRIPT_VERSION = '10032335'
+SCRIPT_VERSION = '10040436'
 EVENT = os.environ.get('GITHUB_EVENT_NAME', '')   # ★09280929 N-11：GitHub 預設環境變數（schedule＝排程班；workflow_dispatch＝手動 Run workflow；本機執行為空）
 SCHEDULED = (EVENT == 'schedule')   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
 LOGIN_PATH = f'artifacts/{APP_ID}/loginLog/data'   # ★09231830 雲端備份一併寄登入紀錄
@@ -629,7 +630,54 @@ def _token():
     return creds.token
 
 
-def write_heartbeat(ok, counts, err='', backup_at=None, on_time=True, missed=None):
+# ★10040436 法規監控（主帥 10/04 04:36 選甲）：行政院全球資訊網為來源（國土署頁防火牆擋自動讀取、內政部法規查詢系統 robots 不允許）
+LAW_URL = 'https://www.ey.gov.tw/Page/DFB720D019CCCB0A/478917df-7599-418f-8715-fd2716b623b4'
+LAW_MOI_URL = 'https://pip.moi.gov.tw/Publicize/Info/G1020'
+LAW_NAME = '《住宅租賃定型化契約應記載及不得記載事項》'
+
+
+def law_parse(html):
+    import re, hashlib
+    m = re.search(r'日期：\s*(\d{2,3}-\d{2}-\d{2})', html)
+    revs = []
+    for x in re.findall(r'中華民國\d{2,3}年\d{1,2}月\d{1,2}日內政部[^。<"]{0,60}?公告[^。<"]*。', html):
+        if x not in revs: revs.append(x)
+    if not m or not revs:
+        raise ValueError('頁面格式不符（找不到日期欄或修正沿革）')
+    sig = hashlib.sha1('|'.join([m.group(1)] + revs).encode('utf-8')).hexdigest()[:16]
+    return m.group(1), revs, sig
+
+
+def law_watch(hb_old, now):
+    """每月第一個準時班次檢查是否改版；有改版只寄主帥本人（NOTIFY_TO），不寄弟、家人、房客"""
+    month = now.strftime('%Y-%m'); hb_old = hb_old or {}
+    if hb_old.get('lawCheckedMonth') == month:
+        return 0, None
+    import requests
+    links = f'\n\n・行政院全球資訊網：{LAW_URL}\n・內政部國土署：{LAW_MOI_URL}\n\n（本信只寄給您，不寄弟、家人、房客；主帥 2026/10/04 04:36 選甲）'
+    try:
+        r = requests.get(LAW_URL, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'}, timeout=30)
+        r.raise_for_status(); r.encoding = 'utf-8'
+        date, revs, sig = law_parse(r.text)
+    except Exception as e:
+        if hb_old.get('lawFailMonth') == month:
+            print(f'  ⚠️ 法規監控本月仍讀取失敗（本月已通知過，靜默重試）：{type(e).__name__}')
+            return 0, {'lawFailMonth': month}
+        send_mail(f'【法規監控】本月無法自動檢查{LAW_NAME}', f'雲端程式本月讀取行政院網頁失敗（{type(e).__name__}），本月尚未確認是否改版。\n請手動查看下列網頁；之後每天會自動重試，成功後依結果通知（本月不再寄失敗通知）。' + links)
+        return 1, {'lawFailMonth': month}
+    upd = {'lawCheckedMonth': month, 'lawCheckedAt': now.isoformat(timespec='seconds'), 'lawDate': date, 'lawSig': sig, 'lawRevCount': len(revs)}
+    old_sig = hb_old.get('lawSig') or ''
+    if not old_sig:
+        send_mail(f'【法規監控】已開始監控{LAW_NAME}（現行 {date} 版）', f'已開始每月檢查{LAW_NAME}。\n現行版本：{date}\n最新修正：{revs[-1]}\n\n之後每月 1 日（雲端排程班）檢查一次；有改版才寄信通知您。' + links)
+        return 1, upd
+    if old_sig != sig:
+        send_mail(f'【法規改版】{LAW_NAME}有更新（{hb_old.get("lawDate") or "?"} → {date}）', f'{LAW_NAME}頁面已更新。\n上次紀錄：{hb_old.get("lawDate") or "?"}（共 {hb_old.get("lawRevCount") or "?"} 次公告）\n本次：{date}（共 {len(revs)} 次公告）\n\n最新修正：\n' + '\n'.join(revs[-3:]) + '\n\n請確認您使用的租賃契約是否需要更新。' + links)
+        return 1, upd
+    print(f'  📜 法規監控：現行 {date} 版，與上次相同，不寄信')
+    return 0, upd
+
+
+def write_heartbeat(ok, counts, err='', backup_at=None, on_time=True, missed=None, law=None):
     """★雲端心跳：成功與失敗都寫；網頁房客管理頁顯示，超過 26 小時沒成功即紅色警示（ＡＭ６０ 失敗要送到使用者會看的地方）"""
     import requests
     tok = _token(); hdr = {'Authorization': f'Bearer {tok}'}
@@ -648,6 +696,9 @@ def write_heartbeat(ok, counts, err='', backup_at=None, on_time=True, missed=Non
           'totalSent': int(old.get('totalSent') or 0) + (int(sum(counts.values())) if counts else 0),   # ★09301945 雲端累計寄出（網頁滑鼠提示）
           'sentSince': old.get('sentSince') or today,   # ★09301945 累計起算日（首次寫入當天）
           'missedDates': missed if missed is not None else (old.get('missedDates') or [])}
+    for _k in ('lawCheckedMonth', 'lawCheckedAt', 'lawDate', 'lawSig', 'lawFailMonth'):   # ★10040436 法規監控欄位：本次有更新用新值，否則帶回舊值（整份覆寫防清空）
+        hb[_k] = (law or {}).get(_k, old.get(_k) or '')
+    hb['lawRevCount'] = int((law or {}).get('lawRevCount', old.get('lawRevCount') or 0))
     r = requests.patch(_hb_url(), headers=hdr, json={'fields': {k: firestore_encode(v) for k, v in hb.items()}}, timeout=30)
     r.raise_for_status()
     print(f'  🛰️ 雲端心跳已寫入：ok={ok}、準時={bool(on_time)}、觸發={EVENT or "local"}、排程班連續準時 {streak} 天、共寄 {hb["total"]} 封、待補寄 {len(hb["missedDates"])} 日')
@@ -656,7 +707,7 @@ def write_heartbeat(ok, counts, err='', backup_at=None, on_time=True, missed=Non
 def main():
     print(f'▶ 嘉義房租雲端通知 啟動（版本 {SCRIPT_VERSION}；觸發 {EVENT or "local"}）')
     global _SUBJ_PREFIX
-    counts = {}; err = ''; backup_at = None
+    counts = {}; err = ''; backup_at = None; law_upd = None
     now = datetime.now(TW); on_time = not in_quiet_hours(now); missed = None
     if SCHEDULED:   # ★09301845 一天只執行一次（主帥 09/30 18:45 2c）；手動 Run workflow 不受影響
         try:
@@ -683,12 +734,12 @@ def main():
             due = []
         if not on_time:
             print('  🌙 睡眠時段（台灣 21:30～07:30）執行：只驗證讀取並寫心跳，不寄任何信（ＡＭ１①⑦；GitHub 排程固定延後約 4.5～5 小時，20:30 班常落在此時段，09/26 查證）')
-            counts.update(lease=0, maint=0, reserve=0, bill=0, settle=0, backup=0, catchup=0)
+            counts.update(lease=0, maint=0, reserve=0, bill=0, settle=0, backup=0, catchup=0, law=0)
             if missed: print(f'  📝 已記錄待補寄日期 {len(missed)} 日，下次 20:30 準時執行時補寄（主帥 09/25 甲案）')
         elif _hb_old is not None and now.strftime('%Y-%m-%d') in (_hb_old.get('onTimeDates') or []):
             # ★09262351 丁案同日去重：今天已由較早的準時班次寄過 → 本班只寫心跳，不重寄（主帥 09/26 15:26）
             print('  ✔ 今天已由較早的準時班次寄過，本班只寫心跳、不重寄（同日去重，丁案）')
-            counts.update(lease=0, maint=0, reserve=0, bill=0, settle=0, backup=0, catchup=0)
+            counts.update(lease=0, maint=0, reserve=0, bill=0, settle=0, backup=0, catchup=0, law=0)
         else:
             counts.update(run_checks(db))
             counts['catchup'] = 0
@@ -702,13 +753,19 @@ def main():
             counts['backup'] = 0
             if _hb_old is not None:
                 counts['backup'], backup_at = backup_if_due(db, _hb_old.get('lastBackupAt'))
-        print(f'✔ 完成：契約 {counts["lease"]}、維護 {counts["maint"]}、預存 {counts["reserve"]}、帳單最後應繳日 {counts["bill"]}、結算日提醒 {counts["settle"]}、補寄 {counts["catchup"]}、雲端備份 {counts["backup"]} 封')
+            counts['law'] = 0
+            if _hb_old is not None:   # ★10040436 法規監控；出錯不影響其他提醒與心跳
+                try:
+                    counts['law'], law_upd = law_watch(_hb_old, now)
+                except Exception as _le:
+                    print(f'  ⚠️ 法規監控失敗：{type(_le).__name__}')
+        print(f'✔ 完成：契約 {counts["lease"]}、維護 {counts["maint"]}、預存 {counts["reserve"]}、帳單最後應繳日 {counts["bill"]}、結算日提醒 {counts["settle"]}、補寄 {counts["catchup"]}、雲端備份 {counts["backup"]}、法規監控 {counts.get("law", 0)} 封')
     except Exception as e:
         err = f'{type(e).__name__}: {e}'
         raise
     finally:
         try:
-            write_heartbeat(not err, counts, err, backup_at, on_time, missed)
+            write_heartbeat(not err, counts, err, backup_at, on_time, missed, law_upd)
         except Exception as he:
             print(f'  ⚠️ 雲端心跳寫入失敗（網頁 26 小時後會顯示紅色警示）: {he}')
 
