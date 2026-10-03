@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-★★★【自我舉證表】rental_cloud_notify(09301945).py（ＡＭ２５）
+★★★【自我舉證表】rental_cloud_notify(10032335).py（ＡＭ２５）
+　・★10032335 P4-19 第二步：DUP_TRANSITION 改 False，過渡期重複信標示消失（主帥 09/23 題二A 兩步走；10/03 主帥貼心跳「排程準時連續 3 天」）
 　・★09301945 心跳加寫 totalSent（雲端累計寄出封數）與 sentSince（起算日），供網頁滑鼠提示（主帥 2026/09/30 13:12 b：兩版心跳文字與運作邏輯統一；股票PRO 09301529 第九節③）；被取消的排程班不寫心跳，累計不重複
 　・★09301845 甲案＋一天一次：排程加 11:30 首班（主帥 2026/09/30 18:36「好,採用你的建議,我選甲案。」）；排程班若本應執行日已有準時成功之排程班紀錄（schedOnTimeDates），本班一啟動即結束——不讀資料、不寄信、不寫心跳（主帥 09/30 18:45 2c「一天只要執行一次就好…第2個時段和第3個時段…自動取消不執行」）；手動 Run workflow 不受影響｜主帥截圖 09301818：延後 5.7～8.2 小時
 　・★09280929 N-11：①當天已記的準時紀錄不因同日後續班次（深夜或失敗）被刪除 ②連續天數只算排程班（手動 Run workflow 不算，才能證明排程可靠）｜主帥 09/28 09:29 貼 Actions 紀錄「連續準時 3 天」含手動執行；GitHub 官方文件：預設環境變數每一步驟可讀、GITHUB_EVENT_NAME＝觸發事件名稱
@@ -76,7 +77,7 @@ GMAIL_ACCOUNT  = os.environ.get('GMAIL_ACCOUNT', '').strip()
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '').strip()
 NOTIFY_TO      = os.environ.get('NOTIFY_TO', '').strip() or GMAIL_ACCOUNT
 
-SCRIPT_VERSION = '09301945'
+SCRIPT_VERSION = '10032335'
 EVENT = os.environ.get('GITHUB_EVENT_NAME', '')   # ★09280929 N-11：GitHub 預設環境變數（schedule＝排程班；workflow_dispatch＝手動 Run workflow；本機執行為空）
 SCHEDULED = (EVENT == 'schedule')   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
 LOGIN_PATH = f'artifacts/{APP_ID}/loginLog/data'   # ★09231830 雲端備份一併寄登入紀錄
@@ -99,7 +100,7 @@ class QuietSkip(Exception):
 
 _SUBJ_PREFIX = ''   # ★09250857 補寄時加在主旨前（例：【補寄：9/24 排程延遲】）
 
-DUP_TRANSITION = True   # ★過渡期（網頁與雲端並行）；第二步交付時改 False（改版記錄待辦 P3-19）
+DUP_TRANSITION = False   # ★10032335 P4-19 第二步：過渡期結束（主帥 10/03 心跳「排程準時連續 3 天」）
 
 
 def dup_head(src):

@@ -1,4 +1,14 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(10032335)　★依鐵律ＡＭ１７／自檢(14)
+　本輪性質：P4-19 雲端心跳第二步（主帥 09/23 題二A「同意兩步走」；10/03 主帥貼心跳「排程準時連續 3 天　✅ 可請 AI 交付第二步」）
+　① DUP_TRANSITION 改 false：過渡期重複信標示消失
+　② 新增 _cloudHealthy：讀 landlord/heartbeat，最後成功與最後準時皆在 26 小時內為正常（同心跳列綠色條件）；讀不到視為不正常；結果暫存 10 分鐘
+　③ 4 種自動提醒（預存月報自動模式、維護到期、租約到期、帳單期限）：雲端正常 → 只畫面提示不寄；不正常 → 網頁照原樣接手寄出（睡眠時段仍不寄）；手動按鈕不受影響；APP_VER v10032335
+　　驗證：語法（node --check 兩段 module）、_cloudHealthy 5 情境、維護與租約函式正常／不正常各實跑　★實證（見交付訊息原始輸出）
+★★★【推定清單（★須主帥實測）】
+　・雲端正常期間開房東頁，維護或租約到期時只見畫面提示、不再收到網頁寄的信（雲端照常寄）
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(10011510)　★依鐵律ＡＭ１７／自檢(14)
 　本輪性質：題一甲 房客報修存雲端、題二甲 寄信入口依ＡＭ１⑦ 分級（主帥 2026/10/01 15:10「採用你的建議,我選甲案。」兩題）
 　① 唯一寄信入口（initEJS）：__otp、__urgent 為急迫照寄；其餘於睡眠時段 21:30～07:30 由按鍵者選「存本機待寄」或「仍要立即寄出」；待寄於非睡眠時段開網頁時與每 10 分鐘自動寄出（信首註明原按下時間）
@@ -2641,7 +2651,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v10011510'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v10032335'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -2732,9 +2742,25 @@ window._inQuietHours = function(d){
   return t>=21*60+30 || t<7*60+30;
 };
 // ★09230021 雲端心跳第一步（主帥 09/23 00:0x 題二A；00:21 第3點：過渡期重複信須在主旨與內文註明正常與原因）
-window.DUP_TRANSITION = true;   // ★第二步交付時改為 false（改版記錄待辦 P3-19），重複信標示即消失
+window.DUP_TRANSITION = false;   // ★10032335 P4-19 第二步（主帥 10/03 心跳「排程準時連續 3 天」）：過渡期結束，重複信標示消失
 window._dupHead = function(src){ return window.DUP_TRANSITION ? ('【過渡期重複信・正常｜'+src+'寄】') : ''; };
 window._dupFoot = function(src){ return window.DUP_TRANSITION ? ('\n\n──────────\n★這是【過渡期的重複信】，屬正常，不是程式壞掉，不必找 AI 修。\n・原因：2026/09/23 起，雲端通知改為每天 20:30 寄出，並加裝「雲端心跳」（每次執行都在雲端留下紀錄）。依鐵律ＡＭ１２，必須先確認雲端連續 3 天正常，網頁才能停寄，所以驗收期間同一類提醒會收到兩封：一封【網頁寄】、一封【雲端寄】。\n・本信由：【'+src+'】寄出。\n・何時結束：房租網頁「🏠 房客管理」頁最上方顯示「雲端已連續 3 天正常」後，AI 會交付第二步，之後只剩雲端一封（改版記錄待辦 P3-19）。') : ''; };
+// ★10032335 P4-19 第二步（主帥 09/23 題二A 兩步走；10/03 心跳連續 3 天）：雲端正常時網頁 4 種自動提醒只畫面提示；雲端超過 26 小時未成功或未準時、或讀不到心跳 → 網頁接手寄出（睡眠時段仍不寄）
+window._cloudHealthy = async function(){
+  const c=window._chc; if(c && Date.now()-c.at<600000) return c.v;
+  let v={ok:false,when:'—'};
+  try{
+    const snap=await window._getDoc(window._doc(window._db,'artifacts',window._APP_ID,'landlord','heartbeat'));
+    if(snap.exists()){
+      const h=snap.data()||{}; const hr=x=>x?(Date.now()-new Date(x).getTime())/36e5:1e9;
+      const okH=hr(h.lastOkAt), otH=h.lastOnTimeAt?hr(h.lastOnTimeAt):null;
+      const d=new Date(h.lastOnTimeAt||h.lastOkAt);
+      v={ok: okH<=26 && (otH===null || otH<=26), when: isNaN(d)?'—':d.toLocaleString('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})};
+    }
+  }catch(e){ window._silentFail && window._silentFail('讀雲端心跳（第二步判定）', e); }
+  window._chc={v:v,at:Date.now()}; return v;
+};
+window._cloudNotice = function(kind, n){ toast('☁️ 雲端排程正常（最後準時 '+((window._chc&&window._chc.v.when)||'—')+'），'+kind+'由雲端寄出；網頁只提示'+(n?('（本次 '+n+' 項）'):'')+'。', 6000); };
 // ★雲端心跳：雲端每次執行寫入 landlord/heartbeat（獨立文件，網頁只讀不寫，避免整份存檔蓋掉新心跳）
 window.renderCloudHeartbeat = async function(){
   const el=document.getElementById('cloud-heartbeat'); if(!el) return; el.title='';   // ★09301945 滑鼠提示先清空（紅字情境不顯示累計）
@@ -3681,8 +3707,11 @@ window.sendReserveReport=async function(manual){
   if(!manual){ if(DB.reserveReportSent&&DB.reserveReportSent[key]) return; }
   if(!manual && window._inQuietHours()) return;   // ★09221551 ＡＭ１：自動寄的月報在睡眠時段不寄也不標記；手動按鈕照常
   if(typeof initEJS==='function') initEJS();
+  const _cloud=manual?{ok:false}:await window._cloudHealthy();   // ★10032335 P4-19 第二步：自動月報在雲端正常時只提示
+  if(_cloud.ok){ window._cloudNotice('本月預存月報'); } else {
   try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:LANDLORD_EMAIL,otp:(manual?'':window._dupHead('網頁'))+'📅 '+reserveReportText('me')+(manual?'':window._dupFoot('網頁'))}); }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
   if(DB.notifyBrother){ const bro=(DB.brotherEmail||LANDLORD_EMAILS[1]||''); if(bro){ try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:bro,otp:(manual?'':window._dupHead('網頁'))+'📅 '+reserveReportText('brother')+(manual?'':window._dupFoot('網頁'))}); }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); } } }
+  }
   const items=reserveMonthly();
   const totOf=who=>{ const ov=(DB.reserveProfile&&DB.reserveProfile[who])||{}; return items.reduce((sm,it)=>sm+(((ov[it.key]!=null)?+ov[it.key]:it.half)||0),0); };
   if(!DB.reserveAutoLog) DB.reserveAutoLog=[];
@@ -3706,6 +3735,7 @@ window.checkMaintenanceDue=async function(){
     if(daysLeft<=30){ const k=r.type+'@'+window._ymd(next); /* ★09210142 房缺-04：原用 toISOString() 是 UTC，台灣清晨會倒退一天 */ if(!DB.maintenanceDueSent[k]) toSend.push({r,next,daysLeft,k}); }
   });
   if(!toSend.length) return;
+  { const _cloud=await window._cloudHealthy(); if(_cloud.ok){ window._cloudNotice('維護到期提醒',toSend.length); return; } }   // ★10032335 P4-19 第二步：雲端正常只提示、不寄不標記
   if(typeof initEJS==='function') initEJS();
   let changed=false;
   for(const x of toSend){
@@ -3735,6 +3765,7 @@ window.checkLeaseExpiry = async function(){
     }
   });
   if(!toSend.length) return;
+  { const _cloud=await window._cloudHealthy(); if(_cloud.ok){ window._cloudNotice('租約到期提醒',toSend.length); return; } }   // ★10032335 P4-19 第二步：雲端正常只提示、不寄不標記
   if(typeof initEJS==='function') initEJS();
   let changed=false;
   for(const x of toSend){
@@ -6749,6 +6780,7 @@ window.checkBillReminders = async function(){
     if(d.gas && !d.gasPaid && isTomorrow(d.gasDue)){ const dd=_vd(d.gasDue); alerts.push({icon:'🔥', name:'瓦斯費', due:`${dd.getMonth()+1}月${dd.getDate()}日`, amount:d.gas}); }
     // 🌐 網路費：每月25日信用卡自動扣款，不提醒
     if(!alerts.length) return;
+    { const _cloud=await window._cloudHealthy(); if(_cloud.ok){ alerts.forEach(a=>toast(a.icon+' 明天是'+a.name+'繳費截止日（'+a.due+'），系統未標記已繳清，請確認！（☁️ 雲端排程正常，提醒信由雲端寄出）', 8000)); return; } }   // ★10032335 P4-19 第二步
     initEJS();
     const nowStr = now.toLocaleString('zh-TW',{timeZone:'Asia/Taipei'});
     for(const a of alerts){
