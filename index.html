@@ -1,4 +1,11 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(10051759)（ＡＭ２５）
+　・★10051759 全碼稽核第 2 回合修復（主帥 10/05 17:59「好,請繼續。」；改版記錄(10051759)【0-5-7】）：甲-2 saveRentPause 編輯時保留結清紀錄（原整份覆寫清掉 settledTo／settledAmount／bxSettled）並擋「截止早於已結清期別」；乙-7 fillCO 退租天數含頭尾＋1；乙-8 sendAnnGmail 全部寄失敗不標記已通知；乙-9 簡易催收信收租日依契約欄；凍結常數零變動；全檔 script 區塊 node --check
+　・★待主帥裁示（P4-48）：bsAutoFill3／bsMarkSettledNow 以「實收>0」即計入應收全額，部分繳納時分帳基準未定；本批不動
+★★★【推定清單】
+　・推定 rentPause 編輯時不會同時改房間（key 變動仍以舊鍵之結清紀錄合併）→ 若為假：結清紀錄跟著搬到新鍵，金額不變
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(10051738)（ＡＭ２５）
 　・★10051738 全碼稽核第 1 回合修復（主帥 10/05 15:38 第 3～5 點、17:38「好,請繼續。」；改版記錄(10051738)【0-5-7】）：乙-1 calcLandlordDays 改合併寫入 landlordStay（保留 room 等既有鍵）並補存 tcKids；乙-2 月曆拖曳存檔改 1.2 秒防抖（原每格觸發一次整份寫雲端）；乙-3 saveDraftBills 跨年登上一年 11、12 月帳單時推前一年；乙-4 sendReserveReport 寄出失敗不標記已寄、下次開頁重試；凍結常數零變動；全檔 script 區塊 node --check
 　・★已查證非缺陷：reserveReportText 以 payments[r].paid 加總——paid 為實付金額（第 4989 行），月報正確
@@ -2668,7 +2675,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v10051738'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v10051759'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -4823,12 +4830,12 @@ window.saveRentPause = async function(){
   if(+from>+to){toast('起始期別不能晚於結束期別');return;}
   if(!DB.rentPause)DB.rentPause={};
   // 若是編輯模式，先刪除舊紀錄
-  if(window._editRentPauseKey && window._editRentPauseKey !== `${room}_${from}_${to}`){
-    delete DB.rentPause[window._editRentPauseKey];
-  }
-  window._editRentPauseKey=null;
   const key=`${room}_${from}_${to}`;
-  DB.rentPause[key]=window.stampRec({room,from,to,reason,createdAt:new Date().toLocaleString('zh-TW')});
+  const _prevKey=window._editRentPauseKey, _prev=_prevKey?(DB.rentPause[_prevKey]||{}):{};   // ★10051759 甲-2：編輯時保留結清紀錄（settledTo／settledAmount／settledAt／settledNote／bxSettled），原整份覆寫會靜默清掉、三桶房租跟著變
+  if(_prev.settledTo && +to<+_prev.settledTo){ toast('截止期別不得早於已結清期別 '+_prev.settledTo+'；如需更改請先處理結清紀錄'); return; }
+  if(_prevKey && _prevKey!==key){ delete DB.rentPause[_prevKey]; }
+  window._editRentPauseKey=null;
+  DB.rentPause[key]=window.stampRec(Object.assign({}, _prev, {room,from,to,reason,createdAt:_prev.createdAt||new Date().toLocaleString('zh-TW')}));
   await saveLandlordData();
   closeRentPauseModal();
   renderRentPauseList();
@@ -5378,7 +5385,7 @@ window.fillCO = function(){
       document.getElementById('co-lw').value=lr.water||0;
       document.getElementById('co-lg').value=lr.gas||0;
       const ds=new Date(lb.dateStart),de=new Date(lb.dateEnd);
-      document.getElementById('co-ld').value=Math.round((de-ds)/86400000)||60;
+      document.getElementById('co-ld').value=(Math.round((de-ds)/86400000)+1)||60;   // ★10051759 乙-7：計費天數含頭尾（與 calcU 同法），原少算 1 天致退租日均費率偏高
       toast('已帶入上期帳單 ✓');
     }
   }
@@ -5623,10 +5630,10 @@ if(window._inQuietHours()){ toast('🌙 睡眠時段（21:30～07:30）不寄公
       sent++;
     }catch(e){ console.warn('通知失敗:',t.tenantEmail,e); }
   }
-  DB.announces[idx].notified=true;
-  DB.announces[idx].sendAt=null;
+  if(sent>0 || !tenants.length){ DB.announces[idx].notified=true; DB.announces[idx].sendAt=null; }   // ★10051759 乙-8：全部寄失敗不標記已通知，下次開頁補寄（原無論成敗都標記）
+  else { console.error('[公告寄信全部失敗，不標記已通知]'); }
   await saveLandlordData();
-  toast(`📧 公告已自動寄出，通知 ${sent} 位房客 ✓`);
+  toast(sent>0?`📧 公告已自動寄出，通知 ${sent} 位房客 ✓`:(tenants.length?'⚠️ 公告寄信失敗，未標記已通知；下次開網頁會再試':'📧 無已填信箱的房客，公告只顯示於網頁'));
 }
 
 window.saveAnnounce = async function(testOnly=false){
@@ -6050,7 +6057,8 @@ window.genTenantSimpleBill = function(){
   const grand=rentSum+utilSum;
   let txt='房租＋水電瓦斯 費用明細（'+(RL[room]||room)+'）\n';
   if(rentSum>0){
-    txt+='【一、房租】每月8日一期，每期 '+f(rentPer)+'\n';
+    const _rd=(DB.tenants[room]||{}).rentDay;   // ★10051759 乙-9：收租日依契約欄（原寫死 8 日）
+    txt+='【一、房租】每月'+(_rd||8)+'日一期，每期 '+f(rentPer)+'\n';
     txt+=(rentRange?('　　暫緩期間 '+rentRange+'，共 '+rentN+' 期\n'):('　　共 '+rentN+' 期\n'));
     txt+='　　→ 房租小計 '+f(rentSum)+'\n';
   }
