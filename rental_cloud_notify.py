@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ★★★【自我舉證表】rental_cloud_notify(10040436).py（ＡＭ２５）
+　・★10051623 稽核第 1 回合修復（主帥 10/05 15:38 第 3～5 點、16:23「好,請繼續。」；改版記錄(10051538)【0-5-7】）：甲-1 五處提醒函式 today 預設改 _now_tw()（台灣時區、naive；原 datetime.now 無時區參數，取雲端主機 UTC 時間，台灣 07:30～08:00 執行會差一天）；乙-1 write_heartbeat 讀舊心跳非 200／404 即丟錯、不以空資料整份覆寫（防 totalSent、連續天數歸零）；丙-1 版本識別註解歸位、丙-2 說明編號順序、丙-3 法規確認信文字改「每月第一個準時排程班」、丙-4 連續天數上限 10 註明；凍結常數零變動；單元實測見改版記錄(10051623) 第十一章
 　・★10040436 法規監控（主帥 2026/10/04 04:36「採用你的建議,我選甲案。查詢行政院當然更好,全國最高行政機關,資料更具可信度和即時性。」）：每月第一個準時班次讀行政院全球資訊網《住宅租賃定型化契約應記載及不得記載事項》頁，比對「日期」欄與修正沿革；首次寄確認信、改版寄通知、讀不到每月寄一封失敗通知，只寄 NOTIFY_TO（主帥本人）；心跳加 law* 欄位（舊值逐次帶回）
 　・★10032335 P4-19 第二步：DUP_TRANSITION 改 False，過渡期重複信標示消失（主帥 09/23 題二A 兩步走；10/03 主帥貼心跳「排程準時連續 3 天」）
 　・★09301945 心跳加寫 totalSent（雲端累計寄出封數）與 sentSince（起算日），供網頁滑鼠提示（主帥 2026/09/30 13:12 b：兩版心跳文字與運作邏輯統一；股票PRO 09301529 第九節③）；被取消的排程班不寫心跳，累計不重複
@@ -27,6 +28,7 @@
 　・★09262351 推定 GitHub 延後維持約 4.5～5 小時（15:30 班約 20:00～20:30 執行）→ 若延後縮短：信在 15:30 起寄出（非睡眠時段，無害）；若延後超過 6 小時：兩班皆落入睡眠時段，隔天第一個準時班次補寄（主旨【補寄】），網頁紅字提醒
 　・★09301845 推定延後不超過約 10 小時（11:30 班約 17:10～19:40 執行）→ 若超過：三班皆落入睡眠時段，隔天第一個準時班次補寄，網頁紅字提醒；GitHub 官方文件載明排程事件可能延遲或被丟棄 → 丟班由下一班承接
 　・★09250857 推定補寄時各提醒函式個別失敗只印警告（沿用原設計）→ 若為假或寄信失敗：該日補寄不重試，GitHub 紀錄可見警告
+　・★10051623 推定心跳文件 GET 回 404＝尚無文件（首次執行），其餘非 200 皆為錯誤 → 若為假：首次執行被誤判為錯誤、該次心跳不寫（網頁 26 小時後紅字），寄信與結算不受影響
 　・推定 Firestore 服務帳號可寫 artifacts/kj-rental/landlord/heartbeat（與 landlord/data 同集合）
 　　→ 若為假：心跳寫入失敗，GitHub 紀錄印出警告，網頁 26 小時後紅色警示；寄信與結算不受影響
 ─────────────────────────────────────────────
@@ -37,8 +39,8 @@
   ② 定期維護到期前 30 天（廚房濾心／冷氣／洗衣機／水塔）
   ③ 每月預存提醒（每月 1 日，稅務備用金哥哥半額）
   ④ 帳單最後應繳日提醒（偶數月 14、19 日，若仍有緩收帳單）
-  ⑥ ★09231830 雲端備份：距上次滿 15 天即把房東資料與登入紀錄寄到主帥 Gmail（附 JSON，可用網頁匯入還原）
   ⑤ 哥弟結算日提醒（奇數月 15 日、偶數月 20 日 20:30；★只寄提醒、不自動結算，結算一律在網頁完成）
+  ⑥ ★09231830 雲端備份：距上次滿 15 天即把房東資料與登入紀錄寄到主帥 Gmail（附 JSON，可用網頁匯入還原）
 ★09230021：排程改每天台灣 20:30（ＡＭ１④）；每次執行寫「雲端心跳」到 landlord/heartbeat（網頁顯示）；
   過渡期（DUP_TRANSITION=True）①～④ 主旨與內文標示「過渡期重複信・正常」。
 ★09230308：通知三級分類（ＡＭ１⑦：急迫／次日有效／一般）：本程式所有信件皆屬【一般】，只在排程 20:30 寄；
@@ -78,13 +80,18 @@ GMAIL_ACCOUNT  = os.environ.get('GMAIL_ACCOUNT', '').strip()
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '').strip()
 NOTIFY_TO      = os.environ.get('NOTIFY_TO', '').strip() or GMAIL_ACCOUNT
 
-SCRIPT_VERSION = '10040436'
+SCRIPT_VERSION = '10051623'   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳（★10051623 丙-1：註解自下一行歸位）
 EVENT = os.environ.get('GITHUB_EVENT_NAME', '')   # ★09280929 N-11：GitHub 預設環境變數（schedule＝排程班；workflow_dispatch＝手動 Run workflow；本機執行為空）
-SCHEDULED = (EVENT == 'schedule')   # 鐵律AA：全檔唯一版本識別處，須＝檔名括號時間戳
+SCHEDULED = (EVENT == 'schedule')   # ★09280929 N-11：排程班判定（手動 Run workflow 為 False）
 LOGIN_PATH = f'artifacts/{APP_ID}/loginLog/data'   # ★09231830 雲端備份一併寄登入紀錄
 BACKUP_EVERY_DAYS = 15   # ★09231830 主帥 09/23 選Ａ：雲端每 15 天把完整備份寄到主帥 Gmail（取代從未成功的本機備份程式）
 HB_PATH = f'artifacts/{APP_ID}/landlord/heartbeat'   # ★雲端心跳：獨立文件，只有本程式寫、網頁只讀
 TW = timezone(timedelta(hours=8))
+
+
+def _now_tw():
+    """★10051623 甲-1：各提醒函式的 today 一律用台灣時間（naive，供與 strptime 結果相減）；原 datetime.now 無時區參數，取雲端主機（UTC）時間，台灣 07:30～08:00 執行會差一天"""
+    return datetime.now(TW).replace(tzinfo=None)
 KIND_URGENT, KIND_NEXT_DAY, KIND_NORMAL = '急迫', '次日有效', '一般'   # ★通知三級分類（ＡＭ１⑦）；本程式信件皆為一般
 
 
@@ -197,7 +204,7 @@ def send_mail(subject, body, to=None, kind=KIND_NORMAL):
 def check_lease(db, today=None):
     """① 房客租約到期前 45 天"""
     tenants = db.get('tenants') or {}
-    today = today or datetime.now()
+    today = today or _now_tw()   # ★10051623 甲-1
     sent = 0
     for r in ROOMS:
         t = tenants.get(r)
@@ -231,7 +238,7 @@ def check_lease(db, today=None):
 def check_maintenance(db, today=None):
     """② 定期維護到期前 30 天"""
     recs = db.get('maintenanceRecords') or []
-    today = today or datetime.now()
+    today = today or _now_tw()   # ★10051623 甲-1
     sent = 0
     for r in recs:
         last = (r.get('lastDate') or '').strip()
@@ -260,7 +267,7 @@ def check_maintenance(db, today=None):
 
 def check_reserve(db, today=None):
     """③ 每月預存提醒（每月 1 日，稅務備用金哥哥半額）"""
-    today = today or datetime.now()
+    today = today or _now_tw()   # ★10051623 甲-1
     if today.day != 1:
         return 0
     tr = db.get('taxRecords') or {}
@@ -281,7 +288,7 @@ def check_reserve(db, today=None):
 
 def check_bill_deadline(db, today=None):
     """④ 帳單最後應繳日提醒（偶數月 14、19 日，若仍有緩收帳單）"""
-    today = today or datetime.now()
+    today = today or _now_tw()   # ★10051623 甲-1
     if today.month % 2 != 0 or today.day not in BILL_DUE_DAYS:
         return 0
     pending = [b for b in (db.get('utilBills') or []) if b.get('deferred')]
@@ -492,7 +499,7 @@ def check_monthly_settle(db, today=None):
     結算日＝奇數月 15 日／偶數月 20 日（若最後一位房客收租日＋1 更晚，取較晚者）。
     ★舊版在此計算金額並呼叫 mark_settled 自動標記已結算，會寫出網頁無法撤銷的舊格式結算單，
       且與網頁「房東課（哥弟結算）」重複結算 → 停用；calc_settle／mark_settled 保留供待辦 P3-21 驗證用，本函式不再呼叫。"""
-    today = today or datetime.now()
+    today = today or _now_tw()   # ★10051623 甲-1
     early, late = settle_days(db, today)
     if today.day != late:
         return 0
@@ -535,7 +542,8 @@ def plan_catchup(hb, now, on_time):
 
 def hb_dates(old, now, ok, on_time, scheduled=True):
     """★09250857 心跳只算準時：只有 21:30 前成功跑完的日子列入 onTimeDates／okDates
-    ★09280929 N-11：①當天已記者不因同日後續班次被刪除 ②連續天數改由 schedOnTimeDates（只收排程班）計算"""
+    ★09280929 N-11：①當天已記者不因同日後續班次被刪除 ②連續天數改由 schedOnTimeDates（只收排程班）計算
+    ★10051623 丙-4：各日期清單只保留最近 10 筆，連續天數最多算到 10，網頁最多顯示 10 天"""
     today = now.strftime('%Y-%m-%d')
     def _keep(key, cond):
         prev = list(old.get(key) or [])
@@ -668,7 +676,7 @@ def law_watch(hb_old, now):
     upd = {'lawCheckedMonth': month, 'lawCheckedAt': now.isoformat(timespec='seconds'), 'lawDate': date, 'lawSig': sig, 'lawRevCount': len(revs)}
     old_sig = hb_old.get('lawSig') or ''
     if not old_sig:
-        send_mail(f'【法規監控】已開始監控{LAW_NAME}（現行 {date} 版）', f'已開始每月檢查{LAW_NAME}。\n現行版本：{date}\n最新修正：{revs[-1]}\n\n之後每月 1 日（雲端排程班）檢查一次；有改版才寄信通知您。' + links)
+        send_mail(f'【法規監控】已開始監控{LAW_NAME}（現行 {date} 版）', f'已開始每月檢查{LAW_NAME}。\n現行版本：{date}\n最新修正：{revs[-1]}\n\n之後每月第一個準時排程班檢查一次；有改版才寄信通知您。' + links)
         return 1, upd
     if old_sig != sig:
         send_mail(f'【法規改版】{LAW_NAME}有更新（{hb_old.get("lawDate") or "?"} → {date}）', f'{LAW_NAME}頁面已更新。\n上次紀錄：{hb_old.get("lawDate") or "?"}（共 {hb_old.get("lawRevCount") or "?"} 次公告）\n本次：{date}（共 {len(revs)} 次公告）\n\n最新修正：\n' + '\n'.join(revs[-3:]) + '\n\n請確認您使用的租賃契約是否需要更新。' + links)
@@ -682,6 +690,8 @@ def write_heartbeat(ok, counts, err='', backup_at=None, on_time=True, missed=Non
     import requests
     tok = _token(); hdr = {'Authorization': f'Bearer {tok}'}
     r = requests.get(_hb_url(), headers=hdr, timeout=30)
+    if r.status_code not in (200, 404):   # ★10051623 乙-1：暫時性錯誤不得以空資料整份覆寫 totalSent／okDates／schedOnTimeDates；丟錯交 main 之 finally 印警告、本次不寫心跳
+        raise RuntimeError(f'讀心跳失敗 HTTP {r.status_code}（本次不覆寫心跳）')
     old = {k: firestore_decode(x) for k, x in r.json().get('fields', {}).items()} if r.status_code == 200 else {}
     now = datetime.now(TW); today = now.strftime('%Y-%m-%d')
     ok_dates, streak, sched_dates = hb_dates(old, now, ok, on_time, SCHEDULED)   # ★09280929 N-11 連續天數只算排程班
