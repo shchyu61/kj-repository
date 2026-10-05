@@ -1,4 +1,11 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(10060026)（ＡＭ２５）
+　・★10060026 全碼稽核第 3 回合修復（主帥 10/06 00:26「好,請繼續。」；改版記錄(10060026)【0-5-7】）：乙-10 checkBillReminders 同日同帳單只寄一封（localStorage billRemindSent）；乙-11 權限防呆補齊——deleteFormer／deletePhotoNote／deleteMaintenanceLogEvent／deleteRepair／deleteTaxReserve／deleteDraftBill／deleteAICat 加 guardRec，saveFormer／savePhotoNote／saveTaxReserve／saveDraftBills／saveAIKnowledge／copyTenantToFormer 新建加 stampRec、編輯沿用原建立者；乙-12 rrSyncPayment 同房同期多筆入帳累加；凍結常數零變動；全檔 script 區塊 node --check
+　・★稽核第 1～3 回合完畢（第 2565～8790 行逐行、第 1～2564 行程式掃描）
+★★★【推定清單】
+　・推定 guardRec 對無 createdBy 之舊紀錄視為哥建立（第 2652 行既有邏輯）→ 若為假：弟刪舊紀錄會被擋，由哥操作即可
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(10051759)（ＡＭ２５）
 　・★10051759 全碼稽核第 2 回合修復（主帥 10/05 17:59「好,請繼續。」；改版記錄(10051759)【0-5-7】）：甲-2 saveRentPause 編輯時保留結清紀錄（原整份覆寫清掉 settledTo／settledAmount／bxSettled）並擋「截止早於已結清期別」；乙-7 fillCO 退租天數含頭尾＋1；乙-8 sendAnnGmail 全部寄失敗不標記已通知；乙-9 簡易催收信收租日依契約欄；凍結常數零變動；全檔 script 區塊 node --check
 　・★待主帥裁示（P4-48）：bsAutoFill3／bsMarkSettledNow 以「實收>0」即計入應收全額，部分繳納時分帳基準未定；本批不動
@@ -2675,7 +2682,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v10051759'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v10060026'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -3528,7 +3535,7 @@ window.saveDraftBills = async function(){
       kwh: k==='elec' ? (g('draft-elec-kwh')?.value||'') : '',
       savedAt:new Date().toLocaleString('zh-TW') };
     const i=DB.draftBills.findIndex(b=>b.id===entry.id);
-    if(i>=0) DB.draftBills[i]=entry; else DB.draftBills.push(entry);
+    if(i>=0){ entry.createdBy=DB.draftBills[i].createdBy||''; entry.createdAt=DB.draftBills[i].createdAt||''; DB.draftBills[i]=entry; } else DB.draftBills.push(window.stampRec(entry));   // ★10060026 乙-11（同類同月更新沿用原建立者）
     n++;
   });
   if(!n){ toast('沒有可存入的帳單，請先填寫金額'); return; }
@@ -3577,6 +3584,7 @@ window.editDraftBill = function(id){
   toast('已載入 '+(DRAFTBILL_META[k]?.label||k)+' '+(b.period||'')+' 到上方表單，改完按「存入暫存清單」更新');
 };
 window.deleteDraftBill = async function(id){
+  if(!window.guardRec((DB.draftBills||[]).find(x=>x.id===id),'刪除'))return;   // ★10060026 乙-11
   if(!confirm('刪除這筆暫存帳單？')) return;
   DB.draftBills=(DB.draftBills||[]).filter(x=>x.id!==id);
   await saveLandlordData();
@@ -3826,13 +3834,14 @@ window.saveTaxReserve = async function(){
   if(!DB.taxReserveLog) DB.taxReserveLog=[];
   const i=DB.taxReserveLog.findIndex(r=>r.month===month);
   const rec={month, amount, note, savedAt:new Date().toLocaleString('zh-TW')};
-  if(i>=0) DB.taxReserveLog[i]=rec; else DB.taxReserveLog.push(rec);
+  if(i>=0){ if(!window.guardRec(DB.taxReserveLog[i],'修改'))return; rec.createdBy=DB.taxReserveLog[i].createdBy||''; rec.createdAt=DB.taxReserveLog[i].createdAt||''; DB.taxReserveLog[i]=rec; } else DB.taxReserveLog.push(window.stampRec(rec));   // ★10060026 乙-11
   await saveLandlordData();
   const ne=document.getElementById('tr-note'); if(ne) ne.value='';
   renderTaxReserve();
   toast('✅ 已記錄 '+month+' 預存 $'+amount);
 };
 window.deleteTaxReserve = async function(month){
+  if(!window.guardRec((DB.taxReserveLog||[]).find(r=>r.month===month),'刪除'))return;   // ★10060026 乙-11
   if(!confirm('刪除 '+month+' 的預存紀錄？')) return;
   DB.taxReserveLog=(DB.taxReserveLog||[]).filter(r=>r.month!==month);
   await saveLandlordData();
@@ -5179,7 +5188,8 @@ window.rrSyncPayment = function(per, room, amount, date){
     const k=DB.rentRecords.findIndex(function(x){ return String(x.period)<per; });
     if(k<0) DB.rentRecords.push(rec); else DB.rentRecords.splice(k,0,rec); }
   const p=rec.payments[room]||(rec.payments[room]={amount:0,paid:0,date:'',note:''});
-  p.amount=Math.max(+p.amount||0, +amount||0); p.paid=+amount||0; p.date=date||p.date||'';
+  const _tot=(DB.rentPayments||[]).filter(function(x){ return x.room===room && (String(x.periodStart||'').slice(0,4)+String(x.periodStart||'').slice(5,7))===per; }).reduce(function(s,x){ return s+(+x.amount||0); },0) || (+amount||0);   // ★10060026 乙-12：同房同期多筆入帳累加（原只記最後一筆）
+  p.amount=Math.max(+p.amount||0, _tot); p.paid=_tot; p.date=date||p.date||'';
   if(st) rec.bxSettled=true;
   return rec.bxSettled?'settled':'open';
 };
@@ -5210,8 +5220,8 @@ window.saveAIKnowledge = async function(){
   // 找同分類是否存在，存在則更新
   const idx = DB.aiKnowledgeDB.findIndex(k=>k.cat===cat);
   const record = {cat, text, updatedAt:now};
-  if(idx>=0) DB.aiKnowledgeDB[idx]=record;
-  else DB.aiKnowledgeDB.push(record);
+  if(idx>=0){ record.createdBy=DB.aiKnowledgeDB[idx].createdBy||''; record.createdAt=DB.aiKnowledgeDB[idx].createdAt||''; DB.aiKnowledgeDB[idx]=record; }
+  else DB.aiKnowledgeDB.push(window.stampRec(record));   // ★10060026 乙-11
   // 向下相容：同步更新舊的 aiKnowledge 字串
   DB.aiKnowledge = DB.aiKnowledgeDB.map(k=>`【${k.cat}】\n${k.text}`).join('\n\n');
   await saveLandlordData();
@@ -5266,6 +5276,7 @@ window.editAICat = function(cat){
   document.getElementById('ai-cat-custom').scrollIntoView({behavior:'smooth'});
 };
 window.deleteAICat = async function(cat){
+  if(!window.guardRec((DB.aiKnowledgeDB||[]).find(k=>k.cat===cat),'刪除'))return;   // ★10060026 乙-11
   if(!confirm(`確定刪除「${cat}」？`))return;
   DB.aiKnowledgeDB = (DB.aiKnowledgeDB||[]).filter(k=>k.cat!==cat);
   DB.aiKnowledge = DB.aiKnowledgeDB.map(k=>`【${k.cat}】\n${k.text}`).join('\n\n');
@@ -6766,6 +6777,7 @@ window.renderMaintenanceLog = function(){
   el.innerHTML=html||'<div class="txt-m">尚無歷年紀錄。</div>';
 };
 window.deleteMaintenanceLogEvent = async function(id){
+  if(!window.guardRec((DB.maintenanceLog||[]).find(e=>e.id===id),'刪除'))return;   // ★10060026 乙-11
   if(!confirm('刪除這筆歷年維護紀錄？')) return;
   DB.maintenanceLog=(DB.maintenanceLog||[]).filter(e=>e.id!==id);
   await saveLandlordData();
@@ -6811,9 +6823,12 @@ window.checkBillReminders = async function(){
     // 🌐 網路費：每月25日信用卡自動扣款，不提醒
     if(!alerts.length) return;
     { const _cloud=await window._cloudHealthy(); if(_cloud.ok){ alerts.forEach(a=>toast(a.icon+' 明天是'+a.name+'繳費截止日（'+a.due+'），系統未標記已繳清，請確認！（☁️ 雲端排程正常，提醒信由雲端寄出）', 8000)); return; } }   // ★10032335 P4-19 第二步
+    const _sk='billRemindSent'; let _sm={}; try{ _sm=JSON.parse(localStorage.getItem(_sk)||'{}')||{}; }catch(_){ _sm={}; }   // ★10060026 乙-10：同一天同一張帳單只寄一封（原每開一次水電頁就寄一封）
+    const _tk=window.todayLocal(); const _fresh=alerts.filter(a=>_sm[a.name+'@'+a.due]!==_tk);
+    if(!_fresh.length) return;
     initEJS();
     const nowStr = now.toLocaleString('zh-TW',{timeZone:'Asia/Taipei'});
-    for(const a of alerts){
+    for(const a of _fresh){
       toast(`${a.icon} 明天是${a.name}繳費截止日（${a.due}），系統未標記已繳清，請確認！`, 8000);
       try{
         await emailjs.send(EJS_SVC, EJS_TPL, {
@@ -6822,6 +6837,7 @@ window.checkBillReminders = async function(){
         });
       }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
     }
+    _fresh.forEach(a=>{ _sm[a.name+'@'+a.due]=_tk; }); try{ localStorage.setItem(_sk, JSON.stringify(_sm)); }catch(_){ window._silentFail && window._silentFail('寫帳單提醒已寄旗標', _); }   // ★10060026 乙-10
   }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
 };
 
@@ -7842,6 +7858,7 @@ window.updateRepairStatus = async function(i, status){
   await saveLandlordData(); renderRepair(); toast('狀態已更新 ✓');
 };
 window.deleteRepair = async function(i){
+  if(!window.guardRec((DB.repairs||[])[i],'刪除'))return;   // ★10060026 乙-11
   if(!confirm('確定刪除此報修紀錄？'))return;
   DB.repairs.splice(i,1);
   await saveLandlordData(); renderRepair(); toast('已刪除');
@@ -7969,10 +7986,11 @@ window.saveFormer = async function(){
   };
   if(!DB.formerTenants)DB.formerTenants=[];
   const idx=document.getElementById('modal-former')._editIdx;
-  if(idx>=0)DB.formerTenants[idx]=f; else DB.formerTenants.unshift(f);
+  if(idx>=0){ if(!window.guardRec(DB.formerTenants[idx],'修改'))return; f.createdBy=DB.formerTenants[idx].createdBy||''; f.createdAt=DB.formerTenants[idx].createdAt||''; DB.formerTenants[idx]=f; } else DB.formerTenants.unshift(window.stampRec(f));   // ★10060026 乙-11
   await saveLandlordData(); CM('modal-former'); renderFormer(); toast('舊房客資料已儲存 ✓');
 };
 window.deleteFormer = async function(i){
+  if(!window.guardRec((DB.formerTenants||[])[i],'刪除'))return;   // ★10060026 乙-11 權限防呆
   if(!confirm('確定刪除此舊房客紀錄？'))return;
   DB.formerTenants.splice(i,1);
   await saveLandlordData(); renderFormer(); toast('已刪除');
@@ -8025,10 +8043,11 @@ window.savePhotoNote = async function(){
   };
   if(!DB.photoNotes)DB.photoNotes=[];
   const idx=document.getElementById('modal-photo')._editIdx;
-  if(idx>=0)DB.photoNotes[idx]=note; else DB.photoNotes.unshift(note);
+  if(idx>=0){ if(!window.guardRec(DB.photoNotes[idx],'修改'))return; note.createdBy=DB.photoNotes[idx].createdBy||''; note.createdAt=DB.photoNotes[idx].createdAt||''; DB.photoNotes[idx]=note; } else DB.photoNotes.unshift(window.stampRec(note));   // ★10060026 乙-11
   await saveLandlordData(); CM('modal-photo'); renderPhotos(); toast('照片備註已儲存 ✓');
 };
 window.deletePhotoNote = async function(i){
+  if(!window.guardRec((DB.photoNotes||[])[i],'刪除'))return;   // ★10060026 乙-11
   if(!confirm('確定刪除？'))return;
   DB.photoNotes.splice(i,1);
   await saveLandlordData(); renderPhotos(); toast('已刪除');
@@ -8297,7 +8316,7 @@ window.copyTenantToFormer = async function(r){
     note:'（由現有房客複製 '+new Date().toLocaleDateString('zh-TW')+'，退租日待補填）',
     savedAt:new Date().toISOString(),
   };
-  DB.formerTenants.unshift(f);
+  DB.formerTenants.unshift(window.stampRec(f));   // ★10060026 乙-11
   await saveLandlordData();
   toast('✅ 已複製到舊房客存檔！請到「房東專區 → 舊房客存檔」補填退租日等資料。');
   // ★08161335 配套C：原本只複製不清除，房客 email 會無限期留在 tenants 裡，
