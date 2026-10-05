@@ -1,4 +1,12 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(10051738)（ＡＭ２５）
+　・★10051738 全碼稽核第 1 回合修復（主帥 10/05 15:38 第 3～5 點、17:38「好,請繼續。」；改版記錄(10051738)【0-5-7】）：乙-1 calcLandlordDays 改合併寫入 landlordStay（保留 room 等既有鍵）並補存 tcKids；乙-2 月曆拖曳存檔改 1.2 秒防抖（原每格觸發一次整份寫雲端）；乙-3 saveDraftBills 跨年登上一年 11、12 月帳單時推前一年；乙-4 sendReserveReport 寄出失敗不標記已寄、下次開頁重試；凍結常數零變動；全檔 script 區塊 node --check
+　・★已查證非缺陷：reserveReportText 以 payments[r].paid 加總——paid 為實付金額（第 4989 行），月報正確
+★★★【推定清單】
+　・推定 tc-kids 輸入框存在且預設 1 → 若為假：tcKids 存入 '1'，計算不變
+　・推定 landlordStay.room 目前雲端無此鍵（全檔無設定處）→ 若為假：合併寫入正好保留它，calcU 自住房改讀該值
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(10040436)　★依鐵律ＡＭ１７／自檢(14)
 　本輪性質：法規監控（主帥 2026/10/04 04:36 選甲）——房客管理頁心跳列加顯示「契約法規 現行版本（最後檢查日）」
 　① 心跳列 ver 字串後加「｜契約法規 YYY-MM-DD 版（M/D 查）」；雲端尚未檢查時顯示「｜契約法規：尚未檢查」；值經 _esc 轉義
@@ -2660,7 +2668,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v10040436'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v10051738'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -3504,7 +3512,8 @@ window.saveDraftBills = async function(){
     const amt=g('draft-'+k)?.value;
     if(amt===''||amt==null) return;
     const mm=g('draft-'+k+'-month')?.value||'';
-    const period = /^\d{6}$/.test(mm) ? mm : (mm ? (''+yr+mm) : '');
+    const _nowM=new Date().getMonth()+1, _y=(mm && !/^\d{6}$/.test(mm) && +mm>_nowM+1) ? yr-1 : yr;   // ★10051738 乙-3：跨年登上一年 11、12 月帳單時推前一年（原一律今年）
+    const period = /^\d{6}$/.test(mm) ? mm : (mm ? (''+_y+String(mm).padStart(2,'0')) : '');
     const entry={ id:k+'-'+(period||'na'), kind:k, month:mm, period, amount:+amt,
       pay:g('draft-'+k+'-pay')?.value||'', due:g('draft-'+k+'-due')?.value||'',
       start:g('draft-'+k+'-start')?.value||'', end:g('draft-'+k+'-end')?.value||'',
@@ -3717,8 +3726,9 @@ window.sendReserveReport=async function(manual){
   if(!manual && window._inQuietHours()) return;   // ★09221551 ＡＭ１：自動寄的月報在睡眠時段不寄也不標記；手動按鈕照常
   if(typeof initEJS==='function') initEJS();
   const _cloud=manual?{ok:false}:await window._cloudHealthy();   // ★10032335 P4-19 第二步：自動月報在雲端正常時只提示
-  if(_cloud.ok){ window._cloudNotice('本月預存月報'); } else {
-  try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:LANDLORD_EMAIL,otp:(manual?'':window._dupHead('網頁'))+'📅 '+reserveReportText('me')+(manual?'':window._dupFoot('網頁'))}); }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
+  let _sentOk=false;   // ★10051738 乙-4：寄出失敗不得標記已寄（原無論成敗都標記，失敗即整月不再寄）
+  if(_cloud.ok){ window._cloudNotice('本月預存月報'); _sentOk=true; } else {
+  try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:LANDLORD_EMAIL,otp:(manual?'':window._dupHead('網頁'))+'📅 '+reserveReportText('me')+(manual?'':window._dupFoot('網頁'))}); _sentOk=true; }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
   if(DB.notifyBrother){ const bro=(DB.brotherEmail||LANDLORD_EMAILS[1]||''); if(bro){ try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:bro,otp:(manual?'':window._dupHead('網頁'))+'📅 '+reserveReportText('brother')+(manual?'':window._dupFoot('網頁'))}); }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); } } }
   }
   const items=reserveMonthly();
@@ -3727,10 +3737,11 @@ window.sendReserveReport=async function(manual){
   const exist=DB.reserveAutoLog.findIndex(r=>r.month===key);
   const rec={month:key, meTotal:totOf('me'), brotherTotal:totOf('brother'), savedAt:new Date().toLocaleString('zh-TW')};
   if(exist>=0) DB.reserveAutoLog[exist]=rec; else DB.reserveAutoLog.unshift(rec);
-  if(!DB.reserveReportSent) DB.reserveReportSent={}; DB.reserveReportSent[key]=true;
+  if(_sentOk){ if(!DB.reserveReportSent) DB.reserveReportSent={}; DB.reserveReportSent[key]=true; }   // ★10051738 乙-4
+  else { console.error('[月報未寄出，不標記已寄，下次開頁重試]'); }
   await saveLandlordData();
   if(typeof renderReserveProfile==='function') renderReserveProfile();
-  if(manual) toast('✅ 已寄本月（'+key+'）月報並登記預存');
+  if(manual) toast(_sentOk?('✅ 已寄本月（'+key+'）月報並登記預存'):('⚠️ 月報寄出失敗，已登記預存；請稍後再按一次'));
 };
 window.checkMaintenanceDue=async function(){
   const recs=DB.maintenanceRecords||[]; if(!recs.length) return;
@@ -4274,7 +4285,7 @@ window.calcLandlordDays = function(){
   const tc2El=document.getElementById('tc-days-display2');
   if(tc2El) tc2El.textContent=tcSet.size;
   // 自動儲存到 DB（問題7）
-  DB.landlordStay = {
+  DB.landlordStay = Object.assign({}, DB.landlordStay||{}, {   // ★10051738 乙-1：合併寫入，保留 room（calcU 第 4501 行讀）等既有鍵；原整份覆寫會洗掉
     ltM1:document.getElementById('lt-m1')?.value||'',
     ltM2:document.getElementById('lt-m2')?.value||'',
     ltM3:document.getElementById('lt-m3')?.value||'',
@@ -4283,8 +4294,10 @@ window.calcLandlordDays = function(){
     tcM3:document.getElementById('tc-m3')?.value||'',
     ltKids:document.getElementById('lt-kids')?.value||'1',
     tcInclude:document.getElementById('tc-include')?.checked||false,
-  };
-  saveLandlordData();
+    tcKids:document.getElementById('tc-kids')?.value||'1',   // ★10051738 乙-1：initU 有還原卻從未儲存
+  });
+  if(window._lsTimer) clearTimeout(window._lsTimer);   // ★10051738 乙-2：月曆拖曳每格觸發一次整份存雲端 → 1.2 秒防抖（同 saveWorkingState）
+  window._lsTimer=setTimeout(function(){ if(window.saveLandlordData) saveLandlordData().catch(function(e){ console.error('[入住天數存檔失敗]', e&&e.message); }); }, 1200);
   calcU();
 };
 
