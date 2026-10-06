@@ -1,4 +1,11 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(10061639)（ＡＭ２５）
+　・★10061639（主帥 10/06 16:39 3a、3b、4b；改版記錄(10061639)【0-5-7】）：P4-46 新增「🏠 自住房」下拉（id=stay-room，存入 DB.landlordStay.room，initU 還原、calcU 讀）；P4-48 哥弟三桶房租改以實收 p.paid 計入（bsAutoFill3、bsMarkSettledNow、給弟明細；部分繳納註明應收）；心跳列第一欄改為網頁版本 v… 與股票PRO 一致、拿掉過時的「可請 AI 交付第二步」字樣（三處 paint 皆加前綴）；凍結常數零變動；全檔 script 區塊 node --check
+★★★【推定清單】
+　・推定雲端 landlordStay 現無 room 鍵（第 3 回合已查全檔無設定處）→ 若為假：下拉會還原該值，calcU 讀同一值，計算不變
+　・推定 rentRecords 之 paid 皆為數字（第 4999 行 saveRent 寫入 +值）→ 若為假（舊資料為布林）：+true＝1 元會低估，請主帥於收租登記重存該期
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(10060026)（ＡＭ２５）
 　・★10060026 全碼稽核第 3 回合修復（主帥 10/06 00:26「好,請繼續。」；改版記錄(10060026)【0-5-7】）：乙-10 checkBillReminders 同日同帳單只寄一封（localStorage billRemindSent）；乙-11 權限防呆補齊——deleteFormer／deletePhotoNote／deleteMaintenanceLogEvent／deleteRepair／deleteTaxReserve／deleteDraftBill／deleteAICat 加 guardRec，saveFormer／savePhotoNote／saveTaxReserve／saveDraftBills／saveAIKnowledge／copyTenantToFormer 新建加 stampRec、編輯沿用原建立者；乙-12 rrSyncPayment 同房同期多筆入帳累加；凍結常數零變動；全檔 script 區塊 node --check
 　・★稽核第 1～3 回合完畢（第 2565～8790 行逐行、第 1～2564 行程式掃描）
@@ -1040,6 +1047,14 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       </div>
     </div>
 
+    <!-- ★10061639 P4-46（主帥 10/06 16:39 3a「同意新增」）：自住房設定欄；calcU 讀 DB.landlordStay.room（房缺-11 原只有讀取端） -->
+    <div style="margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:.85rem;">
+      <label for="stay-room" style="font-weight:900;color:var(--primary);">🏠 自住房（本期不計房客水電、不列應收）</label>
+      <select id="stay-room" onchange="calcLandlordDays()" style="padding:.3rem .5rem;font-size:.85rem;">
+        <option value="3F後">3樓後</option><option value="3F前">3樓前</option><option value="4F前">4樓前</option><option value="4F後">4樓後</option><option value="5F前">5樓前</option>
+      </select>
+      <span class="txt-m">預設 3樓後；換自住間或 3樓後 出租時改這裡即可，存檔後生效，不必改程式。</span>
+    </div>
     <!-- 原房東石房東：不需填填樂，天數=計費天數 -->
     <div style="background:#f5f0e8;border:1.5px solid #d4b896;border-radius:.8rem;padding:.6rem .85rem;margin-bottom:.75rem;">
       <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-weight:900;font-size:.88rem;">
@@ -2682,7 +2697,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v10060026'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v10061639'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -2804,13 +2819,13 @@ window.renderCloudHeartbeat = async function(){
     const ok=h.lastOkAt?new Date(h.lastOkAt):null; const hrs=ok?(Date.now()-ok.getTime())/36e5:1e9;
     const days=(h.okDates||[]).slice(-7); const streak=+h.okStreak||0;
     const ver=(h.version?('｜雲端版本 '+h.version):'')+(h.lastBackupAt?('｜最後雲端備份 '+fmt(h.lastBackupAt)):'｜雲端備份：尚未寄出')+(h.lawDate?('｜契約法規 '+window._esc(h.lawDate)+' 版（'+fmt(h.lawCheckedAt)+' 查）'):'｜契約法規：尚未檢查');   // ★10040436 法規監控（主帥 10/04 04:36 選甲）｜★09231830 主帥選Ａ：雲端每 15 天寄備份
-    if(hrs>26){ paint('#fdecea','#b71c1c','⚠️ <b>雲端通知已超過 26 小時沒有成功執行</b>（最後成功：'+fmt(h.lastOkAt)+'；最後執行：'+fmt(h.lastRunAt)+(h.lastError?'；錯誤：'+String(h.lastError).slice(0,80):'')+'）。請到 GitHub → Actions 查看「嘉義房租雲端通知」。網頁的自動提醒照常寄出，不會漏信。'+ver); return; }
+    if(hrs>26){ paint('#fdecea','#b71c1c','v'+String(window.APP_VER||'').replace(/^v/,'')+' ⚠️ <b>雲端通知已超過 26 小時沒有成功執行</b>（最後成功：'+fmt(h.lastOkAt)+'；最後執行：'+fmt(h.lastRunAt)+(h.lastError?'；錯誤：'+String(h.lastError).slice(0,80):'')+'）。請到 GitHub → Actions 查看「嘉義房租雲端通知」。網頁的自動提醒照常寄出，不會漏信。'+ver); return; }
     // ★09262351 丁案（主帥 09/26 15:26）：只看「成功」會被深夜執行蒙蔽——9/23～9/26 每天 01:2x 成功、寄 0 封仍顯示綠色；改加判「最後一次準時（21:30 前）執行」
     const ot=h.lastOnTimeAt?new Date(h.lastOnTimeAt):null; const hrsOT=ot?(Date.now()-ot.getTime())/36e5:null;
-    if(hrsOT!==null&&hrsOT>26){ paint('#fdecea','#b71c1c','⚠️ <b>雲端通知已超過 26 小時沒有「準時」（21:30 前）執行</b>（最後準時：'+fmt(h.lastOnTimeAt)+'；最後執行：'+fmt(h.lastRunAt)+'）。提醒信會延到隔天補寄；急用時請到 GitHub → Actions →「嘉義房租雲端通知」按「Run workflow」手動執行一次。'+ver); return; }
-    const tail=streak>=3?'　✅ <b>可請 AI 交付第二步</b>（網頁改只提示）':'（滿 3 天後可交付第二步）';   // ★09301945 心跳文字與股票PRO 統一（主帥 09/30 13:12 b）
+    if(hrsOT!==null&&hrsOT>26){ paint('#fdecea','#b71c1c','v'+String(window.APP_VER||'').replace(/^v/,'')+' ⚠️ <b>雲端通知已超過 26 小時沒有「準時」（21:30 前）執行</b>（最後準時：'+fmt(h.lastOnTimeAt)+'；最後執行：'+fmt(h.lastRunAt)+'）。提醒信會延到隔天補寄；急用時請到 GitHub → Actions →「嘉義房租雲端通知」按「Run workflow」手動執行一次。'+ver); return; }
+    const tail='';   // ★10061639 第二步已於 10032335 上線，提示字樣拿掉；心跳列第一欄改為網頁版本（主帥 10/06 16:39 4b：與股票PRO 一致、一次複製）
     const md=x=>{ if(!x) return '—'; const d=new Date(x); return isNaN(d)?String(x):d.toLocaleString('zh-TW',{timeZone:'Asia/Taipei',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}); };
-    paint(h.lastRunOk===false?'#fff8e1':'#e8f5e9',h.lastRunOk===false?'#8a5a00':'#1b5e20','☁️ 雲端最後成功 '+md(h.lastOkAt)+'（該次寄出 '+(+h.total||0)+' 封）｜排程準時連續 '+streak+' 天'+tail+(h.lastRunOk===false?'｜★最近一次執行失敗：'+window._esc(String(h.lastError||'').slice(0,80)):'')+ver);
+    paint(h.lastRunOk===false?'#fff8e1':'#e8f5e9',h.lastRunOk===false?'#8a5a00':'#1b5e20','v'+String(window.APP_VER||'').replace(/^v/,'')+' ☁️ 雲端最後成功 '+md(h.lastOkAt)+'（該次寄出 '+(+h.total||0)+' 封）｜排程準時連續 '+streak+' 天'+tail+(h.lastRunOk===false?'｜★最近一次執行失敗：'+window._esc(String(h.lastError||'').slice(0,80)):'')+ver);
     el.title='該次寄出：最近一次執行寄出的封數\n雲端累計寄出（'+(h.sentSince?String(h.sentSince).slice(5,10).replace('-','/'):'—')+' 起）：'+(+h.totalSent||0)+' 封';
   }catch(e){ paint('#fdecea','#b71c1c','⚠️ 無法讀取雲端心跳：'+(e&&e.message?e.message:e)+'（請截圖回報）'); }
 };
@@ -4309,6 +4324,7 @@ window.calcLandlordDays = function(){
     tcM2:document.getElementById('tc-m2')?.value||'',
     tcM3:document.getElementById('tc-m3')?.value||'',
     ltKids:document.getElementById('lt-kids')?.value||'1',
+    room:document.getElementById('stay-room')?.value||((DB.landlordStay||{}).room)||'3F後',   // ★10061639 P4-46：自住房設定（calcU 讀）
     tcInclude:document.getElementById('tc-include')?.checked||false,
     tcKids:document.getElementById('tc-kids')?.value||'1',   // ★10051738 乙-1：initU 有還原卻從未儲存
   });
@@ -4411,6 +4427,7 @@ window.initU = function(){
   if(ls.ltKids) document.getElementById('lt-kids')&&(document.getElementById('lt-kids').value=ls.ltKids);
   if(ls.tcInclude!==undefined){const el=document.getElementById('tc-include');if(el)el.checked=ls.tcInclude;}
   if(ls.tcKids) document.getElementById('tc-kids')&&(document.getElementById('tc-kids').value=ls.tcKids);
+  { const _sr=document.getElementById('stay-room'); if(_sr && ls.room) _sr.value=ls.room; }   // ★10061639 P4-46：還原自住房設定
   window._ltDays = window._ltDays||0;
   window._tcDays = window._tcDays||0;
   // 如果有儲存資料，重新計算天數
@@ -6139,7 +6156,7 @@ window.bsMarkSettledNow = async function(){
   const _rbase=window.settleBase();   // ★09211845：收租紀錄標記範圍改為與 bsAutoFill3、雲端 mark_settled 相同（所有未結算且 ≥ 起算月）
   (DB.rentRecords||[]).forEach(function(rec,i){
     if(rec.bxSettled || String(rec.period||'') < _rbase) return;   // ★舊寫法只標當月：8/4 結算含 202607 卻未標，下次會重複計算
-    const any=Object.values(rec.payments||{}).some(p=>(+p.amount||0)>0 && p.paid);
+    const any=Object.values(rec.payments||{}).some(p=>(+p.paid||0)>0);   // ★10061639 P4-48（主帥 16:39 3b「以實收」）：有實收才算入結算範圍
     if(any) recIdx.push(i);
   });
 
@@ -6447,7 +6464,7 @@ window.bsAutoFill3 = function(silent){
   (DB.rentRecords||[]).forEach(function(rec){        // ★抓「所有未結算」收租(不再只抓本月)
     if(rec.bxSettled || String(rec.period||'') < _base) return;
     Object.values(rec.payments||{}).forEach(function(p){
-      if((+p.amount||0)>0 && p.paid){ rent += (+p.amount||0); nRent++; }
+      if((+p.paid||0)>0){ rent += (+p.paid||0); nRent++; }   // ★10061639 P4-48 以實收分帳（原以應收全額；與月報 reserveReportText 一致）
     });
   });
   // 網路費：與雲端同一套 → 起算月(netBaseMonth) ~ 本月，扣掉已結算月份(netSettledMonths)
@@ -6466,9 +6483,9 @@ window.bsAutoFill3 = function(silent){
   (DB.rentRecords||[]).forEach(function(rec){
     if(rec.bxSettled || String(rec.period||'') < _base) return;
     Object.entries(rec.payments||{}).forEach(function([room,p]){
-      if((+p.amount||0)>0 && p.paid){
+      if((+p.paid||0)>0){   // ★10061639 P4-48 以實收
         const tn=(DB.tenants[room]||{}).name||'';
-        rentLines.push('・'+(RL[room]||room)+(tn?'・'+tn:'')+' '+rec.period+' 房租 '+(+p.amount||0).toLocaleString());
+        rentLines.push('・'+(RL[room]||room)+(tn?'・'+tn:'')+' '+rec.period+' 房租 '+(+p.paid||0).toLocaleString()+((+p.paid||0)<(+p.amount||0)?'（應收 '+(+p.amount||0).toLocaleString()+'，部分繳納）':''));
         periods.push(String(rec.period||''));
       }
     });
