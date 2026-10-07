@@ -1,4 +1,10 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(10072127)（ＡＭ２５）
+　・★10072127 P4-49 丙級整潔批（主帥 10/07 21:27 第 3 點心跳列 v10061639 前綴實測正常→前提成立；改版記錄(10072127)【0-5-7】；嘉義房租_index稽核報告(10072127) 第五節）：修 13 項——丙-1 doLogout 死碼、丙-2 未用變數、丙-4 黑名單信 catch、丙-10／17 _addMonths 防月底溢位（3 處）、丙-11／16 帳單起迄與瓦斯／網路產出日跨年、丙-12／19 模板字串改 EJS_TPL（10 處）、丙-13 日期格式驗證（5 處）、丙-14 收租歷史 24 期提示、丙-18 照片網址轉義與只准 http(s)、丙-20 房客存檔提示；維持 7 項（丙-3、5、6、7、8、9、15，理由見稽核報告）；凍結常數零變動；全檔 script 區塊 node --check
+★★★【推定清單】
+　・推定 EJS_TPL 仍為 'template_oqm4kw9'（第 2622 行）→ 若為假：10 處改走新常數值，與 initEJS 統一入口一致
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(10061639)（ＡＭ２５）
 　・★10061639（主帥 10/06 16:39 3a、3b、4b；改版記錄(10061639)【0-5-7】）：P4-46 新增「🏠 自住房」下拉（id=stay-room，存入 DB.landlordStay.room，initU 還原、calcU 讀）；P4-48 哥弟三桶房租改以實收 p.paid 計入（bsAutoFill3、bsMarkSettledNow、給弟明細；部分繳納註明應收）；心跳列第一欄改為網頁版本 v… 與股票PRO 一致、拿掉過時的「可請 AI 交付第二步」字樣（三處 paint 皆加前綴）；凍結常數零變動；全檔 script 區塊 node --check
 ★★★【推定清單】
@@ -2622,6 +2628,7 @@ const EJS_SVC  = 'service_q711s3u';  // ★08300718：舊 service_knhvcfj 的 Gm
 const EJS_TPL  = 'template_oqm4kw9';
 // ★09220137：通用通知模板（主帥 2026/09/22 裁示：請股票PRO 把 template_notify_buy 改為共用通知模板，變數 {{to_email}}／{{subject}}／{{message}}）
 //   ★股票PRO 回覆已改好後，把下一行填入 'template_notify_buy' 即全面生效；空字串＝沿用舊寫法（借用驗證碼模板）
+window._addMonths=function(d,n){ const x=new Date(d.getTime()); const day=x.getDate(); x.setDate(1); x.setMonth(x.getMonth()+(+n||0)); const last=new Date(x.getFullYear(),x.getMonth()+1,0).getDate(); x.setDate(Math.min(day,last)); return x; };   // ★10072127 丙-10、17：加月份不溢位（1/31＋1 月＝2/28，原 setMonth 會跳到 3/3）
 const EJS_TPL_NOTICE = 'template_notify_buy';   // ★09220320：股票PRO(09220248) 回函已改登共用資產清冊 S7；主帥於 EmailJS 後台改好模板即生效
 window._noticeSubject = function(msg){
   let s=String(msg||'').split('\n').map(function(x){ return x.trim(); }).filter(Boolean)[0]||'通知';
@@ -2697,7 +2704,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v10061639'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v10072127'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -2914,7 +2921,7 @@ function notifyBlacklist(email, method){
 帳號：${email}
 方式：${method}
 請確認是否需要進一步處理。`
-    });
+    }).catch(function(e){ window._silentFail && window._silentFail('黑名單警示信寄送失敗', e); });   // ★10072127 丙-4：未 await 的寄信加 catch，免成未處理拒絕
   }catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
 }
 
@@ -3302,14 +3309,7 @@ window.doLogout = async function(){
   // ★09251438 主帥 09/25 13:46 截圖：登出不清記憶體，房客在同一分頁登入後看到房東頁與其他房客姓名、月租（個資外洩）
   //   比照股票PRO 第 4630～4634 行：登出後重新載入頁面，記憶體與畫面一次清乾淨
   location.reload(); return;
-  currentEmail=''; isLandlord=false; myRoom=null;
-  document.getElementById('security-overlay').style.display='flex';
-  document.getElementById('btn-logout').style.display='none';
-  document.getElementById('user-badge').style.display='none';
-  if(document.getElementById('access-key-input'))document.getElementById('access-key-input').value='';
-  if(document.getElementById('auth-error'))document.getElementById('auth-error').textContent='';
-  resetOTP();
-  setTimeout(()=>lucide.createIcons(),100);
+  // ★10072127 丙-1：此後原有 8 行死碼（location.reload 之後不會執行）已移除
 };
 
 // ══ Firebase 資料存取 ════════════════════════
@@ -3780,7 +3780,7 @@ window.checkMaintenanceDue=async function(){
   const toSend=[];
   recs.forEach(r=>{
     if(!r.lastDate) return;
-    const next=new Date(r.lastDate); next.setMonth(next.getMonth()+(+r.cycle||24));
+    const next=new Date(r.lastDate); next.setTime(window._addMonths(next,(+r.cycle||24)).getTime());
     const daysLeft=Math.round((next-new Date())/86400000);
     if(daysLeft<=30){ const k=r.type+'@'+window._ymd(next); /* ★09210142 房缺-04：原用 toISOString() 是 UTC，台灣清晨會倒退一天 */ if(!DB.maintenanceDueSent[k]) toSend.push({r,next,daysLeft,k}); }
   });
@@ -4419,8 +4419,7 @@ window.initU = function(){
   const ls = DB.landlordStay||{};
   ['lt-m1','lt-m2','lt-m3','tc-m1','tc-m2','tc-m3'].forEach(id=>{
     const el=document.getElementById(id);
-    const key=id.replace('-','').replace('-',''); // lt-m1 → ltm1
-    // 找對應key
+    // ★10072127 丙-2：移除未用變數 key（以下 keyMap 對應）
     const keyMap={'lt-m1':'ltM1','lt-m2':'ltM2','lt-m3':'ltM3','tc-m1':'tcM1','tc-m2':'tcM2','tc-m3':'tcM3'};
     if(el && ls[keyMap[id]]) el.value=ls[keyMap[id]];
   });
@@ -4777,6 +4776,7 @@ window.toggleRoomCollect = async function(i, room){
   if(!rc[room].paid){
     const d=prompt('「'+(RL[room]||room)+'」收款日期（YYYY-MM-DD），可留空：', window.todayLocal());
     if(d===null)return;
+    if(String(d).trim() && !/^\d{4}-\d{2}-\d{2}$/.test(String(d).trim())){ toast('日期格式須為 YYYY-MM-DD'); return; }   // ★10072127 丙-13 同型
     rc[room].paid=true; rc[room].date=(d||'').trim();
   } else { rc[room].paid=false; rc[room].date=''; }
   _syncBillFromRooms(b);
@@ -4787,6 +4787,7 @@ window.markUtilCollected = async function(i){
   const b=(DB.utilBills||[])[i]; if(!b)return;
   const d=prompt('全部收款日期（YYYY-MM-DD），可留空：', window.todayLocal());
   if(d===null)return;
+  if(String(d).trim() && !/^\d{4}-\d{2}-\d{2}$/.test(String(d).trim())){ toast('日期格式須為 YYYY-MM-DD'); return; }   // ★10072127 丙-13
   const rc=_ensureRoomCollect(b);
   Object.keys(rc).forEach(r=>{ rc[r].paid=true; rc[r].date=(d||'').trim(); });
   b.deferred=false; b.collectedDate=(d||'').trim();
@@ -5085,6 +5086,7 @@ window.bsEditSettle = async function(key){
   if(amt===null) return;
   const date=prompt('修改「收款日」(如 2026-06-18)：', p.settledAt||'');
   if(date===null) return;
+  if(String(date).trim() && !/^\d{4}-\d{2}-\d{2}$/.test(String(date).trim())){ toast('日期格式須為 YYYY-MM-DD'); return; }   // ★10072127 丙-13 同型
   const note=prompt('修改「備註」：', p.settledNote||'');
   if(note===null) return;
   p.settledAmount=+amt||0;
@@ -5118,7 +5120,7 @@ function renderRentHistory(){
     _settleHtml += '<div class="result-box" style="font-weight:700;margin:.3rem 0;">🔍 篩選中（收款日 '+(_from||'不限')+' ～ '+(_to||'不限')+'）：各期收租顯示 '+_rhList.length+' 期、隱藏 '+((DB.rentRecords||[]).length-_rhList.length)+' 期；併收結清顯示 '+_settled.length+' 筆、隱藏 '+(_settledAll.length-_settled.length)+' 筆。<br>★被隱藏的紀錄沒有刪除，按「全部」即可顯示。</div>';
   }
   if(!_rhList.length){el.innerHTML=(_settleHtml||'')+'<div class="txt-m">此區間沒有收租紀錄'+(_rhOn?'（★沒有被刪除，只是不在篩選區間內）':'')+'</div>';return;}
-  el.innerHTML=_settleHtml;
+  el.innerHTML=_settleHtml + (_rhList.length>24 ? '<div class="txt-m" style="margin:.3rem 0;">（共 '+_rhList.length+' 期，只顯示最近 24 期；更早的請用上方收款日篩選）</div>' : '');   // ★10072127 丙-14
   _rhList.slice(0,24).forEach((rec,_fi)=>{
     // ★08051435 修正：篩選後不可用篩選清單的索引，必須換回 DB.rentRecords 的真實索引，
     //   否則 deleteRent(i)／markRentPaid(i) 會操作到錯誤的期別（會刪錯資料）。
@@ -5363,7 +5365,7 @@ async function checkRentOverdue(){
         const short=`${rec.period.slice(0,4)}年${rec.period.slice(4,6)}月`;
         const owed=(rec.payments[r].amount||0)-(rec.payments[r].paid||0);
         try{
-          await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+          await emailjs.send(EJS_SVC,EJS_TPL,{
             to_email:t.tenantEmail,
             otp:`【租金逾期提醒】${RL[r]} ${t.name||''} 您好，${short}租金尚有 NT$${owed.toLocaleString()} 未繳，請盡速以郵局轉帳繳納。`
           });
@@ -5651,7 +5653,7 @@ if(window._inQuietHours()){ toast('🌙 睡眠時段（21:30～07:30）不寄公
   initEJS();
   for(const t of tenants){
     try{
-      await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+      await emailjs.send(EJS_SVC,EJS_TPL,{
         to_email:t.tenantEmail,
         otp:'【公告通知】'+a.content.slice(0,80)+(a.content.length>80?'…':'')
       });
@@ -5858,8 +5860,8 @@ function _renderLoginLogUI(filter, log){
 // 點3：依帳單月份自動預估計費起迄與繳費期限（依真實帳單規律，可手動改）
 window.estimateBillDates = function(kind, mm){
   if(!mm) return {start:'',end:'',due:''};
-  const yr = new Date().getFullYear();
   const M = parseInt(mm,10);
+  const yr = new Date().getFullYear() - ((M > new Date().getMonth()+2) ? 1 : 0);   // ★10072127 丙-11：跨年（1 月登上一年 11、12 月帳單）推前一年，同乙-3
   const mk = (offset, day)=>{ let m=M+offset, y=yr; while(m<=0){m+=12;y--;} while(m>12){m-=12;y++;} return y+'-'+String(m).padStart(2,'0')+'-'+String(day).padStart(2,'0'); };
   const cfg = ({
     water:{ s:[-4,26], e:[-2,28], dueDay:21 },
@@ -6142,6 +6144,7 @@ window.bsMarkSettledNow = async function(){
   const _tdate=prompt('請輸入「實際轉帳日期」（YYYY-MM-DD），系統會自動寫入轉帳紀錄簿：', _today);
   if(_tdate===null) return;
   const _td=(String(_tdate).trim()||_today);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(_td)){ toast('日期格式須為 YYYY-MM-DD'); return; }   // ★10072127 丙-13
   if(!confirm('確認已於 '+_td+' 把 '+f(c.transfer)+' 元轉帳給弟？\n\n按確定後，本次涵蓋的帳單／共同費用／併收結清／網路費月份都會標記為「已與弟結算」，下次不再重複計算。\n（如有誤可在結算單按「撤銷」還原）')) return;
 
   const nm=window.bsUnsettledNetMonths ? window.bsUnsettledNetMonths() : [];
@@ -6333,6 +6336,7 @@ window.btEdit = async function(id){
   const t=(DB.broTransfers||[]).find(function(x){ return String(x.id)===String(id); }); if(!t) return;
   if(!window.guardRec(t,'編輯')) return;
   const d=prompt('轉帳日期（YYYY-MM-DD）：', t.date||''); if(d===null) return;
+  if(String(d).trim() && !/^\d{4}-\d{2}-\d{2}$/.test(String(d).trim())){ toast('日期格式須為 YYYY-MM-DD'); return; }   // ★10072127 丙-13
   const a=prompt('金額（元）：', t.amount||''); if(a===null) return;
   const k=prompt('項目類別（水電代墊／房租／結算款／其他）：', t.kind||'水電代墊'); if(k===null) return;
   const p=prompt('對應月份／期間：', t.period||''); if(p===null) return;
@@ -6690,7 +6694,7 @@ window.calcMaintenance = function(type){
   if(!lastDate){el.style.display='none';return;}
   const last=new Date(lastDate);
   const next=new Date(last);
-  next.setMonth(next.getMonth()+cycle);
+  next.setTime(window._addMonths(next,cycle).getTime());
   const now=new Date();
   const daysLeft=Math.round((next-now)/86400000);
   const monthlyBudget=Math.ceil(cost/cycle);
@@ -6749,7 +6753,7 @@ window.renderMaintenanceHistory = function(){
   const now=new Date();
   el.innerHTML=list.map(r=>{
     const next=new Date(r.lastDate);
-    next.setMonth(next.getMonth()+(+r.cycle||24));
+    next.setTime(window._addMonths(next,(+r.cycle||24)).getTime());
     const days=Math.round((next-now)/86400000);
     const icon=MAINTENANCE_ITEMS[r.type]?.icon||'🔧';
     const badge=days<0?`<span style="color:#e00;font-weight:900;">🚨 逾期${Math.abs(days)}天</span>`:
@@ -6879,11 +6883,12 @@ window.estIssueDate = function(kind, endDate, month){
   if(kind==='gas'){
     if(!endDate) return '';
     const x=new Date(endDate+'T00:00:00'); if(isNaN(x)) return '';
-    return x.getFullYear()+'-'+pad(x.getMonth()+2>12?1:x.getMonth()+2)+'-05';
+    const _gm=x.getMonth()+2, _gy=x.getFullYear()+(_gm>12?1:0);   // ★10072127 丙-16：12 月迄日之瓦斯產出日跨年進位
+    return _gy+'-'+pad(_gm>12?_gm-12:_gm)+'-05';
   }
   if(kind==='net'){
     const m=+month||0; if(!m) return '';
-    const y=new Date().getFullYear();
+    const y=new Date().getFullYear() - ((m > new Date().getMonth()+2) ? 1 : 0);   // ★10072127 丙-16 同型：網路費跨年推前一年
     return y+'-'+pad(m)+'-13';
   }
   return '';
@@ -7454,7 +7459,7 @@ window.notifyMail = async function(mode='save'){
       toast('✅ 已通知房東');
     }catch(e){toast('儲存成功，寄信失敗');}
   } else {
-    toast('✅ 已儲存（未寄信）');
+    toast(isLandlordAuth()?'✅ 已儲存（未寄信）':'✅ 已記錄於本頁（房客端不存雲端，未寄信）');   // ★10072127 丙-20
   }
   if(document.getElementById('mail-note')) document.getElementById('mail-note').value='';
   renderMailHistory();
@@ -7497,7 +7502,7 @@ window.notifyLockBattery = async function(mode='save'){
       toast('✅ 已通知房東：電池已換好');
     }catch(e){toast('儲存成功，寄信失敗');}
   } else {
-    toast('✅ 已儲存（未寄信）');
+    toast(isLandlordAuth()?'✅ 已儲存（未寄信）':'✅ 已記錄於本頁（房客端不存雲端，未寄信）');   // ★10072127 丙-20
   }
   if(document.getElementById('lock-battery-note')) document.getElementById('lock-battery-note').value='';
   renderLockBatteryHistory();
@@ -7724,7 +7729,7 @@ window.submitRepair = async function(){
   initEJS();
   const urgencyEmoji=urgency==='非常緊急'?'🚨':urgency==='緊急'?'⚠️':'🔧';
   try{
-    await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+    await emailjs.send(EJS_SVC,EJS_TPL,{
       to_email:LANDLORD_EMAIL, __urgent: urgency==='非常緊急',   // ★10011510 ＡＭ１⑦ａ
       otp:`${urgencyEmoji}【報修通知】${room} ${tname}\n地點：${location}\n緊急程度：${urgency}\n說明：${desc}\n方便時段：${time||'未填'}\n提報時間：${datetime}`
     });
@@ -7794,7 +7799,7 @@ window.updateCloudRepair = async function(tid, rid, status){
     it.r.status=status; it.r.statusDate=statusDate;
     if(status==='已完成' && it.r.tenantEmail){
       initEJS();
-      try{ await emailjs.send(EJS_SVC,'template_oqm4kw9',{to_email:it.r.tenantEmail, otp:`✅【報修完成通知】您於 ${it.r.datetime} 提報的「${it.r.location}：${String(it.r.desc||'').slice(0,40)}」已完成修繕，請確認。如有問題請再報修。`}); }
+      try{ await emailjs.send(EJS_SVC,EJS_TPL,{to_email:it.r.tenantEmail, otp:`✅【報修完成通知】您於 ${it.r.datetime} 提報的「${it.r.location}：${String(it.r.desc||'').slice(0,40)}」已完成修繕，請確認。如有問題請再報修。`}); }
       catch(e){ window._silentFail && window._silentFail('空catch可見化', e); }
     }
     renderRepair(); updateRepairBadge(); toast('狀態已更新 ✓');
@@ -7866,7 +7871,7 @@ window.updateRepairStatus = async function(i, status){
   if(status==='已完成' && DB.repairs[i].tenantEmail){
     initEJS();
     try{
-      await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+      await emailjs.send(EJS_SVC,EJS_TPL,{
         to_email:DB.repairs[i].tenantEmail,
         otp:`✅【報修完成通知】您於 ${DB.repairs[i].datetime} 提報的「${DB.repairs[i].location}：${DB.repairs[i].desc.slice(0,40)}」已完成修繕，請確認。如有問題請再報修。`
       });
@@ -7900,7 +7905,7 @@ window.notifyWasherDone = async function(){
   let sent=0;
   for(const t of tenants){
     try{
-      await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+      await emailjs.send(EJS_SVC,EJS_TPL,{
         to_email:t.tenantEmail,
         otp:`🫧【洗衣機通知】${now} 5樓洗衣機衣服已洗好，請盡速取出，以免影響其他房客使用。謝謝！`
       });
@@ -7915,7 +7920,7 @@ window.checkLockBattery = function(){
 window.notifyBatteryLow = async function(){
   initEJS();
   try{
-    await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+    await emailjs.send(EJS_SVC,EJS_TPL,{
       to_email:LANDLORD_EMAIL,
       otp:`🔋【電子鎖電池警告】1樓大廳電子鎖電池電量偏低，請盡快返回嘉義更換電池，以免房客無法進出。`
     });
@@ -8081,7 +8086,7 @@ function renderPhotos(){
         <div style="flex:1;">
           <div style="font-weight:900;font-size:.9rem;">${window._esc(n.name||'—')} <span style="font-size:.75rem;color:var(--muted);">${RL[n.room]||n.room||''}</span></div>
 
-          ${n.url ? `<div style="margin-top:.4rem;"><a href="${n.url}" target="_blank" style="font-size:.75rem;color:var(--info);text-decoration:none;">🔗 查看雲端照片網址</a></div>` : ''} <!-- ══ 此為【雲端照片網址】還不會出現欄位的前置作業。202603271156版項目1:修正照片備註渲染 (解決登入失效問題)。═ -->
+          ${n.url ? `<div style="margin-top:.4rem;"><a href="${/^https?:\/\//i.test(String(n.url))?window._esc(n.url):'#'}" target="_blank" rel="noopener" style="font-size:.75rem;color:var(--info);text-decoration:none;">🔗 查看雲端照片網址</a></div>` : ''} <!-- ══ 此為【雲端照片網址】還不會出現欄位的前置作業。202603271156版項目1:修正照片備註渲染 (解決登入失效問題)。═ -->
 
           <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;">儲存於：${new Date(n.savedAt).toLocaleDateString('zh-TW')}</div>
         </div>
@@ -8374,7 +8379,7 @@ window.notifyWasherInUse = async function(){
   let sent=0;
   for(const t of tenants){
     try{
-      await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+      await emailjs.send(EJS_SVC,EJS_TPL,{
         to_email:t.tenantEmail,
         otp:`🫧【洗衣機通知 ${now}】5樓洗衣機目前有人正在使用，請稍後再上樓。如需洗衣服可先準備好，有人完成後會再通知。謝謝！`
       });
@@ -8393,7 +8398,7 @@ window.notifyFloodAlert = async function(){
   // 通知所有房客
   for(const t of tenants){
     try{
-      await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+      await emailjs.send(EJS_SVC,EJS_TPL,{
         to_email:t.tenantEmail,
         __urgent:true, otp:`🌧️【積水警告 ${now}】5樓監視器偵測到戶外地面排水孔附近疑似因大雨/颱風造成積水，請注意安全，外出請小心積水路面。`
       });
@@ -8402,7 +8407,7 @@ window.notifyFloodAlert = async function(){
   }
   // 同時通知房東
   try{
-    await emailjs.send(EJS_SVC,'template_oqm4kw9',{
+    await emailjs.send(EJS_SVC,EJS_TPL,{
       to_email:LANDLORD_EMAIL,
       __urgent:true, otp:`🌧️【積水警告 ${now}】5樓監視器偵測到戶外地面排水孔附近疑似積水，請注意嘉義老家排水狀況。`
     });
