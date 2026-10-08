@@ -1,4 +1,10 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(10080758)（ＡＭ２５）
+　・★10080758 入帳紀錄簿步驟備註改為主帥原文（主帥 10/08 07:58 第 4 點 d；Ｃ-68）：「1.先選「房間」。　2.再選「入帳日（實際收到錢的日期）」。　3.按左邊的【🔄 自動帶入租期】。　4.按左邊的【＋ 新增入帳紀錄】。」——原備註寫「房客實際郵局轉帳日」與畫面欄位標題「入帳日（實際收到錢的日期）」不符（ＡＭ２６）；rpAuto 需房間與入帳日、金額空白時自動帶契約月租，故原步驟 2「租金、房客轉帳方式」刪去不影響操作；同列「★若跳出…」句改為畫面詢問原字「【期別】落在 ○○ 結算單的涵蓋範圍內」（原寫「落在結算單涵蓋範圍內」，與第 5200 行詢問文字不符；Ｃ-68 同型）；其餘程式零變動
+★★★【推定清單】
+　・推定主帥部署後畫面步驟備註即為上句 → 若為假：版本標籤非 v10080758，請重新放入網頁倉庫
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(10072127)（ＡＭ２５）
 　・★10072127 P4-49 丙級整潔批（主帥 10/07 21:27 第 3 點心跳列 v10061639 前綴實測正常→前提成立；改版記錄(10072127)【0-5-7】；嘉義房租_index稽核報告(10072127) 第五節）：修 13 項——丙-1 doLogout 死碼、丙-2 未用變數、丙-4 黑名單信 catch、丙-10／17 _addMonths 防月底溢位（3 處）、丙-11／16 帳單起迄與瓦斯／網路產出日跨年、丙-12／19 模板字串改 EJS_TPL（10 處）、丙-13 日期格式驗證（5 處）、丙-14 收租歷史 24 期提示、丙-18 照片網址轉義與只准 http(s)、丙-20 房客存檔提示；維持 7 項（丙-3、5、6、7、8、9、15，理由見稽核報告）；凍結常數零變動；全檔 script 區塊 node --check
 ★★★【推定清單】
@@ -1281,7 +1287,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
       <button class="btn ba" onclick="rpAuto()">🔄 自動帶入租期</button>
       <button class="btn bs" onclick="rpSave()">＋ 新增入帳紀錄</button>
       <button class="btn bd sm" onclick="rpClear()">清空表單</button>
-    <div class="step-note">1.先選房間。　2.依序填上房客實際郵局轉帳日、租金、房客轉帳方式。　3.按左邊的【🔄 自動帶入租期】。　4.按左邊的【＋ 新增入帳紀錄】。<br>★若跳出「落在結算單涵蓋範圍內」詢問：已給弟結算過的月份按「確定」。</div>
+    <div class="step-note">1.先選「房間」。　2.再選「入帳日（實際收到錢的日期）」。　3.按左邊的【🔄 自動帶入租期】。　4.按左邊的【＋ 新增入帳紀錄】。<br>★若跳出「【期別】落在 ○○ 結算單的涵蓋範圍內」詢問：已給弟結算過的月份按「確定」。</div>
 </div>
     <div style="margin-top:.8rem;padding-top:.6rem;border-top:2px solid var(--border2);">
       <div class="form-row c2">
@@ -2704,7 +2710,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v10072127'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v10080758'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
