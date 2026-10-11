@@ -1,4 +1,11 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(10120158)（ＡＭ２５）
+　・★10120158 暫存帳單加「繳費日」（主帥 10/12 01:58 第 3 點：「為什麼沒有出現在【📋 已暫存帳單清單（多期、可個別編輯）】1:25AM的繳費資訊?這樣等我月底水費電費網路費都齊全後,我要按【傳本期帳單】時,我早就忘記我是哪一天繳10月份的瓦斯帳單282元了!?」；Ｃ-77）：水、電、瓦斯三列各加「📅 繳費日」，勾「我已繳費」時未填則自動帶今天（可改）；存入清單與清單顯示「✅已繳 YYYY-MM-DD」；編輯、本機暫存、清除暫存同步。原因：原暫存帳單只存「已繳／未繳」，無繳費日欄位（原第 3552～3569 行 entry）
+　・★10120158 先修後報：清單繳費方式原只分「現金／信用卡」（原 b.pay==='cash'?'現金':'信用卡'），選「台灣PAY繳費」「郵局APP」也顯示「信用卡」；改依選項顯示原字
+★★★【推定清單】
+　・推定主帥部署後版本標籤為 v10120158、水電瓦斯三列各有「📅 繳費日」 → 若為假：請重新放入網頁倉庫
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(10120133)（ＡＭ２５）
 　・★10120133 帳單暫存區改為每列各自存入（主帥 10/12 01:33 第 4c 點：「建議AI將【📥 帳單暫存區（帳單未收齊時先暫存）】改成可以針對個別項目,例如這次的10月份瓦斯帳單做「存入暫存清單」就好,不要出現【水費】【電費】【網路費】在【📋 已暫存帳單清單（多期、可個別編輯）】。」；Ｃ-76）：水、電、瓦斯、網路四列各加【💾 存入暫存清單（只存○○）】，saveDraftBills(kind) 只存該列並須先選帳單月份；移除下方一次存四類之總按鈕；步驟備註、說明與提示改畫面原字。原因：原總按鈕逐類掃描四列、只略過金額空白者，表單上殘留之其他類別金額會一併存入（原第 3546～3561 行）
 ★★★【推定清單】
@@ -750,8 +757,10 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           <label style="font-size:.78rem;color:var(--muted);">📅 繳費期限（預設帳單月21日，可改）</label>
           <input type="date" id="draft-water-due" onchange="saveDraft()" title="繳費期限（預設帳單月21日）" style="font-size:.8rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;box-sizing:border-box;">
           <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;">
-            <input type="checkbox" id="draft-water-paid" onchange="saveDraft()"> <b>我已繳費給自來水公司</b><div style="font-size:.7rem;color:var(--muted);font-weight:400;margin-left:1.4rem;">（這是「房東對外付款」，不是向房客收款）</div>
+            <input type="checkbox" id="draft-water-paid" onchange="_autoPaidDate('water');saveDraft()"> <b>我已繳費給自來水公司</b><div style="font-size:.7rem;color:var(--muted);font-weight:400;margin-left:1.4rem;">（這是「房東對外付款」，不是向房客收款）</div>
           </label>
+          <label style="font-size:.78rem;color:var(--muted);">📅 繳費日（實際繳費的日期；勾「我已繳費」時自動帶今天，可改）</label>
+          <input type="date" id="draft-water-paiddate" onchange="saveDraft()" style="font-size:.8rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;box-sizing:border-box;">
           <button class="btn bs sm" onclick="saveDraftBills('water')">💾 存入暫存清單（只存水費）</button>
         </div>
       </div>
@@ -795,8 +804,10 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           <div style="font-size:.73rem;color:var(--muted);margin-top:.15rem;">繳費期限前一天未打勾 → 自動 Gmail 提醒</div>
         </div>
         <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;margin-top:.2rem;">
-          <input type="checkbox" id="draft-elec-paid" onchange="saveDraft()"> <b>我已繳費給台電</b><div style="font-size:.7rem;color:var(--muted);font-weight:400;margin-left:1.4rem;">（這是「房東對外付款」，不是向房客收款）</div>
+          <input type="checkbox" id="draft-elec-paid" onchange="_autoPaidDate('elec');saveDraft()"> <b>我已繳費給台電</b><div style="font-size:.7rem;color:var(--muted);font-weight:400;margin-left:1.4rem;">（這是「房東對外付款」，不是向房客收款）</div>
         </label>
+        <label style="font-size:.78rem;color:var(--muted);">📅 繳費日（實際繳費的日期；勾「我已繳費」時自動帶今天，可改）</label>
+        <input type="date" id="draft-elec-paiddate" onchange="saveDraft()" style="font-size:.8rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;box-sizing:border-box;">
         <button class="btn bs sm" style="margin-top:.35rem;" onclick="saveDraftBills('elec')">💾 存入暫存清單（只存電費）</button>
       </div>
     </div>
@@ -836,8 +847,10 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           <label style="font-size:.78rem;color:var(--muted);">📅 繳費期限（預設帳單月20日，可改）</label>
           <input type="date" id="draft-gas-due" onchange="saveDraft()" title="繳費期限（預設帳單月20日）" style="font-size:.8rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;box-sizing:border-box;">
           <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;">
-            <input type="checkbox" id="draft-gas-paid" onchange="saveDraft()"> <b>我已繳費給欣嘉瓦斯</b><div style="font-size:.7rem;color:var(--muted);font-weight:400;margin-left:1.4rem;">（這是「房東對外付款」，不是向房客收款）</div>
+            <input type="checkbox" id="draft-gas-paid" onchange="_autoPaidDate('gas');saveDraft()"> <b>我已繳費給欣嘉瓦斯</b><div style="font-size:.7rem;color:var(--muted);font-weight:400;margin-left:1.4rem;">（這是「房東對外付款」，不是向房客收款）</div>
           </label>
+          <label style="font-size:.78rem;color:var(--muted);">📅 繳費日（實際繳費的日期；勾「我已繳費」時自動帶今天，可改）</label>
+          <input type="date" id="draft-gas-paiddate" onchange="saveDraft()" style="font-size:.8rem;padding:3px 6px;border:1px solid var(--border);border-radius:.35rem;width:100%;box-sizing:border-box;">
           <button class="btn bs sm" onclick="saveDraftBills('gas')">💾 存入暫存清單（只存瓦斯費）</button>
         </div>
       </div>
@@ -2719,7 +2732,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v10120133'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v10120158'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -3565,6 +3578,7 @@ window.saveDraftBills = async function(only){   // ★10120133 每列各自存�
       pay:g('draft-'+k+'-pay')?.value||'', due:g('draft-'+k+'-due')?.value||'',
       start:g('draft-'+k+'-start')?.value||'', end:g('draft-'+k+'-end')?.value||'',
       paid: k==='net' ? true : (g('draft-'+k+'-paid')?.checked||false),
+      paidDate: (k!=='net' && g('draft-'+k+'-paid')?.checked) ? (g('draft-'+k+'-paiddate')?.value||'') : '',   // ★10120158 繳費日（Ｃ-77）
       kwh: k==='elec' ? (g('draft-elec-kwh')?.value||'') : '',
       savedAt:new Date().toLocaleString('zh-TW') };
     const i=DB.draftBills.findIndex(b=>b.id===entry.id);
@@ -3586,8 +3600,8 @@ window.renderDraftBills = function(){
     const det=[];
     if(b.kind==='elec'&&b.kwh) det.push(b.kwh+'度');
     if(b.due) det.push('期限'+b.due);
-    if(b.pay) det.push(b.pay==='cash'?'現金':'信用卡');
-    det.push(b.paid?'✅已繳':'未繳');
+    if(b.pay) det.push(({card:'信用卡',cash:'現金',post:'郵局APP',twpay:'台灣PAY'})[b.pay]||b.pay);   // ★10120158 先修後報：原只分現金／信用卡
+    det.push(b.paid?('✅已繳'+(b.paidDate?' '+b.paidDate:'')):'未繳');   // ★10120158 顯示繳費日（Ｃ-77）
     const netNote = b.kind==='net' ? '<span style="font-size:.76rem;color:var(--muted);">（網路費不入本期帳單）</span>' : `<button class="btn bs sm" onclick="sendDraftBillToCurrent('${b.id}')">📤 傳本期帳單</button>`;
     return `<div style="border:1px solid var(--border);border-radius:.5rem;padding:.5rem .6rem;margin-bottom:.5rem;">
       <div style="font-weight:700;">${m.icon} ${m.label}　📅${b.period||b.month||'—'}　$${(+b.amount||0).toLocaleString()}</div>
@@ -3602,6 +3616,10 @@ window.renderDraftBills = function(){
   }).join('');
   _fillDraftPeriodPick();
 };
+window._autoPaidDate = function(k){   // ★10120158 勾「我已繳費」時繳費日未填則自動帶今天（本地日期，Ｚ３；可改）（主帥 10/12 01:58 第 3 點；Ｃ-77）
+  const cb=document.getElementById('draft-'+k+'-paid'), d=document.getElementById('draft-'+k+'-paiddate'); if(!cb||!d) return;
+  if(cb.checked && !d.value){ const t=new Date(); d.value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); }
+};
 window.editDraftBill = function(id){
   const b=(DB.draftBills||[]).find(x=>x.id===id); if(!b) return;
   const k=b.kind;
@@ -3611,6 +3629,7 @@ window.editDraftBill = function(id){
   sv('draft-'+k+'-pay', b.pay); sv('draft-'+k+'-due', b.due);
   sv('draft-'+k+'-start', b.start); sv('draft-'+k+'-end', b.end);
   if(k!=='net') sc('draft-'+k+'-paid', b.paid);
+  if(k!=='net') sv('draft-'+k+'-paiddate', b.paidDate||'');   // ★10120158
   if(k==='elec') sv('draft-elec-kwh', b.kwh);
   if(window.saveDraft) saveDraft();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -6917,6 +6936,7 @@ window.saveDraft = function(){
     waterMonth:g('draft-water-month')?.value||'',
     water:g('draft-water')?.value||'',
     waterPaid:g('draft-water-paid')?.checked||false,
+    waterPaidDate:g('draft-water-paiddate')?.value||'',
     waterPay:g('draft-water-pay')?.value||'card',
     waterDue:g('draft-water-due')?.value||'',
     waterStart:g('draft-water-start')?.value||'',
@@ -6926,6 +6946,7 @@ window.saveDraft = function(){
     elec:g('draft-elec')?.value||'',
     elecKwh:g('draft-elec-kwh')?.value||'',
     elecPaid:g('draft-elec-paid')?.checked||false,
+    elecPaidDate:g('draft-elec-paiddate')?.value||'',
     elecPay:g('draft-elec-pay')?.value||'card',
     elecDue:g('draft-elec-due')?.value||'',
     elecStart:g('draft-elec-start')?.value||'',
@@ -6934,6 +6955,7 @@ window.saveDraft = function(){
     gasMonth:g('draft-gas-month')?.value||'',
     gas:g('draft-gas')?.value||'',
     gasPaid:g('draft-gas-paid')?.checked||false,
+    gasPaidDate:g('draft-gas-paiddate')?.value||'',
     gasPay:g('draft-gas-pay')?.value||'cash',
     gasDue:g('draft-gas-due')?.value||'',
     gasStart:g('draft-gas-start')?.value||'',
@@ -6979,6 +7001,7 @@ window.loadDraftState = function(){
     // ★08160140 帳單產出日：未填則以計費迄日自動預估，可手動改（滾動式調整）
     sv('draft-water-issue', d.waterIssue || estIssueDate('water', d.waterEnd || _wEst.end, _wm));
     sc('draft-water-paid', d.waterPaid);
+    sv('draft-water-paiddate', d.waterPaidDate);
     // ⚡ 電費（繳費期限預設帳單月28日）
     sv('draft-elec-month',d.elecMonth);
     sv('draft-elec',d.elec);
@@ -6988,6 +7011,7 @@ window.loadDraftState = function(){
     sv('draft-elec-end', d.elecEnd || _eEst.end);
     sv('draft-elec-pay', d.elecPay || 'card');
     sc('draft-elec-paid',d.elecPaid);
+    sv('draft-elec-paiddate', d.elecPaidDate);
     sv('draft-elec-due', d.elecDue || _eEst.due);
     sv('draft-elec-issue', d.elecIssue || estIssueDate('elec', d.elecEnd || _eEst.end, d.elecMonth));
     // 🔥 瓦斯費（繳費期限預設帳單月20日，預設現金）
@@ -7001,6 +7025,7 @@ window.loadDraftState = function(){
     sv('draft-gas-due', d.gasDue || _gEst.due);
     sv('draft-gas-issue', d.gasIssue || estIssueDate('gas', d.gasEnd || _gEst.end, d.gasMonth));
     sc('draft-gas-paid', d.gasPaid);
+    sv('draft-gas-paiddate', d.gasPaidDate);
     // 🌐 網路費：月份自動帶當月；25日信用卡自動扣款、自動視為已繳、無手動勾
     const _autoMonth = String(_td.getMonth()+1).padStart(2,'0');
     sv('draft-net-month', d.netMonth || _autoMonth);
@@ -7043,7 +7068,7 @@ window.clearDraft = function(){
   ['draft-water-month','draft-water','draft-water-start','draft-water-end','draft-water-due',
    'draft-elec-month','draft-elec','draft-elec-kwh','draft-elec-start','draft-elec-end','draft-elec-due',
    'draft-gas-month','draft-gas','draft-gas-start','draft-gas-end','draft-gas-due',
-   'draft-net-month','draft-net','draft-note'].forEach(id=>{
+   'draft-net-month','draft-net','draft-note','draft-water-paiddate','draft-elec-paiddate','draft-gas-paiddate'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.value='';
   });
   ['draft-water-paid','draft-elec-paid','draft-gas-paid'].forEach(id=>{
