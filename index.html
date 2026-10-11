@@ -1,4 +1,10 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(10120133)（ＡＭ２５）
+　・★10120133 帳單暫存區改為每列各自存入（主帥 10/12 01:33 第 4c 點：「建議AI將【📥 帳單暫存區（帳單未收齊時先暫存）】改成可以針對個別項目,例如這次的10月份瓦斯帳單做「存入暫存清單」就好,不要出現【水費】【電費】【網路費】在【📋 已暫存帳單清單（多期、可個別編輯）】。」；Ｃ-76）：水、電、瓦斯、網路四列各加【💾 存入暫存清單（只存○○）】，saveDraftBills(kind) 只存該列並須先選帳單月份；移除下方一次存四類之總按鈕；步驟備註、說明與提示改畫面原字。原因：原總按鈕逐類掃描四列、只略過金額空白者，表單上殘留之其他類別金額會一併存入（原第 3546～3561 行）
+★★★【推定清單】
+　・推定主帥部署後版本標籤為 v10120133、帳單暫存區四列各有一顆存入按鈕 → 若為假：請重新放入網頁倉庫
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(10080758)（ＡＭ２５）
 　・★10080758 入帳紀錄簿步驟備註改為主帥原文（主帥 10/08 07:58 第 4 點 d；Ｃ-68）：「1.先選「房間」。　2.再選「入帳日（實際收到錢的日期）」。　3.按左邊的【🔄 自動帶入租期】。　4.按左邊的【＋ 新增入帳紀錄】。」——原備註寫「房客實際郵局轉帳日」與畫面欄位標題「入帳日（實際收到錢的日期）」不符（ＡＭ２６）；rpAuto 需房間與入帳日、金額空白時自動帶契約月租，故原步驟 2「租金、房客轉帳方式」刪去不影響操作；同列「★若跳出…」句改為畫面詢問原字「【期別】落在 ○○ 結算單的涵蓋範圍內」（原寫「落在結算單涵蓋範圍內」，與第 5200 行詢問文字不符；Ｃ-68 同型）；其餘程式零變動
 ★★★【推定清單】
@@ -746,6 +752,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;">
             <input type="checkbox" id="draft-water-paid" onchange="saveDraft()"> <b>我已繳費給自來水公司</b><div style="font-size:.7rem;color:var(--muted);font-weight:400;margin-left:1.4rem;">（這是「房東對外付款」，不是向房客收款）</div>
           </label>
+          <button class="btn bs sm" onclick="saveDraftBills('water')">💾 存入暫存清單（只存水費）</button>
         </div>
       </div>
     </div>
@@ -790,6 +797,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;margin-top:.2rem;">
           <input type="checkbox" id="draft-elec-paid" onchange="saveDraft()"> <b>我已繳費給台電</b><div style="font-size:.7rem;color:var(--muted);font-weight:400;margin-left:1.4rem;">（這是「房東對外付款」，不是向房客收款）</div>
         </label>
+        <button class="btn bs sm" style="margin-top:.35rem;" onclick="saveDraftBills('elec')">💾 存入暫存清單（只存電費）</button>
       </div>
     </div>
 
@@ -830,6 +838,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem;">
             <input type="checkbox" id="draft-gas-paid" onchange="saveDraft()"> <b>我已繳費給欣嘉瓦斯</b><div style="font-size:.7rem;color:var(--muted);font-weight:400;margin-left:1.4rem;">（這是「房東對外付款」，不是向房客收款）</div>
           </label>
+          <button class="btn bs sm" onclick="saveDraftBills('gas')">💾 存入暫存清單（只存瓦斯費）</button>
         </div>
       </div>
     </div>
@@ -864,6 +873,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         </div>
         <label style="font-size:.74rem;color:var(--muted);margin-top:.25rem;display:block;">📄 帳單產出日（約每月13日，可改）</label>
         <input type="date" id="draft-net-issue" onchange="saveDraft()" title="網路帳單產出日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:100%;box-sizing:border-box;">
+        <button class="btn bs sm" style="margin-top:.35rem;" onclick="saveDraftBills('net')">💾 存入暫存清單（只存網路費）</button>
       </div>
     </div>
 
@@ -875,12 +885,11 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem;margin-top:.3rem;">
       <div id="draft-saved-at" style="font-size:.75rem;color:var(--muted);"></div>
       <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
-        <button class="btn bs sm" onclick="saveDraftBills()">💾 存入暫存清單</button>
         <button class="btn ba sm" onclick="loadDraftToMain()">⬆ 帶入正式帳單計算</button>
         <button class="btn bp sm" onclick="ST('owner-calc')">🏠 前往房東課</button>
         <button class="btn bd sm" onclick="clearDraft()">🗑️ 清除暫存</button>
       </div>
-<div class="step-note" style="flex-basis:100%;">每兩個月水電帳單：1.台電、台水、瓦斯帳單陸續寄來時，每收到一張就填入上方並按【💾 存入暫存清單】。　2.三張都到齊後按【⬆ 帶入正式帳單計算】。　3.往下填「🔌 各房冷氣電表抄錶」「👥 各房計費人數與天數」；家人有回嘉義住，填「🏠 房東家人入住日」。　4.到「📊 計算結果」依那裡的步驟儲存與通知房客。</div>
+<div class="step-note" style="flex-basis:100%;">每兩個月水電帳單：1.台電、台水、瓦斯帳單陸續寄來時，每收到一張就填入上方該列，並按該列的【💾 存入暫存清單（只存水費）】這類按鈕（電費、瓦斯費、網路費各有一顆）。　2.三張都到齊後按【⬆ 帶入正式帳單計算】。　3.往下填「🔌 各房冷氣電表抄錶」「👥 各房計費人數與天數」；家人有回嘉義住，填「🏠 房東家人入住日」。　4.到「📊 計算結果」依那裡的步驟儲存與通知房客。</div>
     </div>
   </div>
 
@@ -888,7 +897,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
   <div class="card" style="border:1.5px solid #2980b9;background:#f0f7fc;">
     <div class="card-title">📋 已暫存帳單清單（多期、可個別編輯）</div>
     <div class="alert-box a-info" style="font-size:.82rem;">
-      填好各類帳單後按「💾 存入暫存清單」，即可分「類別×月份」永久保存（存雲端）。每筆可個別 ✏️編輯、🗑️刪除、📤傳本期帳單。<br>💡 要正式向房客收取：用下方「📥 整期帶入正式帳單」選好期別帶入 → 確認各房電表度數與分攤 → 按計算器的「💾 儲存」即<strong>寫入正式帳單歷史</strong>。
+      每收到一張帳單，填好上方該列後按該列的「💾 存入暫存清單（只存○○）」，即可分「類別×月份」永久保存（存雲端），其他類別不受影響。每筆可個別 ✏️編輯、🗑️刪除、📤傳本期帳單。<br>💡 要正式向房客收取：用下方「📥 整期帶入正式帳單」選好期別帶入 → 確認各房電表度數與分攤 → 按計算器的「💾 儲存」即<strong>寫入正式帳單歷史</strong>。
     </div>
     <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;margin-bottom:.5rem;">
       <span style="font-size:.82rem;font-weight:700;">📥 整期寫入正式帳單：</span>
@@ -2710,7 +2719,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v10080758'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v10120133'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -3538,15 +3547,18 @@ const LANDLORD_PAGES = ['tenants','utility','rent','checkout','former','photos',
 
 // ── 暫存帳單清單（多期、可個別編輯；取代舊預建頁）──────────────
 const DRAFTBILL_META={ water:{icon:'💧',label:'水費'}, elec:{icon:'⚡',label:'電費'}, gas:{icon:'🔥',label:'瓦斯費'}, net:{icon:'🌐',label:'網路費'} };
-window.saveDraftBills = async function(){
+window.saveDraftBills = async function(only){   // ★10120133 每列各自存入（主帥 10/12 01:33 第 4c 點；Ｃ-76）：只存按下那一列，其他類別不動
   const g=id=>document.getElementById(id);
   const yr=new Date().getFullYear();
   if(!DB.draftBills) DB.draftBills=[];
-  let n=0;
-  ['water','elec','gas','net'].forEach(k=>{
+  let n=0; const saved=[];
+  const kinds = only ? [only] : ['water','elec','gas','net'];
+  for(const k of kinds){
+    const lb=(DRAFTBILL_META[k]||{}).label||k;
     const amt=g('draft-'+k)?.value;
-    if(amt===''||amt==null) return;
+    if(amt===''||amt==null){ if(only){ toast('請先填寫'+lb+'金額'); return; } continue; }
     const mm=g('draft-'+k+'-month')?.value||'';
+    if(only && !mm){ toast('請先選擇'+lb+'帳單月份'); return; }
     const _nowM=new Date().getMonth()+1, _y=(mm && !/^\d{6}$/.test(mm) && +mm>_nowM+1) ? yr-1 : yr;   // ★10051738 乙-3：跨年登上一年 11、12 月帳單時推前一年（原一律今年）
     const period = /^\d{6}$/.test(mm) ? mm : (mm ? (''+_y+String(mm).padStart(2,'0')) : '');
     const entry={ id:k+'-'+(period||'na'), kind:k, month:mm, period, amount:+amt,
@@ -3557,18 +3569,18 @@ window.saveDraftBills = async function(){
       savedAt:new Date().toLocaleString('zh-TW') };
     const i=DB.draftBills.findIndex(b=>b.id===entry.id);
     if(i>=0){ entry.createdBy=DB.draftBills[i].createdBy||''; entry.createdAt=DB.draftBills[i].createdAt||''; DB.draftBills[i]=entry; } else DB.draftBills.push(window.stampRec(entry));   // ★10060026 乙-11（同類同月更新沿用原建立者）
-    n++;
-  });
+    n++; saved.push(lb+' '+(entry.period||'—'));
+  }
   if(!n){ toast('沒有可存入的帳單，請先填寫金額'); return; }
   DB.draftBills.sort((a,b)=>(b.period||'').localeCompare(a.period||'')||a.kind.localeCompare(b.kind));
   await saveLandlordData();
   renderDraftBills();
-  toast('✅ 已存入暫存清單（'+n+' 筆；同類別同月份會更新）');
+  toast('✅ 已存入暫存清單：'+saved.join('、')+'（同類別同月份會更新）');
 };
 window.renderDraftBills = function(){
   const el=document.getElementById('draftbills-list'); if(!el) return;
   const list=(DB.draftBills||[]).slice().sort((a,b)=>(b.period||'').localeCompare(a.period||'')||a.kind.localeCompare(b.kind));
-  if(!list.length){ el.innerHTML='<div class="txt-m">尚無暫存帳單。在上方填好金額後按「💾 存入暫存清單」即可保存。</div>'; return; }
+  if(!list.length){ el.innerHTML='<div class="txt-m">尚無暫存帳單。在上方填好某一類帳單後，按該列的「💾 存入暫存清單（只存○○）」即可保存。</div>'; return; }
   el.innerHTML=list.map(b=>{
     const m=DRAFTBILL_META[b.kind]||{icon:'🔧',label:b.kind};
     const det=[];
@@ -3602,7 +3614,7 @@ window.editDraftBill = function(id){
   if(k==='elec') sv('draft-elec-kwh', b.kwh);
   if(window.saveDraft) saveDraft();
   window.scrollTo({top:0,behavior:'smooth'});
-  toast('已載入 '+(DRAFTBILL_META[k]?.label||k)+' '+(b.period||'')+' 到上方表單，改完按「存入暫存清單」更新');
+  toast('已載入 '+(DRAFTBILL_META[k]?.label||k)+' '+(b.period||'')+' 到上方表單，改完按該列的「💾 存入暫存清單」更新');
 };
 window.deleteDraftBill = async function(id){
   if(!window.guardRec((DB.draftBills||[]).find(x=>x.id===id),'刪除'))return;   // ★10060026 乙-11
