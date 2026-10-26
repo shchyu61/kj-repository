@@ -1,4 +1,13 @@
 <!-- ═══════════════════════════════════════════════════════════
+★★★【自我舉證表】index(10260855)（ＡＭ２５）
+　・★10260855 先修後報：哥弟結算信「（我多負責 1 元）」原寫死，改為金額為奇數才印（主帥 10/26 01:43 第 4 點）
+　・★10260855 先修後報：帳單暫存區選月份時一併重算「帳單產出日」；網路費月份選單補 onchange；水費產出日改回主帥 06/13 定案「帳單月份的5日」（主帥 10/26 01:43 第 3 點截圖 10251523）
+　・★10260855 題 D 甲加強版：簡易催收明細加「🎁 房客協助折讓」（金額、原因、哥全額吸收／兄弟各半），催收明細與房客端帳單顯示折讓後金額；兄弟各半時自動套入從轉帳扣弟一半（主帥 10/26 02:23 第 4 點）
+　・★10260855 主帥 10/26 02:23 第 5、7、8 點：兩個起算月欄位加用途說明；填填樂標籤顯示下一期實際月份、舊期暫存自動清空；存水電帳單後立即重繪 1 樓公共電費歷史
+★★★【推定清單】
+　・推定主帥部署後版本標籤為 v10260855；暫存區選 10月 時水費產出日 10/05、網路費 10/13；填填樂標籤為「10月／11月／12月入住日」 → 若為假：請重新放入網頁倉庫
+═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(10120158)（ＡＭ２５）
 　・★10120158 暫存帳單加「繳費日」（主帥 10/12 01:58 第 3 點：「為什麼沒有出現在【📋 已暫存帳單清單（多期、可個別編輯）】1:25AM的繳費資訊?這樣等我月底水費電費網路費都齊全後,我要按【傳本期帳單】時,我早就忘記我是哪一天繳10月份的瓦斯帳單282元了!?」；Ｃ-77）：水、電、瓦斯三列各加「📅 繳費日」，勾「我已繳費」時未填則自動帶今天（可改）；存入清單與清單顯示「✅已繳 YYYY-MM-DD」；編輯、本機暫存、清除暫存同步。原因：原暫存帳單只存「已繳／未繳」，無繳費日欄位（原第 3552～3569 行 entry）
 　・★10120158 先修後報：清單繳費方式原只分「現金／信用卡」（原 b.pay==='cash'?'現金':'信用卡'），選「台灣PAY繳費」「郵局APP」也顯示「信用卡」；改依選項顯示原字
@@ -743,7 +752,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
           <input type="date" id="draft-water-start" onchange="saveDraft()" title="計費起日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
           <input type="date" id="draft-water-end" onchange="saveDraft()" title="計費迄日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:50%;box-sizing:border-box;">
         </div>
-        <label style="font-size:.74rem;color:var(--muted);margin-top:.25rem;display:block;">📄 帳單產出日（約每期月底，可改）</label>
+        <label style="font-size:.74rem;color:var(--muted);margin-top:.25rem;display:block;">📄 帳單產出日（約帳單月 5 日，可改）</label>
         <input type="date" id="draft-water-issue" onchange="saveDraft()" title="水費帳單產出日" style="font-size:.72rem;padding:2px 3px;border:1px solid var(--border);border-radius:.3rem;width:100%;box-sizing:border-box;">
       </div>
       <div><label>繳費方式 / 期限 / 狀態</label>
@@ -859,7 +868,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
     <!-- 網路費 (每月) -->
     <div class="form-row c3" style="background:#f0fff0;border-radius:.7rem;padding:.5rem .6rem;margin-bottom:.4rem;">
       <div><label>🌐 網路費帳單月份</label>
-        <select id="draft-net-month">
+        <select id="draft-net-month" onchange="onBillMonthChange('net')">
           <option value="">-- 選擇月份 --</option>
           <option value="01">01月</option><option value="02">02月</option>
           <option value="03">03月</option><option value="04">04月</option>
@@ -2220,6 +2229,7 @@ td.tot{font-weight:900;color:var(--danger);background:#fff8f0;}
         <input type="text" id="bs-bill-base" placeholder="202602" onchange="bsSetBillBase()"></div>
       <div style="display:flex;align-items:flex-end;font-size:.75rem;color:var(--muted);" id="bs-net-info">—</div>
     </div>
+    <div class="step-note" style="flex-basis:100%;font-size:.75rem;">🛈 這兩格是「自動套入」的起點，平常不用動（★10260855 主帥 10/26 02:23 第 5 點要求加註）：①「房租／網路 起算月」：網路費從這個月起逐月算到本月、扣掉已結算月份；房租只找這個月（含）以後還沒結算的收租紀錄。②「水電帳單／公共電費 起算期別」：只找這一期（含）以後、還沒標記結算的水電帳單與 1 樓公共電費。比它早的期別一律不算，防止 9/21 事故還原前的舊資料被重複結算。只有要補算更早的舊帳時才改：填 6 碼年月（如 202609）→ 點別處 → 自動存雲端並重新套入。</div>
     <div id="bs-gmail-out"></div>
   </div>
 
@@ -2732,7 +2742,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v10120158'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v10260855'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -5523,7 +5533,7 @@ function renderMyBill(){
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div><div style="font-weight:900;">📅 ${b.period} 期</div>
         <div class="txt-m">${b.dateStart}～${b.dateEnd}</div></div>
-        <span style="font-weight:900;font-size:1.05rem;color:var(--danger);">NT$${(r.total+(rent||0)).toLocaleString()}</span>
+        <span style="font-weight:900;font-size:1.05rem;color:var(--danger);">NT$${(r.total-(+r.discount||0)+(rent||0)).toLocaleString()}${(+r.discount||0)>0?'<div class="txt-m" style="font-size:.72rem;">含協助折讓 −'+(+r.discount).toLocaleString()+'</div>':''}</span>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.4rem;margin-top:.5rem;">
         <div style="text-align:center;padding:.4rem;background:var(--card);border-radius:.6rem;border:1px solid var(--border2);">
@@ -5544,7 +5554,7 @@ function renderMyBill(){
   });
   // 統計
   let totalE=0,totalW=0,totalG=0,totalAll=0;
-  myBills.forEach(b=>{const r=b.rooms[myRoom];totalE+=(r.acFee||0)+(r.sharedElec||0);totalW+=r.water||0;totalG+=r.gas||0;totalAll+=r.total||0;});
+  myBills.forEach(b=>{const r=b.rooms[myRoom];totalE+=(r.acFee||0)+(r.sharedElec||0);totalW+=r.water||0;totalG+=r.gas||0;totalAll+=(r.total||0)-(+r.discount||0);});
   document.getElementById('my-bill-stats').innerHTML=`<div class="result-box">
     <div class="rrow"><span class="lbl">累計電費</span><span>NT$${totalE.toLocaleString()}</span></div>
     <div class="rrow"><span class="lbl">累計水費</span><span>NT$${totalW.toLocaleString()}</span></div>
@@ -5910,11 +5920,16 @@ window.estimateBillDates = function(kind, mm){
 // 帳單月份變更→重新預估起迄與繳費期限
 window.onBillMonthChange = function(kind){
   const mm=document.getElementById('draft-'+kind+'-month')?.value||'';
-  const est=estimateBillDates(kind, mm);
   const sv=(id,v)=>{const el=document.getElementById(id); if(el) el.value=v;};
-  sv('draft-'+kind+'-start', est.start);
-  sv('draft-'+kind+'-end',   est.end);
-  sv('draft-'+kind+'-due',   est.due);
+  if(kind!=='net'){
+    const est=estimateBillDates(kind, mm);
+    sv('draft-'+kind+'-start', est.start);
+    sv('draft-'+kind+'-end',   est.end);
+    sv('draft-'+kind+'-due',   est.due);
+    sv('draft-'+kind+'-issue', estIssueDate(kind, est.end, mm));   // ★10260855 先修後報：帳單產出日隨帳單月份重算（主帥 10/26 01:43 第 3 點截圖）
+  } else {
+    sv('draft-net-issue', estIssueDate('net','', mm));   // ★10260855 同上：網路費選月份即重算產出日（原無 onchange，10月仍顯示 06/13）
+  }
   saveDraft();
 };
 // 點1：弟弟 Gmail 通知設定（存 Firebase，狀態持久）
@@ -6096,7 +6111,31 @@ window.tsbOnRoom = function(){
     const rc=(b.roomCollect||{})[room]||{}; const unpaid=!rc.paid;
     const mo=+(''+(b.period||'')).slice(4,6);
     return '<label style="display:block;margin:.25rem 0;"><input type="checkbox" class="tsb-bill" value="'+b.period+'" '+(unpaid?'checked':'')+' onchange="genTenantSimpleBill()"> '+mo+'月帳單　應繳 $'+((b.rooms[room].total||0).toLocaleString())+' '+(unpaid?'<span style="color:var(--danger);font-size:.75rem;">(未收)</span>':'<span style="color:var(--muted);font-size:.75rem;">(已收)</span>')+'</label>';
-  }).join('');
+  }).join('')+window._tsbDiscHtml(room,bills);
+  genTenantSimpleBill();
+};
+// ★10260855 題 D 甲加強版：房客協助折讓（主帥 10/26 02:23 第 4 點：「此次優待湯富傑210元,是我自作主張,由我自己吸收…之後的優待方案,若需要我弟負責一半,我希望網頁版可讓我自主選擇。」）
+window._tsbDiscHtml = function(room,bills){
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  return '<div style="margin-top:.5rem;padding:.5rem .6rem;border:1px dashed var(--gold);border-radius:.6rem;background:#fffdf5;">'+
+    '<div style="font-weight:900;color:var(--primary);font-size:.85rem;">🎁 房客協助折讓（例：房客幫忙拍電表，本期少收）</div>'+
+    '<div class="step-note" style="font-size:.75rem;">步驟：①填折讓金額 ②填原因（原樣印在房客通知信：信首「因為３樓房客＋原因」與該房「只收」列，例：協助拍照電表）③選由誰吸收——「哥全額吸收」不影響給弟的結算；「兄弟各半」時，自動套入會從轉帳扣弟的一半（奇數哥多負責 1 元）。填完自動存雲端，下方明細與房客端帳單同步顯示折讓後金額。（網頁另有「房客優待」＝本期合計捨去到十位，兩者不同）</div>'+
+    bills.map(function(b){
+      const r=b.rooms[room]||{}; const mo=+(''+(b.period||'')).slice(4,6); const id=room+'_'+b.period;
+      window._tsbRoom=room; const on=' onchange="_tsbDiscSave(window._tsbRoom,\''+(+b.period||0)+'\')"';
+      return '<div style="display:flex;flex-wrap:wrap;gap:.35rem;align-items:center;margin:.3rem 0;font-size:.8rem;">'+mo+'月帳單：折讓 '+
+        '<input type="number" min="0" style="width:5.5rem;" id="tsbd-a-'+id+'" value="'+((+r.discount)||'')+'"'+on+'> 元　原因 '+
+        '<input type="text" style="width:10rem;" id="tsbd-n-'+id+'" value="'+esc(r.discountNote)+'"'+on+'>　由 '+
+        '<select id="tsbd-s-'+id+'"'+on+'><option value="me"'+(r.discountSplit!=='half'?' selected':'')+'>哥全額吸收</option><option value="half"'+(r.discountSplit==='half'?' selected':'')+'>兄弟各半</option></select>'+
+        (b.bxSettled?'<span style="color:var(--muted);">（此期已與弟結算：選「兄弟各半」不會回溯改已轉帳金額）</span>':'')+'</div>';
+    }).join('')+'</div>';
+};
+window._tsbDiscSave = async function(room,period){
+  const id=room+'_'+period; const b=(DB.utilBills||[]).find(x=>''+x.period===''+period); if(!b||!b.rooms||!b.rooms[room]) return;
+  const r=b.rooms[room]; const a=Math.max(0,Math.round(+(document.getElementById('tsbd-a-'+id)?.value||0)));
+  if(a>0){ r.discount=a; r.discountNote=(document.getElementById('tsbd-n-'+id)?.value||'').trim(); r.discountSplit=(document.getElementById('tsbd-s-'+id)?.value==='half')?'half':'me'; }
+  else { delete r.discount; delete r.discountNote; delete r.discountSplit; }
+  try{ await saveLandlordData(); toast('✅ 已存協助折讓：'+period+' '+(RL[room]||room)+' '+a+' 元'); }catch(e){ toast('⚠️ 儲存失敗，請重試'); }
   genTenantSimpleBill();
 };
 window.genTenantSimpleBill = function(){
@@ -6119,7 +6158,9 @@ window.genTenantSimpleBill = function(){
     const mo=+(''+(b.period||'')).slice(4,6);
     const rng=(md(b.dateStart)&&md(b.dateEnd))?('('+md(b.dateStart)+'～'+md(b.dateEnd)+')'):'';
     const acNote=(r.acFee||0)>0?('（含冷氣 '+f(r.acFee)+'）'):'';
-    utilLines.push('　　・'+mo+'月帳單'+rng+'：電 '+f(elec)+acNote+'＋水 '+f(r.water||0)+'＋瓦斯 '+f(r.gas||0)+' → 應繳 '+f(tot));
+    const _dc=+r.discount||0;   // ★10260855 題 D：協助折讓
+    if(_dc>0){ utilSum-=_dc; utilLines.push('　　・'+mo+'月帳單'+rng+'：電 '+f(elec)+acNote+'＋水 '+f(r.water||0)+'＋瓦斯 '+f(r.gas||0)+' → 應繳 '+f(tot)+'，協助折讓 −'+f(_dc)+(r.discountNote?'（'+r.discountNote+'）':'')+' → 實繳 '+f(tot-_dc)); }
+    else utilLines.push('　　・'+mo+'月帳單'+rng+'：電 '+f(elec)+acNote+'＋水 '+f(r.water||0)+'＋瓦斯 '+f(r.gas||0)+' → 應繳 '+f(tot));
   });
   const grand=rentSum+utilSum;
   let txt='房租＋水電瓦斯 費用明細（'+(RL[room]||room)+'）\n';
@@ -6464,6 +6505,8 @@ window.billBase   = function(){ return ''+(DB.billBaseMonth||'202602'); };      
 // ★兩者不可共用：水電帳單「期別」與網路費「月份」的編號基準不同
 //   （例：202602 期水電帳單涵蓋 2025/12/08~2026/02/02，仍屬本次結算範圍；
 //     而網路費自 202603 起才由哥支付）
+// ★10260855 先修後報：存水電帳單後立即重繪 1 樓公共電費歷史（主帥 10/26 02:23 第 8 點：輸入後要按重新整理才出現）
+(function(){ const _o=window.saveUtilBill; if(typeof _o!=='function') return; window.saveUtilBill=async function(){ const _r=await _o.apply(this,arguments); try{ if(window.bsRenderPubHistory) window.bsRenderPubHistory(); }catch(_e){} return _r; }; })();
 window.bsUnsettledNetMonths = function(){
   const base = window.settleBase();
   const now = new Date();
@@ -6485,7 +6528,7 @@ window.bsUnsettledNetMonths = function(){
 };
 window.bsAutoFill3 = function(silent){
   const bills = DB.utilBills||[];
-  let adv=0, odd=0, pubBro=0, pubBig=0, nAdv=0;
+  let adv=0, odd=0, pubBro=0, pubBig=0, nAdv=0, discBro=0; const discLines=[];   // ★10260855 題 D：兄弟各半之協助折讓
   const _base = window.settleBase();     // 房租／網路
   const _bbase = window.billBase();      // 水電帳單／公共電費
   const unassigned = [];
@@ -6496,6 +6539,7 @@ window.bsAutoFill3 = function(silent){
     odd += (+b.n9||0);
     pubBro += (+b.pubBro||0);
     pubBig += (+b.pubBig||0);
+    Object.entries(b.rooms||{}).forEach(function([rk,rr]){ if(rr&&rr.discountSplit==='half'&&(+rr.discount||0)>0){ const h=Math.floor((+rr.discount)/2); discBro+=h; discLines.push('・'+b.period+' 期 '+(RL[rk]||rk)+' 折讓 '+(+rr.discount).toLocaleString()+(rr.discountNote?'（'+rr.discountNote+'）':'')+' → 你負擔 '+h.toLocaleString()); } });
     if(b.utilPaidBy==='弟'){ adv += (+b.n14||0); nAdv++; }   // ★只算「明示弟先付」，不再預設弟
   });
   let rent=0, nRent=0;
@@ -6549,6 +6593,7 @@ window.bsAutoFill3 = function(silent){
     const _y=+maxP.slice(0,4), _m=+maxP.slice(4,6);
     cutoff=_y+'年'+_m+'/'+new Date(_y,_m,0).getDate();      // 例：202607 → 2026年7/31
   }
+  window._bsDiscBro=discBro; window._bsDiscLines=discLines;
   window._bsDetail={rentLines:rentLines, pubLines:pubLines, periods:periods,
                     unassigned:unassigned, cutoff:cutoff, netMonths:nmAll};
   if(unassigned.length && !silent){
@@ -6604,8 +6649,9 @@ window.calcBroSettle = function(){
   const pubToBro = pubBro - pubBroShare;         // 弟已代墊 − 弟應負 ＝ 哥應補弟(可為負)
   let commonToBro=0;                             // ⑤共同費用：弟已付 − 弟應負(floor) 之總和
   commonList.forEach(function(c){ const amt=+c.amount||0; commonToBro += ((c.payer==='弟')?amt:0) - Math.floor(amt/2); });
-  const transfer = rentBro + utilToBro - netBro + pubToBro + commonToBro;
-  window._bsCalc={rent,net,adv,paid,odd,oddBro,broBear,rentBro,utilToBro,netBro,pubBro,pubBig,pubTotal,pubBroShare,pubToBro,common:commonList,commonToBro,transfer,oddOwner};
+  const discBro = +(window._bsDiscBro||0);   // ★10260855 題 D：兄弟各半之協助折讓，弟負擔一半（floor，哥多 1）
+  const transfer = rentBro + utilToBro - netBro + pubToBro + commonToBro - discBro;
+  window._bsCalc={rent,net,adv,paid,odd,oddBro,broBear,rentBro,utilToBro,netBro,pubBro,pubBig,pubTotal,pubBroShare,pubToBro,common:commonList,commonToBro,discBro,transfer,oddOwner};
   const f=n=>Math.round(n).toLocaleString();
   document.getElementById('bs-detail').innerHTML=
     '<div style="font-size:.85rem;line-height:1.95;">'+
@@ -6652,16 +6698,16 @@ ${D.rentLines.length?D.rentLines.join('\n'):'・（明細請見網頁「收租�
 ${c.odd?(oddAll?`（水電帳單的零頭 ${f(c.odd)} 元，全部由我吸收，不用你負擔）\n`:`（水電帳單的零頭 ${f(c.odd)} 元，我們各負責一半，你負擔 ${f(c.oddBro)} 元）\n`):''}${advSentence}
 
 【3. 網路費】
-網路費 ${f(c.net)} 元（${nm.length?nm.map(ymTxt).join('、'):'—'}，每月 ${f(fee)} 元 × ${nMon} 個月）是我先付的，你負責一半 ${f(c.netBro)} 元（我多負責 1 元）。
+網路費 ${f(c.net)} 元（${nm.length?nm.map(ymTxt).join('、'):'—'}，每月 ${f(fee)} 元 × ${nMon} 個月）是我先付的，你負責一半 ${f(c.netBro)} 元${(c.net%2)?'（我多負責 1 元）':''}。
 這 ${f(c.netBro)} 元你不用另外拿錢給我，我會直接從「我要轉帳給你的錢」裡面扣掉。
 ${c.pubTotal?`
 【4. 公共電費（1樓大廳）】
 這是 1 樓大廳的電費（電號…14-5），房客不分攤，只有我們兩人各負責一半。各期明細：
 ${D.pubLines.length?D.pubLines.join('\n'):'・（明細請見網頁「1樓公共電費歷史」）'}
-合計 ${f(c.pubTotal)} 元，各負責一半 → 你應該負擔 ${f(c.pubBroShare)} 元（我多負責 1 元）。
+合計 ${f(c.pubTotal)} 元，各負責一半 → 你應該負擔 ${f(c.pubBroShare)} 元${(c.pubTotal%2)?'（我多負責 1 元）':''}。
 你實際已經代墊了 ${f(c.pubBro)} 元，${c.pubToBro>=0?`比應負擔的多墊了 ${f(c.pubToBro)} 元，所以我要補你 ${f(c.pubToBro)} 元。`:`比應負擔的還少 ${f(Math.abs(c.pubToBro))} 元，所以這 ${f(Math.abs(c.pubToBro))} 元我會從轉帳金額裡面扣掉。`}
 `:''}${(c.common&&c.common.length)?`
-【${c.pubTotal?5:4}. 其他共同費用（各負責一半，我多負責 1 元）】
+【${c.pubTotal?5:4}. 其他共同費用（各負責一半${c.common.some(function(x){return (+x.amount||0)%2;})?'，金額為奇數者我多負責 1 元':''}）】
 ${c.common.map(function(x){
    const _d=String(x.date||''), _s=String(x.desc||'');
    const _pre=(_d && _s.indexOf(_d)!==0) ? _d+' ' : '';
@@ -6669,9 +6715,13 @@ ${c.common.map(function(x){
  }).join('\n')}
 我先付的部分，你要付給我 ${f(owedToMe)} 元；你先付的部分，我要付給你 ${f(owedToYou)} 元。
 ${c.commonToBro>=0?`兩邊相抵 → 我還要補你 ${f(Math.abs(c.commonToBro))} 元。`:`兩邊相抵 → 你還要補我 ${f(Math.abs(c.commonToBro))} 元，這筆我會從轉帳金額裡面扣掉。`}
+`:''}${c.discBro?`
+【房客協助折讓（兄弟各半）】
+${(window._bsDiscLines||[]).join('\n')}
+合計你負擔 ${f(c.discBro)} 元（金額為奇數者我多負責 1 元），這筆我會從轉帳金額裡面扣掉。
 `:''}
 【結算】這次我轉帳給你：
-${f(c.rentBro)}（房租）＋ ${f(c.utilToBro)}（水電補你）－ ${f(c.netBro)}（網路）${c.pubTotal?(c.pubToBro>=0?'＋ '+f(c.pubToBro)+'（公共電費）':'－ '+f(Math.abs(c.pubToBro))+'（公共電費）'):''}${c.commonToBro?(c.commonToBro>=0?'＋ '+f(c.commonToBro)+'（共同費用）':'－ '+f(Math.abs(c.commonToBro))+'（共同費用）'):''} ＝ ${f(c.transfer)} 元`;
+${f(c.rentBro)}（房租）＋ ${f(c.utilToBro)}（水電補你）－ ${f(c.netBro)}（網路）${c.pubTotal?(c.pubToBro>=0?'＋ '+f(c.pubToBro)+'（公共電費）':'－ '+f(Math.abs(c.pubToBro))+'（公共電費）'):''}${c.discBro?'－ '+f(c.discBro)+'（協助折讓）':''}${c.commonToBro?(c.commonToBro>=0?'＋ '+f(c.commonToBro)+'（共同費用）':'－ '+f(Math.abs(c.commonToBro))+'（共同費用）'):''} ＝ ${f(c.transfer)} 元`;
   window._bsGmailText=txt;
   const out=document.getElementById('bs-gmail-out');
   if(out){
@@ -6910,7 +6960,11 @@ window.estIssueDate = function(kind, endDate, month){
     const x=new Date(d+'T00:00:00'); if(isNaN(x)) return '';
     x.setDate(x.getDate()+addDays);
     return x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(x.getDate()); };
-  if(kind==='water') return fromEnd(endDate,0);
+  if(kind==='water'){   // ★10260855 先修後報：改回主帥 06/13 定案「水費帳單產出日＝帳單月份的5日」（08160140 改以計費迄日預估，10月帳單顯示 8/28）
+    const m=+month||0; if(!m) return fromEnd(endDate,0);
+    const y=new Date().getFullYear() - ((m > new Date().getMonth()+2) ? 1 : 0);
+    return y+'-'+pad(m)+'-05';
+  }
   /* ★08170927 修正：原本預估「計費迄日次日（＝抄表日）」＝ 8/07，
      ★但主帥實測 202608 電費帳單是【8/13】才產出，預估值是錯的。
      ★過往期別由弟弟負責，主帥無法確認是否也都是 13 號，
@@ -7119,14 +7173,28 @@ window.saveLandlordDraft = function(){
     ltM2:document.getElementById('draft-lt-m2')?.value||'',
     ltM3:document.getElementById('draft-lt-m3')?.value||'',
     savedAt:new Date().toLocaleString('zh-TW'),
+    forStart:(window._ltDraftTarget?window._ltDraftTarget().key:''),   // ★10260855 記下這份暫存屬於哪一期起
   };
   localStorage.setItem('landlordDraft', JSON.stringify(d));
   const el=document.getElementById('draft-lt-saved-at');
   if(el) el.textContent='💾 已暫存：'+d.savedAt;
 };
+// ★10260855 填填樂月份：依最新一期已存水電帳單的計費迄日次日推下一期的 3 個月（主帥 10/26 02:23 第 7 點截圖 10260211）
+window._ltDraftTarget = function(){
+  const bs=(DB.utilBills||[]).filter(b=>b&&b.dateEnd).slice().sort((a,b)=>(''+(b.period||'')).localeCompare(''+(a.period||'')));
+  let x=bs.length?new Date(bs[0].dateEnd+'T00:00:00'):new Date(); if(bs.length) x.setDate(x.getDate()+1);
+  const ms=[0,1,2].map(k=>{ const d=new Date(x.getFullYear(), x.getMonth()+k, 1); return {y:d.getFullYear(), m:d.getMonth()+1}; });
+  return {key:''+ms[0].y+String(ms[0].m).padStart(2,'0'), ms:ms};
+};
 window.loadLandlordDraftState = function(){
   try{
-    const d=JSON.parse(localStorage.getItem('landlordDraft')||'{}');
+    let d=JSON.parse(localStorage.getItem('landlordDraft')||'{}');
+    const _t=window._ltDraftTarget();
+    _t.ms.forEach(function(o,k){ const el=document.getElementById('draft-lt-m'+(k+1)+'-label'); if(el) el.textContent=o.m+'月入住日（'+o.y+'/'+String(o.m).padStart(2,'0')+'）'+(k===2?'（選填）':''); });
+    if(d.forStart && d.forStart!==_t.key && (d.ltM1||d.ltM2||d.ltM3)){
+      try{ localStorage.removeItem('landlordDraft'); }catch(_){}
+      const _old=d.forStart; d={}; setTimeout(function(){ const el=document.getElementById('draft-lt-saved-at'); if(el) el.textContent='⚠️ 上次暫存是 '+(+_old.slice(4,6))+' 月起的入住日（已屬上一期），已自動清空，請填本期'; },0);
+    }
     if(document.getElementById('draft-lt-m1')) document.getElementById('draft-lt-m1').value=d.ltM1||'';
     if(document.getElementById('draft-lt-m2')) document.getElementById('draft-lt-m2').value=d.ltM2||'';
     if(document.getElementById('draft-lt-m3')) document.getElementById('draft-lt-m3').value=d.ltM3||'';
@@ -7274,7 +7342,22 @@ window.renderUtilHistory = function(){
    ★引號一律用「」，不用『』（主帥引述對話時慣用『』，避免互相干擾）。 */
 const BILL_FOOTER_POST='●各項費用請以【郵局】轉帳給余科蓁。郵局帳號在此群組的【相簿】裡面，有郵局存摺照片檔。\n\n●請於收到本帳單後【7 天內】，完成【郵局】轉帳，謝謝。\n\n●台電、台水、瓦斯公司的「最後應繳日」為每期的 2/19、4/19、6/19、8/19、10/19、12/19，逾期將被處罰併入下期帳單。';
 const BILL_DEFER='●此次費用合併計算，費用較多，若房客當月生活費預算卡住，可延到下個月6號前，再轉帳。\n（若您的公司是每個月１０號發薪日，可順延到下個月１１號再轉帳，謝謝您）\n（學生房客：若本月生活費預算卡住，可順延到下個月１１號再轉帳，謝謝您）';
-window.genSingleBillFull = function(b){ const z=genSingleBillText(b); return z? z+'\n\n\n'+BILL_FOOTER_POST : ''; };
+/* ★10260855 房客通知信協助折讓（主帥 2026/10/26 08:55 第 2 點、08:57 補充：「金額和房客和協助內容,請勿寫死」；Ｃ-109）
+   有協助折讓（💡水電帳單 → 簡易催收明細 →「🎁 房客協助折讓」）之期別，信首加兩行說明，該房列「$實收（$原價，原因，只收$實收）」；
+   房客稱呼依房號樓層（同樓層另有房客時改用「3樓前房客」）；原因取折讓欄所填文字；其餘各列（零頭、合計、每度電、房東天數）不變。 */
+window._billDiscHead = function(bills){
+  const fw=function(d){ return String(d).replace(/[0-9]/g,function(c){ return String.fromCharCode(c.charCodeAt(0)+0xFEE0); }); };
+  const fl=function(r){ return ((''+r).match(/^(\d+)F/)||[])[1]||''; };
+  const items=[];
+  (bills||[]).forEach(function(b){ const R=(b&&b.rooms)||{};
+    ROOMS.forEach(function(r){ const x=R[r]||{}; if(!((+x.discount||0)>0)) return;
+      const f1=fl(r); const same=ROOMS.filter(function(o){ return o!==r && fl(o)===f1 && (((DB.tenants||{})[o]||{}).status==='occupied'); }).length;
+      const who=(f1&&!same)? fw(f1)+'樓房客' : (RL[r]||r)+'房客';
+      const s1=who+((x.discountNote||'').trim()||'協助');
+      if(items.indexOf(s1)<0) items.push(s1); }); });
+  return items.length? '因為'+items.join('、')+'，本期帳單金額以此文字為主。\n（截圖的原價金額是固定公式，截圖金額本期請忽視。）\n\n' : '';
+};
+window.genSingleBillFull = function(b){ const z=genSingleBillText(b); return z? window._billDiscHead([b])+z+'\n\n\n'+BILL_FOOTER_POST : ''; };
 window.genSingleBillText = function(b){
   if(!b) return '';
   const R=b.rooms||{};
@@ -7295,7 +7378,8 @@ window.genSingleBillText = function(b){
      ★這些空行是主帥為了方便房客閱覽而加的，★不是多餘，先前我誤以為是網頁多加了空行，
        方向完全相反（實際是網頁少了空行）。 */
   let t=`●${yr}年${mo}月水、電、瓦斯、冷氣帳單\n\n`;
-  ROOMS.forEach(r=>{ t+=`　　${RL[r]||r}　$${f(((R[r]||{}).total)||0)}\n`; });
+  ROOMS.forEach(r=>{ const x=R[r]||{}; const tt=x.total||0; const dd=Math.min(+x.discount||0,tt);
+    t+= dd>0 ? `　　${RL[r]||r}　$${f(tt-dd)}（$${f(tt)}，${(x.discountNote||'').trim()||'協助'}，只收$${f(tt-dd)}）\n` : `　　${RL[r]||r}　$${f(tt)}\n`; });   // ★10260855 協助折讓列（Ｃ-109）
   t+=`　　房東贊助房客零頭　$${f(N9)}\n`;
   if(tcWEG>0) t+=`　　房東未常住贊助水電瓦斯　$${f(tcWEG)}\n`;
   t+=`　　我本期水電瓦斯　$${f(ltWEG)}\n`;
@@ -7317,9 +7401,9 @@ window.genMultiBillText = function(periods){
   /* ★08170913：合併小計的框改用「」，不用『』。
      原因：主帥在對話中引述文字時慣用『』，若帳單內也用『』會變成『『』』互相干擾。
      ★其餘格式（第1行的 ●、▲▲▲ 前後空行、各期的 ●）一律維持原樣，未做任何更動。 */
-  let t=`●${yr}年${moList}水、電、瓦斯、冷氣帳單\n\n「\n`;
+  let t=window._billDiscHead(bills)+`●${yr}年${moList}水、電、瓦斯、冷氣帳單\n\n「\n`;
   ROOMS.forEach(r=>{
-    const vals=bills.map(b=>((b.rooms||{})[r]||{}).total||0);
+    const vals=bills.map(b=>{ const x=((b.rooms||{})[r]||{}); return (x.total||0)-Math.min(+x.discount||0,x.total||0); });   // ★10260855 合併小計以實收計（Ｃ-109）
     const sum=vals.reduce((sm,v)=>sm+v,0);
     if(sum<=0) return;
     const parts=vals.map(v=>'$'+v.toLocaleString()).join('　＋　');
