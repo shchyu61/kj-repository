@@ -1,11 +1,11 @@
 <!-- ═══════════════════════════════════════════════════════════
-★★★【自我舉證表】index(10261037)（ＡＭ２５）
+★★★【自我舉證表】index(10261739)（ＡＭ２５）
 　・★10260926 先修後報：哥弟結算信「（我多負責 1 元）」原寫死，改為金額為奇數才印（主帥 10/26 01:43 第 4 點）
 　・★10260926 先修後報：帳單暫存區選月份時一併重算「帳單產出日」；網路費月份選單補 onchange；水費產出日改回主帥 06/13 定案「帳單月份的5日」（主帥 10/26 01:43 第 3 點截圖 10251523）
 　・★10260926 題 D 甲加強版：簡易催收明細加「🎁 房客協助折讓」（金額、原因、哥全額吸收／兄弟各半），催收明細與房客端帳單顯示折讓後金額；兄弟各半時自動套入從轉帳扣弟一半（主帥 10/26 02:23 第 4 點）
 　・★10260926 主帥 10/26 02:23 第 5、7、8 點：兩個起算月欄位加用途說明；填填樂標籤顯示下一期實際月份、舊期暫存自動清空；存水電帳單後立即重繪 1 樓公共電費歷史
 ★★★【推定清單】
-　・推定主帥部署後版本標籤為 v10261037；暫存區選 10月 時水費產出日 10/05、網路費 10/13；填填樂標籤為「10月／11月／12月入住日」 → 若為假：請重新放入網頁倉庫
+　・推定主帥部署後版本標籤為 v10261739；暫存區選 10月 時水費產出日 10/05、網路費 10/13；填填樂標籤為「10月／11月／12月入住日」 → 若為假：請重新放入網頁倉庫
 ═══════════════════════════════════════════════════════════ -->
 <!-- ═══════════════════════════════════════════════════════════
 ★★★【自我舉證表】index(10120158)（ＡＭ２５）
@@ -2742,7 +2742,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v10261037'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v10261739'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -4827,6 +4827,7 @@ window.saveUtilBill = async function(sendEmail=true){
   const idx=DB.utilBills.findIndex(b=>b.period===period);
   const _exist=idx>=0?DB.utilBills[idx]:null;
   bill.rooms=window._mergeDisc(bill.rooms,period);   // ★10260926 重存保留【收租紀錄】存的協助折讓（Ｃ-110）
+  if(_exist&&_exist.bxSettled) bill.bxSettled=true;   // ★10261615 重存保留「已與弟結算」旗標（先修後報）
   bill.deferred=document.getElementById('u-deferred')?.checked||false;
   bill.collectedDate=bill.deferred?'':((_exist&&_exist.collectedDate)?_exist.collectedDate:'');
   if(window._ensureRoomCollect)_ensureRoomCollect(bill);
@@ -6572,7 +6573,15 @@ window.bsUnsettledNetMonths = function(){
   }
   return out;
 };
+/* ★10261615 結算旗標保留（先修後報；證據：10/26 02:22 備份 202610 期水電帳單 bxSettled＝true，10/26 16:12 備份已無，savedAt 10/26 13:01＝主帥在【水電帳單】重存該期；結算單 1792951585255 billPeriods 含 202610）：
+   saveUtilBill 整筆覆寫會遺失 bxSettled → 11/15 房東課「自動套入」會把已結算的 10 月帳單再算一次。修法：重存保留 bxSettled；並以仍存在之已確認結算單 billPeriods 補回遺失旗標（撤銷結算會刪除結算單，不受影響）。 */
+window._healBxSettled=function(){
+  const per=new Set(); (DB.settlements||[]).forEach(function(s){ if(s && s.confirmed!==false) (s.billPeriods||[]).forEach(function(p){ per.add(String(p)); }); });
+  let n=0; (DB.utilBills||[]).forEach(function(b){ if(b && !b.bxSettled && per.has(String(b.period||''))){ b.bxSettled=true; n++; } });
+  return n;
+};
 window.bsAutoFill3 = function(silent){
+  try{ window._healBxSettled(); }catch(e){}
   const bills = DB.utilBills||[];
   let adv=0, odd=0, pubBro=0, pubBig=0, nAdv=0, discBro=0; const discLines=[];   // ★10260926 題 D：兄弟各半之協助折讓
   const _base = window.settleBase();     // 房租／網路
@@ -7290,6 +7299,7 @@ window.addBlacklistNote = function(){
   toast(`📋 請到程式碼第【1-7】章節手動加入：'${val}'`);
 };
 window.renderUtilHistory = function(){
+  try{ window._healBxSettled&&window._healBxSettled(); }catch(e){}   // ★10261615 顯示前補回遺失之結算旗標
   const el=document.getElementById('util-bill-history');
   if(!el)return;
   if(!DB.utilBills||!DB.utilBills.length){
