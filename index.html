@@ -1,5 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════════
-★★★【自我舉證表】index(10261739)（ＡＭ２５）
+★★★【自我舉證表】index(11081808)（ＡＭ２５）
+　・★11081808 主帥 2026/11/08 18:08 第 2 點：「我回答:保留原價1710元,未來要查帳,才知道某個月份曾經有優待房客少收費用。但中午我把【湯富傑】的水電瓦斯費點選【已收款】,卻顯示收取1710元,與實際金額1500元不符!!!請改成點選【已收款】按鈕後,除了原本的收帳日期讓我自由輸入,也要讓我自由輸入或網頁版自動套入1500元的功能。」→【水電帳單】頁歷史帳單向房客收款列之【已收款】按鈕：輸入收款日期後再輸入實收金額（自動帶入帳單原價－協助優待，可改），存 roomCollect[房].amount；按鈕顯示「已收款 MM-DD $實收（原價 $帳單）」；改為未收款時清除；舊紀錄未輸入者以應收顯示｜各房標籤與展開明細「合計」保留帳單原價｜【收租紀錄】簡易催收明細勾選列依 Ｃ-111 顯示折讓後金額並附原價（11/08 17:46 第 3 點漏改補齊）｜存檔欄位只新增 amount；已收、已結算旗標與日期邏輯不動
 　・★10260926 先修後報：哥弟結算信「（我多負責 1 元）」原寫死，改為金額為奇數才印（主帥 10/26 01:43 第 4 點）
 　・★10260926 先修後報：帳單暫存區選月份時一併重算「帳單產出日」；網路費月份選單補 onchange；水費產出日改回主帥 06/13 定案「帳單月份的5日」（主帥 10/26 01:43 第 3 點截圖 10251523）
 　・★10260926 題 D 甲加強版：簡易催收明細加「🎁 房客協助折讓」（金額、原因、哥全額吸收／兄弟各半），催收明細與房客端帳單顯示折讓後金額；兄弟各半時自動套入從轉帳扣弟一半（主帥 10/26 02:23 第 4 點）
@@ -2742,7 +2743,7 @@ window.guardRec = function(o, what){
 };
 let myRoom       = null; // 房客：所在房間key
 // ── 【1-4】資料庫初始結構（新增欄位時在此調整）────────────────────
-window.APP_VER='v10261739'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
+window.APP_VER='v11081808'; // ★唯一版本來源：每次改版「只改這一行」，頁面標籤與匯出檔自動同步
 document.addEventListener('DOMContentLoaded',function(){var vt=document.getElementById('ver-tag');if(vt)vt.textContent=window.APP_VER;});
 let DB = { tenants:{}, utilBills:[], rentRecords:[], checkouts:[], announces:[], repairs:[], tapoSettings:{}, formerTenants:[], photoNotes:[], postalAccount:{}, landlordStay:{}, aiKnowledge:'', aiKnowledgeDB:[], mailRecords:[], lockBatteryRecords:[], loginLog:[], rentPause:{}, landlordSettlements:[], lastUtilBills:{water:0, elec:0, gas:0}, taxRecords:{houseTax:{amount:4292,paidDate:'',note:''},landTax:{amount:500,paidDate:'',note:''},stampTax:{amount:1427,paidDate:'2026-05-25',note:'嘉義市稅務局印花稅專屬櫃檯繳清'}}, inheritanceLog:[], maintenanceRecords:[], maintenanceLog:[], maintenanceReserveLog:[], defaultNetFee:1409, netBaseMonth:'202603', netSettledMonths:[], settlements:[], preBills:[], draftBills:[], taxReserveLog:[], brotherEmail:'', notifyBrother:false, notifyTenant:false, bsOddOwner:'all', reserveProfile:{}, maintenanceDueSent:{}, leaseExpirySent:{}, rentReceiptSent:{}, reserveReportSent:{}, reserveAutoLog:[], billWorkingState:null, rentContracts:[], rentPayments:[], rentOverdueSent:{} }; /* ★09210142 房缺-05 */
 let _ejsOk = false;
@@ -4863,6 +4864,8 @@ window._syncBillFromRooms = function(b){
   b.deferred=!allPaid;
   b.collectedDate=allPaid?(rk.map(r=>rc[r].date).filter(Boolean).sort().pop()||''):'';
 };
+window._rcDue = function(b,room){ const u=((b&&b.rooms)||{})[room]||{}; const t=+u.total||0; const d=Math.min(+u.discount||0,t); return {t:t,d:d,n:t-d}; };   // ★11081808 Ｃ-122（主帥 2026/11/08 18:08 第 2 點）：應收＝帳單原價－協助優待（Ｃ-107）
+window._rcAmt = function(b,room){ const c=((b&&b.roomCollect)||{})[room]||{}; return (c.amount!==undefined&&c.amount!==null&&c.amount!=='')?(+c.amount):window._rcDue(b,room).n; };   // ★11081808 Ｃ-122（主帥 2026/11/08 18:08 第 2 點）：實收＝已輸入值；舊紀錄未輸入者以應收顯示
 window.toggleRoomCollect = async function(i, room){
   const b=(DB.utilBills||[])[i]; if(!b)return;
   const rc=_ensureRoomCollect(b);
@@ -4871,11 +4874,16 @@ window.toggleRoomCollect = async function(i, room){
     const d=prompt('「'+(RL[room]||room)+'」收款日期（YYYY-MM-DD），可留空：', window.todayLocal());
     if(d===null)return;
     if(String(d).trim() && !/^\d{4}-\d{2}-\d{2}$/.test(String(d).trim())){ toast('日期格式須為 YYYY-MM-DD'); return; }   // ★10072127 丙-13 同型
-    rc[room].paid=true; rc[room].date=(d||'').trim();
-  } else { rc[room].paid=false; rc[room].date=''; }
+    const _du=window._rcDue(b,room);   // ★11081808 Ｃ-122（主帥 2026/11/08 18:08 第 2 點）：實收金額，自動帶入應收、可改
+    const a=prompt('「'+(RL[room]||room)+'」實收金額（元）：已自動帶入 '+_du.n.toLocaleString()+(_du.d>0?'（帳單原價 '+_du.t.toLocaleString()+' －優待 '+_du.d.toLocaleString()+'）':'')+'，可改：', String(_du.n));
+    if(a===null)return;
+    const _a=String(a).replace(/[,，\s元$]/g,'');
+    if(_a && !/^\d+$/.test(_a)){ toast('實收金額須為整數（元）'); return; }
+    rc[room].paid=true; rc[room].date=(d||'').trim(); rc[room].amount=_a?(+_a):_du.n;
+  } else { rc[room].paid=false; rc[room].date=''; delete rc[room].amount; }
   _syncBillFromRooms(b);
   await saveLandlordData(); renderUtilHistory();
-  toast((RL[room]||room)+'：'+(rc[room].paid?('已收'+(rc[room].date?'（'+rc[room].date+'）':'')):'改緩收'));
+  toast((RL[room]||room)+'：'+(rc[room].paid?('已收 $'+window._rcAmt(b,room).toLocaleString()+(rc[room].date?'（'+rc[room].date+'）':'')):'改緩收'));   // ★11081808 Ｃ-122（主帥 2026/11/08 18:08 第 2 點）
 };
 window.markUtilCollected = async function(i){
   const b=(DB.utilBills||[])[i]; if(!b)return;
@@ -6157,7 +6165,7 @@ window.tsbOnRoom = function(){
   box.innerHTML=bills.map(function(b){
     const rc=(b.roomCollect||{})[room]||{}; const unpaid=!rc.paid;
     const mo=+(''+(b.period||'')).slice(4,6);
-    return '<label style="display:block;margin:.25rem 0;"><input type="checkbox" class="tsb-bill" value="'+b.period+'" '+(unpaid?'checked':'')+' onchange="genTenantSimpleBill()"> '+mo+'月帳單　應繳 $'+((b.rooms[room].total||0).toLocaleString())+' '+(unpaid?'<span style="color:var(--danger);font-size:.75rem;">(未收)</span>':'<span style="color:var(--muted);font-size:.75rem;">(已收)</span>')+'</label>';
+    return '<label style="display:block;margin:.25rem 0;"><input type="checkbox" class="tsb-bill" value="'+b.period+'" '+(unpaid?'checked':'')+' onchange="genTenantSimpleBill()"> '+mo+'月帳單　應繳 $'+(function(x){ var t=+x.total||0, d=Math.min(+x.discount||0,t); return (t-d).toLocaleString()+(d>0?'（原 $'+t.toLocaleString()+' −折讓 '+d.toLocaleString()+'）':''); })(b.rooms[room])+' '+   /* ★11081808 Ｃ-122（主帥 2026/11/08 18:08 第 2 點）：Ｃ-111 漏改補齊 */ (unpaid?'<span style="color:var(--danger);font-size:.75rem;">(未收)</span>':'<span style="color:var(--muted);font-size:.75rem;">(已收)</span>')+'</label>';
   }).join('')+(bills.some(function(b){ return (+(((b.rooms||{})[room]||{}).discount)||0)>0; })?'<div class="step-note" style="font-size:.75rem;">🎁 本明細已含協助折讓；修改請到【水電帳單】頁計算結果下方「🎁 房客協助折讓」。</div>':'');   // ★10261037 輸入移至水電帳單頁（Ｃ-111）
   genTenantSimpleBill();
 };
@@ -7340,7 +7348,7 @@ window.renderUtilHistory = function(){
         + '與帳單暫存區的「我已繳費給台電／自來水／瓦斯」<b>互不相關、不會連動</b>）：</div>'
         + '<div style="margin-top:.25rem;display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;">'
         + rk.map(function(r){ var c=rc[r];
-            return `<button class="btn ${c.paid?'bs':'bo'} sm" style="font-size:.72rem;padding:2px 8px;white-space:nowrap;" onclick="toggleRoomCollect(${i},'${r}')">${RL[r]||r} ${c.paid?('已收款'+(c.date?' '+c.date.slice(5):'')):'未收款'}</button>`;
+            return `<button class="btn ${c.paid?'bs':'bo'} sm" style="font-size:.72rem;padding:2px 8px;white-space:nowrap;" onclick="toggleRoomCollect(${i},'${r}')">${RL[r]||r} ${c.paid?('已收款'+(c.date?' '+c.date.slice(5):'')+' $'+window._rcAmt(b,r).toLocaleString()+(window._rcAmt(b,r)<window._rcDue(b,r).t?'（原價 $'+window._rcDue(b,r).t.toLocaleString()+'）':'')):'未收款'}</button>`;   // ★11081808 Ｃ-122（主帥 2026/11/08 18:08 第 2 點）
           }).join('') + '</div>';
     })();
     return `<div class="hist-item">
